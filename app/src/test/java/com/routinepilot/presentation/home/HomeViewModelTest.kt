@@ -2,6 +2,8 @@ package com.routinepilot.presentation.home
 
 import com.routinepilot.domain.model.Routine
 import com.routinepilot.domain.repository.RoutineRepository
+import java.time.Instant
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -33,12 +35,13 @@ class HomeViewModelTest {
 
     @Test
     fun uiState_mirrorsRepositoryRoutines() = runTest(dispatcher) {
-        val viewModel = HomeViewModel(FakeRoutineRepository(listOf(Routine(1, "Morning walk"))))
+        val routine = Routine(UUID.randomUUID(), "Morning walk", 0, Instant.EPOCH)
+        val viewModel = HomeViewModel(FakeRoutineRepository(listOf(routine)))
 
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(listOf(Routine(1, "Morning walk")), viewModel.uiState.value.routines)
+        assertEquals(listOf(routine), viewModel.uiState.value.routines)
     }
 
     private class FakeRoutineRepository(routines: List<Routine>) : RoutineRepository {

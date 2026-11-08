@@ -24,6 +24,24 @@ Packages under `app/src/main/java/com/routinepilot`:
 
 Dependencies point inward: presentation depends on domain; data and infrastructure implement domain interfaces. Hilt bindings live in `infrastructure/di`.
 
+## Local data model
+
+Room database `routinepilot.db` (schema version 2). Every table uses UUID text primary keys, `createdAt`, `modifiedAt` (local modification time), and `deletedAt` (tombstone). Deletes are soft: reads filter `deletedAt IS NULL`. Hard purge is reserved for future sync cleanup.
+
+| Table | Purpose | Relationships |
+| --- | --- | --- |
+| `routines` | Routines with `position` ordering | Parent of steps and occurrences |
+| `routine_steps` | Ordered steps of a routine | Cascade from routine; restricted from hard delete while events reference it |
+| `tasks` | Standalone tasks, optionally linked to a routine | Routine delete sets link to null |
+| `scheduled_occurrences` | Planned or completed routine runs | Cascade from routine |
+| `execution_sessions` | Runs of a routine | Cascade from routine; optional occurrence (set null) |
+| `step_completion_events` | Step completions within a session | Cascade from session; restricted by step |
+| `user_preferences` | Named preference values, unique by name | None |
+
+Device-only UI settings stay in DataStore. Preferences that must sync later belong in `user_preferences`.
+
+Schema changes need a `Migration` in `infrastructure/database/Migrations.kt`. Room exports each version to `app/schemas/`; commit those files.
+
 ## Requirements
 
 - JDK 17
