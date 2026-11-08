@@ -8,6 +8,7 @@ import com.routinepilot.infrastructure.database.newStep
 import com.routinepilot.infrastructure.database.scalar
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -15,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Before
@@ -23,6 +25,10 @@ import org.junit.Test
 class RoutineRepositoryTest {
     private lateinit var db: RoutinePilotDatabase
     private lateinit var repository: RoutineRepositoryImpl
+
+    private companion object {
+        const val DISTINCT_TIMESTAMP_MILLIS = 5L
+    }
 
     @Before
     fun setUp() {
@@ -138,6 +144,72 @@ class RoutineRepositoryTest {
 
         assertNull(repository.observeRoutine(routine.id).first())
         assertEquals(0L, db.scalar("SELECT COUNT(*) FROM routines"))
+    }
+
+    @Test
+    fun saveRoutine_softDeletesActiveStepsMissingFromTheList() = runBlocking {
+        val routine = newRoutine()
+        val keep = newStep(routine.id, "Keep", position = 0)
+        val drop = newStep(routine.id, "Drop", position = 1)
+        repository.saveRoutine(routine, listOf(keep, drop))
+
+        repository.saveRoutine(routine, listOf(keep.copy(title = "Kept")))
+
+        assertEquals(listOf("Kept"), repository.observeSteps(routine.id).first().map { it.title })
+        assertEquals(1L, db.scalar("SELECT COUNT(*) FROM routine_steps WHERE deletedAt IS NOT NULL"))
+    }
+
+    @Test
+    fun stepDetails_roundTripDescriptionAndDuration() = runBlocking {
+        val routine = newRoutine()
+        val step = newStep(routine.id, "Stretch", position = 0).copy(description = "Hips", durationSeconds = 600)
+        repository.saveRoutine(routine.copy(description = "Daily"), listOf(step))
+
+        assertEquals("Daily", repository.observeRoutine(routine.id).first()?.description)
+        assertEquals(listOf(step), repository.observeSteps(routine.id).first())
+    }
+
+    @Test
+    fun restoreRoutine_restoresRoutineAndOnlyStepsDeletedWithIt() = runBlocking {
+        val routine = newRoutine()
+        val earlier = newStep(routine.id, "Earlier", position = 0)
+        val kept = newStep(routine.id, "Kept", position = 1)
+        repository.saveRoutine(routine, listOf(earlier, kept))
+        repository.deleteStep(earlier.id)
+        // Tombstones are matched by timestamp, so the two deletions need distinct milliseconds.
+        delay(DISTINCT_TIMESTAMP_MILLIS)
+        repository.deleteRoutine(routine.id)
+
+        repository.restoreRoutine(routine.id)
+
+        assertEquals(listOf(routine), repository.observeRoutines().first())
+        assertEquals(listOf("Kept"), repository.observeSteps(routine.id).first().map { it.title })
+        assertEquals(1L, db.scalar("SELECT COUNT(*) FROM routine_steps WHERE deletedAt IS NOT NULL"))
+    }
+
+    @Test
+    fun duplicateRoutine_copiesRoutineAndStepsAsNewRows() = runBlocking {
+        val source = newRoutine(title = "Morning", position = 0)
+        val brush = newStep(source.id, "Brush", position = 0).copy(durationSeconds = 120)
+        repository.saveRoutine(source, listOf(brush))
+
+        val copyId = repository.duplicateRoutine(source.id)!!
+
+        val copy = repository.observeRoutine(copyId).first()!!
+        assertEquals("Morning (copy)", copy.title)
+        assertEquals(1, copy.position)
+        val copySteps = repository.observeSteps(copyId).first()
+        assertEquals(listOf("Brush"), copySteps.map { it.title })
+        assertEquals(120, copySteps.single().durationSeconds)
+        assertEquals(copyId, copySteps.single().routineId)
+        assertNotEquals(brush.id, copySteps.single().id)
+        assertEquals(listOf(brush), repository.observeSteps(source.id).first())
+        assertEquals(2, repository.observeRoutines().first().size)
+    }
+
+    @Test
+    fun duplicateRoutine_ofMissingRoutine_returnsNull() = runBlocking {
+        assertNull(repository.duplicateRoutine(UUID.randomUUID()))
     }
 
     @Test

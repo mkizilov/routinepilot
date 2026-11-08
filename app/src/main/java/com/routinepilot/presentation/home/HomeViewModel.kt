@@ -5,18 +5,35 @@ import androidx.lifecycle.viewModelScope
 import com.routinepilot.domain.model.Routine
 import com.routinepilot.domain.repository.RoutineRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class HomeUiState(val routines: List<Routine> = emptyList())
 
+sealed interface HomeEvent {
+    data class RoutineDeleted(val id: UUID) : HomeEvent
+
+    data object RoutineDuplicated : HomeEvent
+}
+
+interface HomeActions {
+    fun duplicateRoutine(id: UUID)
+
+    fun deleteRoutine(id: UUID)
+}
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    routineRepository: RoutineRepository,
-) : ViewModel() {
+    private val routineRepository: RoutineRepository,
+) : ViewModel(), HomeActions {
     val uiState: StateFlow<HomeUiState> = routineRepository.observeRoutines()
         .map { HomeUiState(routines = it) }
         .stateIn(
@@ -24,6 +41,27 @@ class HomeViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
             initialValue = HomeUiState(),
         )
+
+    private val eventChannel = Channel<HomeEvent>(Channel.BUFFERED)
+    val events: Flow<HomeEvent> = eventChannel.receiveAsFlow()
+
+    override fun duplicateRoutine(id: UUID) {
+        viewModelScope.launch {
+            routineRepository.duplicateRoutine(id)
+            eventChannel.send(HomeEvent.RoutineDuplicated)
+        }
+    }
+
+    override fun deleteRoutine(id: UUID) {
+        viewModelScope.launch {
+            routineRepository.deleteRoutine(id)
+            eventChannel.send(HomeEvent.RoutineDeleted(id))
+        }
+    }
+
+    fun undoDelete(id: UUID) {
+        viewModelScope.launch { routineRepository.restoreRoutine(id) }
+    }
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L

@@ -80,4 +80,6 @@ CI (`.github/workflows/android.yml`) runs format, detekt, unit tests, and a debu
 
 ## Status
 
-Initial scaffold: a single home screen that lists routines from Room (empty state for now), navigation through Compose NavHost, and DataStore wired through Hilt for future preferences.
+Routine management: the home screen lists routines and offers duplicate and delete (with undo). The editor creates and renames routines, adds, removes (with undo), reorders, and describes steps, sets step durations in minutes, shows the total estimated duration, and validates input before saving. Deleting a routine from the editor asks for confirmation.
+
+Decisions: step reordering uses up and down buttons rather than drag and drop. Step removal and routine deletion undo only from the snackbar that follows them; edits stay in the draft until Save. Duration is stored in seconds.

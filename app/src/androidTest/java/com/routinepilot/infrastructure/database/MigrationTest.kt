@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -82,9 +83,41 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun migration2To3_addsNullableDescriptionAndDuration() = runBlocking {
+        createVersion1Database { it.execSQL("INSERT INTO `routines` (`title`) VALUES ('Morning walk')") }
+
+        val db = openMigratedDatabase()
+        try {
+            val routine = db.routineDao().observeActive().first().single()
+            assertNull(routine.description)
+            db.routineStepDao().upsert(
+                listOf(
+                    RoutineStepEntity(
+                        id = UUID.randomUUID(),
+                        routineId = routine.id,
+                        title = "Brush",
+                        position = 0,
+                        createdAt = TEST_TIME,
+                        modifiedAt = TEST_TIME,
+                        description = "Teeth",
+                        durationSeconds = 120,
+                    ),
+                ),
+            )
+            assertEquals(120L, db.scalar("SELECT durationSeconds FROM routine_steps WHERE title = ?", "Brush"))
+            assertEquals(
+                "Teeth",
+                db.routineStepDao().activeSnapshot(routine.id).single().description,
+            )
+        } finally {
+            db.close()
+        }
+    }
+
     private fun openMigratedDatabase(): RoutinePilotDatabase =
         Room.databaseBuilder(context, RoutinePilotDatabase::class.java, TEST_DB)
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .addCallback(ForeignKeysCallback)
             .build()
 

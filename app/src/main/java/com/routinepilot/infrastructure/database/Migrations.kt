@@ -3,6 +3,14 @@ package com.routinepilot.infrastructure.database
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
+val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `routines` ADD COLUMN `description` TEXT")
+        db.execSQL("ALTER TABLE `routine_steps` ADD COLUMN `description` TEXT")
+        db.execSQL("ALTER TABLE `routine_steps` ADD COLUMN `durationSeconds` INTEGER")
+    }
+}
+
 private const val UUID_V4_SQL =
     "lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || " +
         "substr('89ab', 1 + (random() & 3), 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))"

@@ -14,12 +14,20 @@ import com.routinepilot.infrastructure.database.StepCompletionEventEntity
 import com.routinepilot.infrastructure.database.TaskEntity
 import java.time.Instant
 
-internal fun RoutineEntity.toDomain() = Routine(id, title, position, createdAt)
+internal fun RoutineEntity.toDomain() = Routine(id, title, position, createdAt, description)
 
 internal fun Routine.toEntity(modifiedAt: Instant) =
-    RoutineEntity(id = id, title = title, position = position, createdAt = createdAt, modifiedAt = modifiedAt)
+    RoutineEntity(
+        id = id,
+        title = title,
+        position = position,
+        createdAt = createdAt,
+        modifiedAt = modifiedAt,
+        description = description,
+    )
 
-internal fun RoutineStepEntity.toDomain() = RoutineStep(id, routineId, title, position, createdAt)
+internal fun RoutineStepEntity.toDomain() =
+    RoutineStep(id, routineId, title, position, createdAt, description, durationSeconds)
 
 internal fun RoutineStep.toEntity(modifiedAt: Instant) =
     RoutineStepEntity(
@@ -29,6 +37,8 @@ internal fun RoutineStep.toEntity(modifiedAt: Instant) =
         position = position,
         createdAt = createdAt,
         modifiedAt = modifiedAt,
+        description = description,
+        durationSeconds = durationSeconds,
     )
 
 internal fun TaskEntity.toDomain() = Task(id, title, isCompleted, routineId, position, createdAt)

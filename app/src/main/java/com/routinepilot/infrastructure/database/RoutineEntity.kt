@@ -13,4 +13,5 @@ data class RoutineEntity(
     val createdAt: Instant,
     val modifiedAt: Instant,
     val deletedAt: Instant? = null,
+    val description: String? = null,
 )

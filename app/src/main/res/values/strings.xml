@@ -1,4 +1,41 @@
 <resources>
     <string name="app_name">RoutinePilot</string>
     <string name="home_empty_state">No routines yet</string>
+    <string name="home_new_routine">New routine</string>
+    <string name="home_more_actions">More actions</string>
+    <string name="home_action_duplicate">Duplicate</string>
+    <string name="home_action_delete">Delete</string>
+    <string name="home_routine_deleted">Routine deleted</string>
+    <string name="home_routine_duplicated">Routine duplicated</string>
+    <string name="undo">Undo</string>
+
+    <string name="editor_title_new">New routine</string>
+    <string name="editor_title_edit">Edit routine</string>
+    <string name="editor_back">Back</string>
+    <string name="editor_name_label">Name</string>
+    <string name="editor_description_label">Description</string>
+    <string name="editor_total_duration">Total: %1$s</string>
+    <string name="editor_steps_heading">Steps</string>
+    <string name="editor_no_steps">No steps yet. Add the first step.</string>
+    <string name="editor_add_step">Add step</string>
+    <string name="editor_step_number">Step %1$d</string>
+    <string name="editor_step_name_label">Step name</string>
+    <string name="editor_step_description_label">Step description</string>
+    <string name="editor_step_minutes_label">Minutes</string>
+    <string name="editor_move_up">Move step up</string>
+    <string name="editor_move_down">Move step down</string>
+    <string name="editor_remove_step">Remove step</string>
+    <string name="editor_step_removed">Removed %1$s</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_delete_routine">Delete routine</string>
+    <string name="editor_delete_title">Delete routine?</string>
+    <string name="editor_delete_message">The routine and its steps will be removed.</string>
+    <string name="editor_delete_confirm">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="editor_missing">This routine no longer exists.</string>
+
+    <string name="error_blank_title">Enter a name</string>
+    <string name="error_title_too_long">Use at most 80 characters</string>
+    <string name="error_description_too_long">Use at most 500 characters</string>
+    <string name="error_duration_invalid">Enter whole minutes from 1 to 480, or leave blank</string>
 </resources>

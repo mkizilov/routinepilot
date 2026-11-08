@@ -14,7 +14,7 @@ import androidx.room.TypeConverters
         StepCompletionEventEntity::class,
         UserPreferenceEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)

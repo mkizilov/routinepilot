@@ -6,6 +6,8 @@ import com.routinepilot.data.mapping.toEntity
 import com.routinepilot.domain.model.Routine
 import com.routinepilot.domain.model.RoutineStep
 import com.routinepilot.domain.repository.RoutineRepository
+import com.routinepilot.domain.validation.RoutineValidator
+import com.routinepilot.infrastructure.database.RoutineEntity
 import com.routinepilot.infrastructure.database.RoutinePilotDatabase
 import java.time.Instant
 import java.util.UUID
@@ -32,6 +34,10 @@ class RoutineRepositoryImpl @Inject constructor(
         val now = Instant.now()
         database.withTransaction {
             routineDao.upsert(routine.toEntity(now))
+            val kept = steps.map { it.id }.toSet()
+            stepDao.activeIds(routine.id)
+                .filterNot { it in kept }
+                .forEach { stepDao.markDeleted(it, now) }
             stepDao.upsert(steps.map { it.toEntity(now) })
         }
     }
@@ -41,6 +47,45 @@ class RoutineRepositoryImpl @Inject constructor(
         database.withTransaction {
             routineDao.markDeleted(id, now)
             stepDao.markDeletedForRoutine(id, now)
+        }
+    }
+
+    override suspend fun restoreRoutine(id: UUID) {
+        val now = Instant.now()
+        database.withTransaction<Unit> {
+            val deletedAt = routineDao.findIncludingDeleted(id)?.deletedAt ?: return@withTransaction
+            routineDao.restore(id, now)
+            stepDao.restoreDeletedAt(id, deletedAt, now)
+        }
+    }
+
+    override suspend fun duplicateRoutine(id: UUID): UUID? {
+        val now = Instant.now()
+        return database.withTransaction<UUID?> {
+            val source = routineDao.findActive(id) ?: return@withTransaction null
+            val copyId = UUID.randomUUID()
+            routineDao.upsert(
+                RoutineEntity(
+                    id = copyId,
+                    title = "${source.title} (copy)".take(RoutineValidator.MAX_TITLE_LENGTH),
+                    position = routineDao.countActive(),
+                    createdAt = now,
+                    modifiedAt = now,
+                    description = source.description,
+                ),
+            )
+            stepDao.upsert(
+                stepDao.activeSnapshot(id).map {
+                    it.copy(
+                        id = UUID.randomUUID(),
+                        routineId = copyId,
+                        createdAt = now,
+                        modifiedAt = now,
+                        deletedAt = null,
+                    )
+                },
+            )
+            copyId
         }
     }
 

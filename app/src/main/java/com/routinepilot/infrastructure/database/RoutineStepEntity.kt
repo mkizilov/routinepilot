@@ -27,4 +27,6 @@ data class RoutineStepEntity(
     val createdAt: Instant,
     val modifiedAt: Instant,
     val deletedAt: Instant? = null,
+    val description: String? = null,
+    val durationSeconds: Int? = null,
 )
