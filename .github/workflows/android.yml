@@ -24,6 +24,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.9
+      - name: Repository checks that need no JDK
+        run: python3 scripts/static-checks.py
       - name: Format, static analysis, unit tests, debug and release builds
         run: gradle spotlessCheck detekt testDebugUnitTest assembleDebug assembleRelease --no-daemon
 

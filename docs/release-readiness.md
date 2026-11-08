@@ -1,5 +1,7 @@
 # Release readiness: implementation and testing summary
 
+The prioritized remaining work, with status and estimates, is in [ROADMAP.md](../ROADMAP.md). This page describes the release pass as it was when it was written.
+
 This is the final summary of the release-preparation pass. It records what exists, what was executed, and what must happen before the app or the backend is published. Nothing in it was compiled or run on a device.
 
 ## Status at a glance

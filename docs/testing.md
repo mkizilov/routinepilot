@@ -10,6 +10,12 @@ This records what was run, what was not, and why. Counts are the number of `@Tes
 | Compose UI and database tests | `app/src/androidTest` | 129 | Emulator or device, API 34 in CI | Android SDK, emulator |
 | Backend unit, database, and API tests | `backend/src/test` | 63 | JVM | JDK 17 and Gradle. Database and API tests also need Docker for Testcontainers |
 
+The Gradle wrapper is not committed yet. Generate it once with `gradle wrapper --gradle-version 8.9`, then use `./gradlew`. The repository checks need no JDK, so run them first:
+
+```sh
+python3 scripts/static-checks.py
+```
+
 Commands:
 
 ```sh
@@ -34,6 +40,29 @@ cd backend && gradle test installDist                                           
 - **Help**: `HelpScreenTest`.
 - **Account deletion**: `AccountScreenTest` checks that deletion needs the password and a confirmation, and that the confirmed password is passed on.
 - **Planning race**: `PlanningViewModelTest`.
+
+## Repository checks script
+
+`scripts/static-checks.py` uses only the Python standard library. It runs twelve checks, prints one line for each, and exits with status 1 on any failure. It reads text and structure. It does not compile code or run tests.
+
+| Check | What it catches |
+| --- | --- |
+| Brackets balance in every `.kt` and `.kts` file | Unclosed or mismatched brackets, after blanking strings and comments |
+| XML files are well formed | Broken manifest and resource files |
+| Version catalog aliases match the build scripts | A `libs.` reference to an alias the catalog does not define, and a `version.ref` with no version |
+| Every DAO call names a declared DAO method | Calls to DAO methods that do not exist |
+| Hilt modules place `@Binds` and `@Provides` correctly | `@Binds` outside an abstract module, and `@Provides` outside an object |
+| Every injected constructor dependency has a binding | Constructor parameters with no `@Binds`, `@Provides`, or injectable class behind them |
+| No unused imports | Imports left behind by edits |
+| No line over 120 characters | Detekt's line limit |
+| String, style, and XML resources resolve | Missing `R.string` names, missing `@string`, `@style`, and `@xml` references in the manifest, and duplicate string names |
+| Documentation paths and links exist | Backticked repository paths and relative links that point at nothing |
+| Gradle is limited to two workers | A missing `org.gradle.workers.max=2` in `gradle.properties` |
+| Workflow YAML parses | Syntax errors in `.github/workflows`, when Ruby is installed |
+
+The script is checked against itself. For the final pass, one defect was injected into a scratch copy of the tree for each check that can fail, and each one was reported. The defects were an unbalanced bracket, an undefined catalog alias, an undeclared DAO method, an unused import, a missing string, a broken documentation link, a worker limit that was too high, a `@Provides` annotation removed, and a `@Binds` moved into an object. The scratch copy was deleted. A rename that keeps a binding's return type is not reported, because Hilt still sees that binding.
+
+The Android CI job runs the script first.
 
 ## What was run in this environment
 

@@ -20,6 +20,8 @@ Status: the release configuration, signing hooks, and CI workflow are written. N
 
 ## Signing
 
+The commands on this page use `./gradlew`, which needs the Gradle wrapper. The wrapper is not committed yet. Generate it once with `gradle wrapper --gradle-version 8.9`.
+
 Gradle reads signing from environment variables only. Nothing is written into the repository, and `keystore.properties`, `*.jks`, `*.keystore`, `*.p12`, and `.env` are ignored by git.
 
 1. Create the upload keystore outside the repository:

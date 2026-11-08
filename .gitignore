@@ -13,6 +13,9 @@ _opam/
 keystore.properties
 .env
 
+# Python caches from scripts/
+__pycache__/
+
 # Android / Gradle
 build/
 .gradle/

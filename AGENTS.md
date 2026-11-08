@@ -1,20 +1,18 @@
 # RoutinePilot: project boundaries and working agreement
 
-- Work only in `/Users/mk-rune/test_projects/06-routinepilot`. This is one of fourteen independent repositories.
+- Work only in `/Users/mk-rune/test_projects/06-routinepilot`. Other repositories are independent of it.
 - Do not read, modify, clean up, or run commands in sibling repositories or the user's configuration.
 - Work autonomously: choose sensible defaults and document assumptions; do not ask questions or delegate.
 - Never install anything globally or use sudo, Homebrew, launchd, host credentials, or host Docker sockets.
 - Dependencies, toolchains, caches, browser binaries, SDKs, temporary files and test data stay in this repository. Preserve the supplied project-local environment. Python packages go in `.venv`.
-- `.agent-local/` is ignored, project-local build/runtime state. `.opencode/` is managed orchestration configuration; do not change or remove it or bypass the sandbox.
+- `.agent-local/` is ignored, project-local build and runtime state. Do not bypass the sandbox or change managed tool configuration.
 - Use existing system tools read-only, or install pinned tools under this repository. Do not change shell profiles, user settings, Keychain, or global Git settings.
 - Bind test servers to loopback; use ports 21500–21599. Limit build/test workers to two unless a required benchmark explicitly needs more.
 - Docker-dependent integration tests must remain reproducible but be reported as unverified here if they require access outside this repository. Do not bypass this boundary.
 - Do not touch attached hardware, enroll services, flash firmware, install agents, or alter OS settings. Supply manual checklists for such steps.
-- Implement only the current numbered prompt, preserving prior behavior. Run appropriate checks, fix failures, and report genuine limitations without fabricating test or benchmark results.
-- Before finishing every numbered turn: stop its servers/watchers, remove scratch outputs, update relevant documentation, and make a local conventional-commit Git commit. Do not push.
-- End each turn with a short summary of changes, checks actually run, remaining limitations, and commit hash. The orchestrator will provide the next prompt only after this turn ends.
-
-Extend this file with the project's language-specific architecture and verification commands while retaining these boundaries.
+- Implement only what the current task asks, and preserve prior behavior. Run appropriate checks, fix failures, and report genuine limitations without fabricating test or benchmark results.
+- Before finishing a task: stop any servers or watchers you started, remove scratch outputs, update relevant documentation, and make a local conventional-commit Git commit. Do not push.
+- Report each task with a short summary of changes, the checks actually run, remaining limitations, and the commit hash.
 
 ## Android architecture
 
@@ -45,6 +43,7 @@ The backend is not compiled in every environment. Record it as unverified when G
 
 Run from the repository root with a JDK 17 and an Android SDK available (see README). Until the Gradle wrapper is committed, use a local Gradle 8.9 (`gradle wrapper --gradle-version 8.9` generates it).
 
+- `python3 scripts/static-checks.py` — repository checks that need no JDK. Run them first.
 - `./gradlew spotlessCheck detekt` — formatting and static analysis
 - `./gradlew testDebugUnitTest` — JVM unit tests
 - `./gradlew assembleDebug` — debug build

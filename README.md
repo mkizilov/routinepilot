@@ -26,7 +26,7 @@ Dependencies point inward: presentation depends on domain; data and infrastructu
 
 ## Local data model
 
-Room database `routinepilot.db` (schema version 6). Every table uses UUID text primary keys, `createdAt`, `modifiedAt` (local modification time), and `deletedAt` (tombstone). Deletes are soft: reads filter `deletedAt IS NULL`. Hard purge is reserved for future sync cleanup.
+Room database `routinepilot.db` (schema version 8). Every table uses UUID text primary keys, `createdAt`, `modifiedAt` (local modification time), and `deletedAt` (tombstone). Deletes are soft: reads filter `deletedAt IS NULL`. Hard purge is reserved for future sync cleanup.
 
 | Table | Purpose | Relationships |
 | --- | --- | --- |
@@ -157,7 +157,7 @@ The app never reads other events. Refusing leaves export off, and nothing else i
 - The sync runs only while the app process is alive. Changes made while the app is closed are exported when it next starts.
 - Access revoked outside the app is noticed at the next sync or when the screen resumes.
 - The UID relies on the provider storing `UID_2445`. A provider that drops it can create a duplicate only after a lost link.
-- The first build exports the Room schema for version 6 to `app/schemas/6.json`. That file is not in this checkout yet. Commit it after the first build.
+- The first build exports the Room schema for version 8 to `app/schemas/`. Those files are not in this checkout yet. Commit them after the first build.
 - **Not verified here.** The environment had no JDK, Android SDK, Gradle, or network, so nothing in this section has been compiled or run. The mapping and sync tests are written but have not run. The provider calls, the screen, the migration, and the permission prompts have not run on a device or emulator. Check them on a device before relying on them.
 
 ## Requirements
@@ -186,7 +186,7 @@ Then use `./gradlew` for all commands:
 ./gradlew check                    # all of the above checks
 ```
 
-CI (`.github/workflows/android.yml`) runs format, detekt, unit tests, and debug and release builds on every push and pull request, and runs the Compose UI tests on an API 34 emulator. It currently calls `gradle` directly through `gradle/actions/setup-gradle`; switch to `./gradlew` once the wrapper is committed. The release build is unsigned in CI, because no signing secret is set there. `docs/release.md` describes signing.
+CI (`.github/workflows/android.yml`) starts with `scripts/static-checks.py`, then runs format, detekt, unit tests, and debug and release builds on every push and pull request, and runs the Compose UI tests on an API 34 emulator. It currently calls `gradle` directly through `gradle/actions/setup-gradle`; switch to `./gradlew` once the wrapper is committed. The release build is unsigned in CI, because no signing secret is set there. `docs/release.md` describes signing.
 
 ## Layout
 
@@ -202,6 +202,25 @@ CI (`.github/workflows/android.yml`) runs format, detekt, unit tests, and debug 
 - `docs/privacy.md` what is stored where, what is sent, and how to delete data
 - `docs/testing.md` the test suites, what was run, and what was not
 - `docs/release-readiness.md` the final summary and what remains before release
+
+## Verification status
+
+Read this before relying on any feature.
+
+- **Not compiled or run since the calendar export (commit `14b9fb8`).** The commits from that point to the current head were written where there was no JDK, Android SDK, Gradle, emulator, Docker daemon, or device. Their Kotlin code, unit tests, instrumented tests, backend tests, Docker image, and CI workflows have not been executed. Earlier commits were not re-verified in this series.
+- **Checked without a compiler:** `python3 scripts/static-checks.py` runs twelve structural checks. It needs only Python 3.9 or later, and CI runs it first.
+- **Gradle wrapper:** not committed yet. Run `gradle wrapper --gradle-version 8.9` once, then use `./gradlew`.
+- **Remaining work:** [ROADMAP.md](ROADMAP.md) lists it in priority order, with status and estimates.
+
+## Documentation
+
+- [ROADMAP.md](ROADMAP.md): status, prioritized remaining work, and estimates
+- [docs/release.md](docs/release.md): build types, signing, and the release checklist
+- [docs/privacy.md](docs/privacy.md): what is stored, sent, and deleted
+- [docs/testing.md](docs/testing.md): test suites, what was run, and what was not
+- [docs/release-readiness.md](docs/release-readiness.md): summary of the release pass
+- [docs/offline-sync.md](docs/offline-sync.md), [docs/smart-scheduling.md](docs/smart-scheduling.md), [docs/ui-accessibility.md](docs/ui-accessibility.md): design and behavior notes
+- [backend/README.md](backend/README.md): sync backend API, configuration, and deployment
 
 ## Status
 
