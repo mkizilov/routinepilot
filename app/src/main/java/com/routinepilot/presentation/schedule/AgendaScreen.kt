@@ -128,7 +128,12 @@ private fun LazyListScope.section(
 }
 
 @Composable
-private fun AgendaRow(item: AgendaItem, zone: ZoneId, actions: AgendaActions, showActions: Boolean) {
+private fun AgendaRow(
+    item: AgendaItem,
+    zone: ZoneId,
+    actions: AgendaActions,
+    showActions: Boolean,
+) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -161,13 +166,14 @@ private fun AgendaRow(item: AgendaItem, zone: ZoneId, actions: AgendaActions, sh
 }
 
 @Composable
-private fun statusLabel(item: AgendaItem): String = when (item.status) {
-    OccurrenceStatus.COMPLETED -> stringResource(R.string.agenda_status_completed)
-    OccurrenceStatus.SKIPPED -> stringResource(R.string.agenda_status_skipped)
-    OccurrenceStatus.PLANNED, OccurrenceStatus.RESCHEDULED ->
-        if (item.isMoved) {
-            stringResource(R.string.agenda_status_moved)
-        } else {
-            stringResource(R.string.agenda_status_planned)
-        }
-}
+private fun statusLabel(item: AgendaItem): String =
+    when (item.status) {
+        OccurrenceStatus.COMPLETED -> stringResource(R.string.agenda_status_completed)
+        OccurrenceStatus.SKIPPED -> stringResource(R.string.agenda_status_skipped)
+        OccurrenceStatus.PLANNED, OccurrenceStatus.RESCHEDULED ->
+            if (item.isMoved) {
+                stringResource(R.string.agenda_status_moved)
+            } else {
+                stringResource(R.string.agenda_status_planned)
+            }
+    }

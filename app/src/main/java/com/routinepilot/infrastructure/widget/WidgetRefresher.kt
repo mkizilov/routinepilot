@@ -31,81 +31,86 @@ private const val TODAY_REFRESH_MILLIS = 15 * MINUTE_MILLIS
  * list (so items move from upcoming to due). When the process is not alive, [WidgetRefreshWorker] catches up.
  */
 @Singleton
-class WidgetRefresher @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val scheduleRepository: ScheduleRepository,
-    private val routineRepository: RoutineRepository,
-    private val activeExecutionStore: ActiveExecutionStore,
-    private val clock: Clock,
-    @ApplicationScope private val scope: CoroutineScope,
-) {
-    private var started = false
+class WidgetRefresher
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+        private val scheduleRepository: ScheduleRepository,
+        private val routineRepository: RoutineRepository,
+        private val activeExecutionStore: ActiveExecutionStore,
+        private val clock: Clock,
+        @ApplicationScope private val scope: CoroutineScope,
+    ) {
+        private var started = false
 
-    fun start() {
-        if (started) return
-        started = true
-        scope.launch { refreshAll() }
-        scope.launch { watchToday() }
-        scope.launch {
-            routineRepository.observeRoutines().distinctUntilChanged().collect { refreshQuickStart() }
-        }
-        scope.launch {
-            activeExecutionStore.observe()
-                .map { run -> run?.let { RunKey.of(it) } }
-                .distinctUntilChanged()
-                .collect { refreshRun() }
-        }
-        scope.launch { tickRunningRoutine() }
-    }
-
-    suspend fun refreshAll() {
-        refreshToday()
-        refreshRun()
-        refreshQuickStart()
-    }
-
-    suspend fun refreshToday() = TodayWidget().updateAll(context)
-
-    suspend fun refreshRun() = RunWidget().updateAll(context)
-
-    suspend fun refreshQuickStart() = QuickStartWidget().updateAll(context)
-
-    /** Re-subscribes at each day boundary and at least every fifteen minutes, so "today" never goes stale. */
-    private suspend fun watchToday() {
-        while (true) {
-            val zone = clock.zone
-            val day = LocalDate.now(clock)
-            withTimeoutOrNull(TODAY_REFRESH_MILLIS) {
-                scheduleRepository.observeAgenda(
-                    from = day.atStartOfDay(zone).toInstant(),
-                    to = day.plusDays(1).atStartOfDay(zone).toInstant(),
-                ).collect { refreshToday() }
+        fun start() {
+            if (started) return
+            started = true
+            scope.launch { refreshAll() }
+            scope.launch { watchToday() }
+            scope.launch {
+                routineRepository.observeRoutines().distinctUntilChanged().collect { refreshQuickStart() }
             }
+            scope.launch {
+                activeExecutionStore
+                    .observe()
+                    .map { run -> run?.let { RunKey.of(it) } }
+                    .distinctUntilChanged()
+                    .collect { refreshRun() }
+            }
+            scope.launch { tickRunningRoutine() }
         }
-    }
 
-    /** Ticks only while a routine runs, so an idle app does not wake up each minute for the widget. */
-    private suspend fun tickRunningRoutine() {
-        activeExecutionStore.observe()
-            .map { it?.status == ExecutionStatus.RUNNING }
-            .distinctUntilChanged()
-            .collectLatest { running ->
-                if (!running) return@collectLatest
-                while (true) {
-                    delay(MINUTE_MILLIS)
-                    refreshRun()
+        suspend fun refreshAll() {
+            refreshToday()
+            refreshRun()
+            refreshQuickStart()
+        }
+
+        suspend fun refreshToday() = TodayWidget().updateAll(context)
+
+        suspend fun refreshRun() = RunWidget().updateAll(context)
+
+        suspend fun refreshQuickStart() = QuickStartWidget().updateAll(context)
+
+        /** Re-subscribes at each day boundary and at least every fifteen minutes, so "today" never goes stale. */
+        private suspend fun watchToday() {
+            while (true) {
+                val zone = clock.zone
+                val day = LocalDate.now(clock)
+                withTimeoutOrNull(TODAY_REFRESH_MILLIS) {
+                    scheduleRepository
+                        .observeAgenda(
+                            from = day.atStartOfDay(zone).toInstant(),
+                            to = day.plusDays(1).atStartOfDay(zone).toInstant(),
+                        ).collect { refreshToday() }
                 }
             }
-    }
+        }
 
-    /** What a run widget must redraw for. Checkpoints that only move the clock do not change it. */
-    private data class RunKey(
-        val sessionId: UUID,
-        val status: ExecutionStatus,
-        val stepIndex: Int,
-    ) {
-        companion object {
-            fun of(run: ActiveExecution) = RunKey(run.sessionId, run.status, run.stepIndex)
+        /** Ticks only while a routine runs, so an idle app does not wake up each minute for the widget. */
+        private suspend fun tickRunningRoutine() {
+            activeExecutionStore
+                .observe()
+                .map { it?.status == ExecutionStatus.RUNNING }
+                .distinctUntilChanged()
+                .collectLatest { running ->
+                    if (!running) return@collectLatest
+                    while (true) {
+                        delay(MINUTE_MILLIS)
+                        refreshRun()
+                    }
+                }
+        }
+
+        /** What a run widget must redraw for. Checkpoints that only move the clock do not change it. */
+        private data class RunKey(
+            val sessionId: UUID,
+            val status: ExecutionStatus,
+            val stepIndex: Int,
+        ) {
+            companion object {
+                fun of(run: ActiveExecution) = RunKey(run.sessionId, run.status, run.stepIndex)
+            }
         }
     }
-}

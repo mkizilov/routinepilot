@@ -6,10 +6,16 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
-data class PlannedOccurrence(val originalScheduledAt: Instant, val localDate: LocalDate)
+data class PlannedOccurrence(
+    val originalScheduledAt: Instant,
+    val localDate: LocalDate,
+)
 
 /** What must change so that a schedule's occurrences match its rule. Nothing outside this plan changes. */
-data class GenerationPlan(val toInsert: List<PlannedOccurrence>, val toRemove: List<UUID>)
+data class GenerationPlan(
+    val toInsert: List<PlannedOccurrence>,
+    val toRemove: List<UUID>,
+)
 
 /**
  * Plans occurrences for one schedule. Calling it again with the rows it already produced returns an empty plan,
@@ -27,7 +33,11 @@ object ScheduleGenerator {
     const val PAST_DAYS = 1L
     const val HORIZON_DAYS = 14L
 
-    fun plan(schedule: Schedule, existing: List<ScheduledOccurrence>, now: Instant): GenerationPlan {
+    fun plan(
+        schedule: Schedule,
+        existing: List<ScheduledOccurrence>,
+        now: Instant,
+    ): GenerationPlan {
         val zone = schedule.zone
         val today = ScheduleCalendar.dateOf(now, zone)
         val windowFrom = today.minusDays(PAST_DAYS)
@@ -37,23 +47,27 @@ object ScheduleGenerator {
 
         val latestExisting = existing.maxOfOrNull { ScheduleCalendar.dateOf(it.originalScheduledAt, zone) }
         val rangeTo = maxOf(windowTo, latestExisting ?: windowTo)
-        val produced = ScheduleCalendar.occurrenceDates(schedule.recurrence, windowFrom, rangeTo).map { date ->
-            PlannedOccurrence(ScheduleCalendar.instantAt(date, schedule.recurrence.time, zone), date)
-        }
+        val produced =
+            ScheduleCalendar.occurrenceDates(schedule.recurrence, windowFrom, rangeTo).map { date ->
+                PlannedOccurrence(ScheduleCalendar.instantAt(date, schedule.recurrence.time, zone), date)
+            }
         val producedInstants = produced.map { it.originalScheduledAt }.toSet()
         val knownInstants = existing.map { it.originalScheduledAt }.toSet()
 
-        val toInsert = produced.filter {
-            it.originalScheduledAt >= floor &&
-                it.originalScheduledAt < windowEnd &&
-                it.originalScheduledAt !in knownInstants
-        }
-        val toRemove = existing.filter {
-            it.deletedAt == null &&
-                it.status.isPending &&
-                it.originalScheduledAt >= now &&
-                it.originalScheduledAt !in producedInstants
-        }.map { it.id }
+        val toInsert =
+            produced.filter {
+                it.originalScheduledAt >= floor &&
+                    it.originalScheduledAt < windowEnd &&
+                    it.originalScheduledAt !in knownInstants
+            }
+        val toRemove =
+            existing
+                .filter {
+                    it.deletedAt == null &&
+                        it.status.isPending &&
+                        it.originalScheduledAt >= now &&
+                        it.originalScheduledAt !in producedInstants
+                }.map { it.id }
 
         return GenerationPlan(toInsert, toRemove)
     }

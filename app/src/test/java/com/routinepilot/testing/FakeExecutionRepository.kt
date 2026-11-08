@@ -28,7 +28,12 @@ class FakeExecutionRepository : ExecutionRepository {
         return session
     }
 
-    override suspend fun endSession(id: UUID, outcome: SessionOutcome, endedAt: Instant, focusedMillis: Long) {
+    override suspend fun endSession(
+        id: UUID,
+        outcome: SessionOutcome,
+        endedAt: Instant,
+        focusedMillis: Long,
+    ) {
         sessions.update { list ->
             list.map { session ->
                 if (session.id == id && session.endedAt == null) {

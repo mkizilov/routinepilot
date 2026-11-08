@@ -23,8 +23,11 @@ import javax.inject.Singleton
 object DatabaseModule {
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): RoutinePilotDatabase =
-        Room.databaseBuilder(context, RoutinePilotDatabase::class.java, "routinepilot.db")
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+    ): RoutinePilotDatabase =
+        Room
+            .databaseBuilder(context, RoutinePilotDatabase::class.java, "routinepilot.db")
             .addMigrations(
                 MIGRATION_1_2,
                 MIGRATION_2_3,
@@ -33,7 +36,6 @@ object DatabaseModule {
                 MIGRATION_5_6,
                 MIGRATION_6_7,
                 MIGRATION_7_8,
-            )
-            .addCallback(ForeignKeysCallback)
+            ).addCallback(ForeignKeysCallback)
             .build()
 }

@@ -19,9 +19,13 @@ enum class OccurrenceStatus {
 }
 
 sealed interface ScheduleTarget {
-    data class RoutineTarget(val routineId: UUID) : ScheduleTarget
+    data class RoutineTarget(
+        val routineId: UUID,
+    ) : ScheduleTarget
 
-    data class TaskTarget(val taskId: UUID) : ScheduleTarget
+    data class TaskTarget(
+        val taskId: UUID,
+    ) : ScheduleTarget
 }
 
 /**

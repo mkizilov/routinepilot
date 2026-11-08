@@ -15,23 +15,27 @@ import java.util.UUID
  * the run has resumed, finished, or been replaced.
  */
 @HiltWorker
-class PausedRunReminderWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val recovery: RunRecovery,
-    private val presenter: RunNotificationPresenter,
-) : CoroutineWorker(appContext, params) {
-    override suspend fun doWork(): Result {
-        val sessionId = inputData.getString(KEY_SESSION_ID)
-            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-            ?: return Result.failure()
-        recovery.pausedRunForReminder(sessionId)?.let { run ->
-            presenter.showPausedReminder(run.routineId, run.routineTitle)
+class PausedRunReminderWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted params: WorkerParameters,
+        private val recovery: RunRecovery,
+        private val presenter: RunNotificationPresenter,
+    ) : CoroutineWorker(appContext, params) {
+        override suspend fun doWork(): Result {
+            val sessionId =
+                inputData
+                    .getString(KEY_SESSION_ID)
+                    ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                    ?: return Result.failure()
+            recovery.pausedRunForReminder(sessionId)?.let { run ->
+                presenter.showPausedReminder(run.routineId, run.routineTitle)
+            }
+            return Result.success()
         }
-        return Result.success()
-    }
 
-    companion object {
-        const val KEY_SESSION_ID = "session_id"
+        companion object {
+            const val KEY_SESSION_ID = "session_id"
+        }
     }
-}

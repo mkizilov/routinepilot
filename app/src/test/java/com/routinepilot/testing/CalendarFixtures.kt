@@ -23,14 +23,15 @@ fun calendarSchedule(
     startDate: LocalDate = LocalDate.of(2026, 3, 10),
     modifiedAt: Instant = Instant.parse("2026-03-10T08:00:00Z"),
     zone: ZoneId = berlinZone,
-): Schedule = Schedule(
-    id = calendarScheduleId,
-    target = ScheduleTarget.RoutineTarget(calendarRoutineId),
-    recurrence = Recurrence(pattern, time, startDate),
-    zone = zone,
-    createdAt = modifiedAt,
-    modifiedAt = modifiedAt,
-)
+): Schedule =
+    Schedule(
+        id = calendarScheduleId,
+        target = ScheduleTarget.RoutineTarget(calendarRoutineId),
+        recurrence = Recurrence(pattern, time, startDate),
+        zone = zone,
+        createdAt = modifiedAt,
+        modifiedAt = modifiedAt,
+    )
 
 fun calendarSource(
     schedule: Schedule = calendarSchedule(),

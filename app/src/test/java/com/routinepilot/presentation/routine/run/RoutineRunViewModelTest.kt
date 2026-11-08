@@ -50,48 +50,55 @@ class RoutineRunViewModelTest {
     }
 
     @Test
-    fun viewModel_showsTheOpenedRoutine_andStartsItThroughTheCoordinator() = runTest(dispatcher) {
-        val viewModel = viewModelFor(routine.id, FakeActiveExecutionStore())
+    fun viewModel_showsTheOpenedRoutine_andStartsItThroughTheCoordinator() =
+        runTest(dispatcher) {
+            val viewModel = viewModelFor(routine.id, FakeActiveExecutionStore())
 
-        assertEquals("Morning", viewModel.uiState.value.routineTitle)
-        assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals("Morning", viewModel.uiState.value.routineTitle)
+            assertFalse(viewModel.uiState.value.isLoading)
 
-        viewModel.start()
+            viewModel.start()
 
-        assertEquals(ExecutionStatus.RUNNING, viewModel.uiState.value.timer.status)
-    }
+            assertEquals(ExecutionStatus.RUNNING, viewModel.uiState.value.timer.status)
+        }
 
     @Test
-    fun viewModel_whileAnotherRoutineRuns_hidesTheTitleAndTimer() = runTest(dispatcher) {
-        val other = ActiveExecution(
-            sessionId = UUID.randomUUID(),
-            routineId = UUID.randomUUID(),
-            startedAt = wallNow,
-            stepIds = listOf(UUID.randomUUID()),
-            stepIndex = 0,
-            elapsedMillis = 0L,
-            status = ExecutionStatus.PAUSED,
-        )
+    fun viewModel_whileAnotherRoutineRuns_hidesTheTitleAndTimer() =
+        runTest(dispatcher) {
+            val other =
+                ActiveExecution(
+                    sessionId = UUID.randomUUID(),
+                    routineId = UUID.randomUUID(),
+                    startedAt = wallNow,
+                    stepIds = listOf(UUID.randomUUID()),
+                    stepIndex = 0,
+                    elapsedMillis = 0L,
+                    status = ExecutionStatus.PAUSED,
+                )
 
-        val state = viewModelFor(routine.id, FakeActiveExecutionStore(other)).uiState.value
+            val state = viewModelFor(routine.id, FakeActiveExecutionStore(other)).uiState.value
 
-        assertTrue(state.blockedByOtherRun)
-        assertEquals("", state.routineTitle)
-        assertTrue(state.timer.steps.isEmpty())
-    }
+            assertTrue(state.blockedByOtherRun)
+            assertEquals("", state.routineTitle)
+            assertTrue(state.timer.steps.isEmpty())
+        }
 
-    private fun TestScope.viewModelFor(routineId: UUID, store: FakeActiveExecutionStore): RoutineRunViewModel {
+    private fun TestScope.viewModelFor(
+        routineId: UUID,
+        store: FakeActiveExecutionStore,
+    ): RoutineRunViewModel {
         val routines = FakeRoutineRepository(listOf(routine), listOf(stretch))
-        val coordinator = RoutineRunCoordinator(
-            routineRepository = routines,
-            executionRepository = FakeExecutionRepository(),
-            activeExecutionStore = store,
-            monotonicClock = FakeMonotonicClock(),
-            wallClock = Clock.fixed(wallNow, ZoneOffset.UTC),
-            reminders = FakePausedRunReminders(),
-            foreground = FakeRunForegroundLauncher(),
-            scope = backgroundScope,
-        )
+        val coordinator =
+            RoutineRunCoordinator(
+                routineRepository = routines,
+                executionRepository = FakeExecutionRepository(),
+                activeExecutionStore = store,
+                monotonicClock = FakeMonotonicClock(),
+                wallClock = Clock.fixed(wallNow, ZoneOffset.UTC),
+                reminders = FakePausedRunReminders(),
+                foreground = FakeRunForegroundLauncher(),
+                scope = backgroundScope,
+            )
         return RoutineRunViewModel(SavedStateHandle(mapOf(ROUTINE_ID_ARG to routineId.toString())), coordinator)
     }
 }

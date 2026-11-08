@@ -28,10 +28,16 @@ interface RoutineDao {
     suspend fun upsert(routine: RoutineEntity)
 
     @Query("UPDATE routines SET deletedAt = :at, modifiedAt = :at WHERE id = :id")
-    suspend fun markDeleted(id: UUID, at: Instant)
+    suspend fun markDeleted(
+        id: UUID,
+        at: Instant,
+    )
 
     @Query("UPDATE routines SET deletedAt = NULL, modifiedAt = :at WHERE id = :id")
-    suspend fun restore(id: UUID, at: Instant)
+    suspend fun restore(
+        id: UUID,
+        at: Instant,
+    )
 
     /** Hard delete, used only by sync purge after tombstones are no longer needed. */
     @Query("DELETE FROM routines WHERE id = :id")

@@ -21,18 +21,20 @@ import java.util.UUID
  * as a missing permission: the plan is empty, so the caller keeps every link it had. Events written before the
  * revocation carry their UID, so the next sync adopts them instead of creating duplicates.
  */
-class CalendarSynchronizer(private val gateway: CalendarGateway) {
-
+class CalendarSynchronizer(
+    private val gateway: CalendarGateway,
+) {
     fun sync(
         settings: CalendarSettings,
         sources: List<CalendarSource>,
         links: List<CalendarLink>,
         now: Instant,
-    ): CalendarSyncPlan = try {
-        plan(settings, sources, links, now)
-    } catch (e: SecurityException) {
-        CalendarSyncPlan.stopped(CalendarState.PERMISSION_MISSING)
-    }
+    ): CalendarSyncPlan =
+        try {
+            plan(settings, sources, links, now)
+        } catch (e: SecurityException) {
+            CalendarSyncPlan.stopped(CalendarState.PERMISSION_MISSING)
+        }
 
     /** Removes the events the user asked to remove. Works when integration is off, because the user asked for it. */
     fun removeAll(links: List<CalendarLink>): CalendarSyncPlan {
@@ -97,12 +99,13 @@ class CalendarSynchronizer(private val gateway: CalendarGateway) {
             }
 
             val existingId = gateway.findEventId(destination, draft.uid)
-            val eventId = if (existingId != null) {
-                gateway.updateEvent(existingId, draft)
-                existingId
-            } else {
-                gateway.insertEvent(destination, draft) ?: continue
-            }
+            val eventId =
+                if (existingId != null) {
+                    gateway.updateEvent(existingId, draft)
+                    existingId
+                } else {
+                    gateway.insertEvent(destination, draft) ?: continue
+                }
             upserts += linkFor(source.schedule, destination, eventId, draft, hash, now)
             if (existingId == null) created++ else updated++
         }
@@ -124,18 +127,22 @@ class CalendarSynchronizer(private val gateway: CalendarGateway) {
         return CalendarSyncPlan(
             upserts = upserts,
             deletes = deletes,
-            report = CalendarSyncReport(
-                state = CalendarState.SYNCED,
-                linked = finalLinks.count { it.status == CalendarLinkStatus.LINKED },
-                created = created,
-                updated = updated,
-                ended = ended,
-                removedInCalendar = finalLinks.count { it.status == CalendarLinkStatus.REMOVED_IN_CALENDAR },
-            ),
+            report =
+                CalendarSyncReport(
+                    state = CalendarState.SYNCED,
+                    linked = finalLinks.count { it.status == CalendarLinkStatus.LINKED },
+                    created = created,
+                    updated = updated,
+                    ended = ended,
+                    removedInCalendar = finalLinks.count { it.status == CalendarLinkStatus.REMOVED_IN_CALENDAR },
+                ),
         )
     }
 
-    private fun endSeries(link: CalendarLink, now: Instant): CalendarLink {
+    private fun endSeries(
+        link: CalendarLink,
+        now: Instant,
+    ): CalendarLink {
         val eventId = link.eventId
         return when {
             eventId == null || !gateway.eventExists(eventId) ->

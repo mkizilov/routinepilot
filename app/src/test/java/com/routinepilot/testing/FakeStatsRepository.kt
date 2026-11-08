@@ -8,7 +8,9 @@ import java.time.Instant
 import java.time.LocalDate
 
 /** Test double whose history can be changed to simulate sessions and items being recorded. */
-class FakeStatsRepository(initial: StatisticsInput = StatisticsInput.EMPTY) : StatsRepository {
+class FakeStatsRepository(
+    initial: StatisticsInput = StatisticsInput.EMPTY,
+) : StatsRepository {
     val input = MutableStateFlow(initial)
 
     override fun observeInput(

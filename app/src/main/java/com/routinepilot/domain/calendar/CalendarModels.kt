@@ -57,7 +57,10 @@ data class CalendarSettings(
     val lastSyncMillis: Long? = null,
 )
 
-data class CalendarStep(val title: String, val durationSeconds: Int?)
+data class CalendarStep(
+    val title: String,
+    val durationSeconds: Int?,
+)
 
 /** A schedule to export. [title] is the routine or task name, and [steps] is empty for tasks. */
 data class CalendarSource(
@@ -121,16 +124,28 @@ interface CalendarGateway {
     fun writableCalendars(): List<CalendarInfo>
 
     /** The id of the event with this stable identifier in the calendar, or null if there is none. */
-    fun findEventId(calendarId: Long, uid: String): Long?
+    fun findEventId(
+        calendarId: Long,
+        uid: String,
+    ): Long?
 
     fun eventExists(eventId: Long): Boolean
 
     /** Returns the new event's id, or null if the provider refused. */
-    fun insertEvent(calendarId: Long, draft: CalendarEventDraft): Long?
+    fun insertEvent(
+        calendarId: Long,
+        draft: CalendarEventDraft,
+    ): Long?
 
-    fun updateEvent(eventId: Long, draft: CalendarEventDraft): Boolean
+    fun updateEvent(
+        eventId: Long,
+        draft: CalendarEventDraft,
+    ): Boolean
 
-    fun updateRecurrence(eventId: Long, rrule: String): Boolean
+    fun updateRecurrence(
+        eventId: Long,
+        rrule: String,
+    ): Boolean
 
     fun deleteEvent(eventId: Long): Boolean
 }

@@ -8,12 +8,13 @@ plugins {
 }
 
 /*
- * Release settings come from the environment, so no secret or deployment address is written into the repository. Without
- * a keystore, the release build is produced unsigned. See docs/release.md.
+ * Release settings come from the environment, so no secret or deployment address is written into the repository.
+ * Without a keystore, the release build is produced unsigned. See docs/release.md.
  */
 val releaseKeystorePath: String? = System.getenv("RP_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
-val releaseSyncUrl: String = (findProperty("routinepilot.syncBaseUrl") as String?)
-    ?: System.getenv("ROUTINEPILOT_SYNC_URL").orEmpty()
+val releaseSyncUrl: String =
+    (findProperty("routinepilot.syncBaseUrl") as String?)
+        ?: System.getenv("ROUTINEPILOT_SYNC_URL").orEmpty()
 
 android {
     namespace = "com.routinepilot"

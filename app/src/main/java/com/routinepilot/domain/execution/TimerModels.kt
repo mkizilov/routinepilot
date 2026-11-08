@@ -9,14 +9,19 @@ enum class ExecutionStatus {
     RUNNING,
     PAUSED,
     COMPLETED,
-    CANCELLED;
+    CANCELLED,
+    ;
 
     val isActive: Boolean
         get() = this == RUNNING || this == PAUSED
 }
 
 /** A routine step as seen by the timer. A null duration means the step has no countdown and is never auto-advanced. */
-data class TimedStep(val id: UUID, val title: String, val durationSeconds: Int?) {
+data class TimedStep(
+    val id: UUID,
+    val title: String,
+    val durationSeconds: Int?,
+) {
     val durationMillis: Long?
         get() = durationSeconds?.let { it * MILLIS_PER_SECOND }
 }
@@ -25,13 +30,23 @@ data class TimedStep(val id: UUID, val title: String, val durationSeconds: Int?)
 sealed interface TimerEvent {
     val atMillis: Long
 
-    data class StepCompleted(val stepId: UUID, override val atMillis: Long) : TimerEvent
+    data class StepCompleted(
+        val stepId: UUID,
+        override val atMillis: Long,
+    ) : TimerEvent
 
-    data class StepSkipped(val stepId: UUID, override val atMillis: Long) : TimerEvent
+    data class StepSkipped(
+        val stepId: UUID,
+        override val atMillis: Long,
+    ) : TimerEvent
 
-    data class Finished(override val atMillis: Long) : TimerEvent
+    data class Finished(
+        override val atMillis: Long,
+    ) : TimerEvent
 
-    data class Cancelled(override val atMillis: Long) : TimerEvent
+    data class Cancelled(
+        override val atMillis: Long,
+    ) : TimerEvent
 }
 
 data class TimerSnapshot(

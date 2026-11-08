@@ -10,7 +10,10 @@ import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.Column
+import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.padding
 import com.routinepilot.R
 import com.routinepilot.domain.widget.TodayWidgetItem
 import com.routinepilot.domain.widget.TodayWidgetState
@@ -20,14 +23,19 @@ private const val TAG = "TodayWidget"
 
 /** Today's next routines and tasks. Read-only: a tap opens the app. */
 class TodayWidget : GlanceAppWidget() {
-    override val sizeMode: SizeMode = SizeMode.Responsive(
-        WidgetSizing.DECLARED_SIZES_DP.map { (width, height) -> DpSize(width.dp, height.dp) }.toSet(),
-    )
+    override val sizeMode: SizeMode =
+        SizeMode.Responsive(
+            WidgetSizing.DECLARED_SIZES_DP.map { (width, height) -> DpSize(width.dp, height.dp) }.toSet(),
+        )
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val state = runCatching { context.widgetEntryPoint().widgetStateLoader().today() }
-            .onFailure { Log.w(TAG, "Could not load today's items", it) }
-            .getOrNull()
+    override suspend fun provideGlance(
+        context: Context,
+        id: GlanceId,
+    ) {
+        val state =
+            runCatching { context.widgetEntryPoint().widgetStateLoader().today() }
+                .onFailure { Log.w(TAG, "Could not load today's items", it) }
+                .getOrNull()
         provideContent {
             if (state == null) WidgetText(str(R.string.widget_load_failed)) else TodayContent(state)
         }

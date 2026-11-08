@@ -20,13 +20,18 @@ object OccurrenceTransitions {
      * Moves a pending occurrence to [newTime]. Moving it back to its original time returns it to PLANNED. The
      * original time is never changed, so the rule still cannot regenerate this slot.
      */
-    fun reschedule(occurrence: ScheduledOccurrence, newTime: Instant, zone: ZoneId): ScheduledOccurrence? {
+    fun reschedule(
+        occurrence: ScheduledOccurrence,
+        newTime: Instant,
+        zone: ZoneId,
+    ): ScheduledOccurrence? {
         if (!canChange(occurrence)) return null
-        val status = if (newTime == occurrence.originalScheduledAt) {
-            OccurrenceStatus.PLANNED
-        } else {
-            OccurrenceStatus.RESCHEDULED
-        }
+        val status =
+            if (newTime == occurrence.originalScheduledAt) {
+                OccurrenceStatus.PLANNED
+            } else {
+                OccurrenceStatus.RESCHEDULED
+            }
         return occurrence.copy(
             scheduledAt = newTime,
             localDate = ScheduleCalendar.dateOf(newTime, zone),

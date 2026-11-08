@@ -14,16 +14,19 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class OnboardingViewModel @Inject constructor(
-    private val store: OnboardingStore,
-    routines: RoutineRepository,
-) : ViewModel() {
-    /** Null until the stored flag and the routine list have loaded, so the start screen is chosen only once. */
-    val introNeeded: StateFlow<Boolean?> = combine(store.completed, routines.observeRoutines()) { completed, list ->
-        needsOnboarding(completed, list.isNotEmpty())
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+class OnboardingViewModel
+    @Inject
+    constructor(
+        private val store: OnboardingStore,
+        routines: RoutineRepository,
+    ) : ViewModel() {
+        /** Null until the stored flag and the routine list have loaded, so the start screen is chosen only once. */
+        val introNeeded: StateFlow<Boolean?> =
+            combine(store.completed, routines.observeRoutines()) { completed, list ->
+                needsOnboarding(completed, list.isNotEmpty())
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    fun finish() {
-        viewModelScope.launch { store.markCompleted() }
+        fun finish() {
+            viewModelScope.launch { store.markCompleted() }
+        }
     }
-}

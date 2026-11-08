@@ -21,14 +21,21 @@ class SyncWireTest {
 
     @Test
     fun numbersAndBooleans_areSentAsJsonValues_andTextFieldsStayText() {
-        val payload = mapOf(
-            "title" to "Brush",
-            "position" to "2",
-            "isCompleted" to "true",
-            "description" to null,
-        ).toPayload()
+        val payload =
+            mapOf(
+                "title" to "Brush",
+                "position" to "2",
+                "isCompleted" to "true",
+                "description" to null,
+            ).toPayload()
 
-        assertEquals(2L, payload.getValue("position").jsonPrimitive.content.toLong())
+        assertEquals(
+            2L,
+            payload
+                .getValue("position")
+                .jsonPrimitive.content
+                .toLong(),
+        )
         assertTrue(!payload.getValue("position").jsonPrimitive.isString)
         assertEquals(true, payload.getValue("isCompleted").jsonPrimitive.booleanOrNull)
         assertTrue(payload.getValue("title").jsonPrimitive.isString)
@@ -54,13 +61,14 @@ class SyncWireTest {
 
     @Test
     fun upsertRequest_namesTheWireEntityType() {
-        val step = PlannedChange(
-            changeId,
-            ObjectKey(SyncType.ROUTINE_STEP, entityId),
-            MutationKind.UPSERT,
-            1,
-            mapOf("routineId" to entityId.toString(), "title" to "Brush", "position" to "1"),
-        ).toWire()
+        val step =
+            PlannedChange(
+                changeId,
+                ObjectKey(SyncType.ROUTINE_STEP, entityId),
+                MutationKind.UPSERT,
+                1,
+                mapOf("routineId" to entityId.toString(), "title" to "Brush", "position" to "1"),
+            ).toWire()
 
         assertEquals("routine_step", step.entityType)
         assertEquals("UPSERT", step.operation)
@@ -69,15 +77,16 @@ class SyncWireTest {
 
     @Test
     fun serverLogEntry_becomesAServerChange_withItsFields() {
-        val record = ChangeRecordDto(
-            seq = 9,
-            changeId = changeId.toString(),
-            entityType = "task",
-            entityId = entityId.toString(),
-            operation = "UPSERT",
-            version = 4,
-            payload = mapOf("title" to "Ferns", "isCompleted" to "true").toPayload(),
-        )
+        val record =
+            ChangeRecordDto(
+                seq = 9,
+                changeId = changeId.toString(),
+                entityType = "task",
+                entityId = entityId.toString(),
+                operation = "UPSERT",
+                version = 4,
+                payload = mapOf("title" to "Ferns", "isCompleted" to "true").toPayload(),
+            )
 
         val change = checkNotNull(record.toServerChange())
 
@@ -89,27 +98,29 @@ class SyncWireTest {
 
     @Test
     fun entityTypesTheAppDoesNotSync_areSkipped() {
-        val preference = ChangeRecordDto(
-            seq = 10,
-            changeId = changeId.toString(),
-            entityType = "preference",
-            entityId = entityId.toString(),
-            operation = "UPSERT",
-            version = 1,
-        )
+        val preference =
+            ChangeRecordDto(
+                seq = 10,
+                changeId = changeId.toString(),
+                entityType = "preference",
+                entityId = entityId.toString(),
+                operation = "UPSERT",
+                version = 1,
+            )
 
         assertNull(preference.toServerChange())
     }
 
     @Test
     fun conflictAnswer_carriesTheServerState() {
-        val result = ResultDto(
-            changeId = changeId.toString(),
-            status = "CONFLICT",
-            serverVersion = 5,
-            serverDeleted = false,
-            serverPayload = mapOf("title" to "Evening").toPayload(),
-        ).toSubmitResult()
+        val result =
+            ResultDto(
+                changeId = changeId.toString(),
+                status = "CONFLICT",
+                serverVersion = 5,
+                serverDeleted = false,
+                serverPayload = mapOf("title" to "Evening").toPayload(),
+            ).toSubmitResult()
 
         assertEquals(SubmitResult.Conflict(BaseState(5, deleted = false, fields = mapOf("title" to "Evening"))), result)
     }
@@ -125,10 +136,11 @@ class SyncWireTest {
 
     @Test
     fun serverUploadResponse_decodes_withItsRealFieldNames() {
-        val body = """
+        val body =
+            """
             {"results":[{"changeId":"$changeId","status":"ACCEPTED","entityType":"routine",
             "entityId":"$entityId","version":2,"seq":5}]}
-        """.trimIndent()
+            """.trimIndent()
 
         val decoded = ApiJson.decodeFromString<UploadResponseDto>(body)
 

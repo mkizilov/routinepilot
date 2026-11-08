@@ -69,7 +69,12 @@ class CalendarSynchronizerTest {
         assertEquals(gateway.inserted.single(), link.eventId)
         assertEquals(CalendarLinkStatus.LINKED, link.status)
         assertEquals(CalendarEventMapper.uidFor(calendarScheduleId), link.uid)
-        assertEquals(CalendarEventMapper.uidFor(calendarScheduleId), gateway.events.getValue(link.eventId!!).draft.uid)
+        assertEquals(
+            CalendarEventMapper.uidFor(calendarScheduleId),
+            gateway.events
+                .getValue(link.eventId!!)
+                .draft.uid,
+        )
         assertEquals(1, plan.report.created)
     }
 
@@ -93,7 +98,12 @@ class CalendarSynchronizerTest {
 
         assertEquals(listOf(eventId), gateway.updated)
         assertEquals(1, gateway.events.size)
-        assertEquals("Evening", gateway.events.getValue(eventId).draft.title)
+        assertEquals(
+            "Evening",
+            gateway.events
+                .getValue(eventId)
+                .draft.title,
+        )
         assertEquals(1, renamed.report.updated)
     }
 
@@ -170,19 +180,25 @@ class CalendarSynchronizerTest {
 
     @Test
     fun changingTheDestination_removesTheOldEvents_andCreatesInTheNewCalendar() {
-        val twoCalendars = FakeCalendarGateway(
-            calendars = listOf(CalendarInfo(1L, "Home", "me@example.com"), CalendarInfo(2L, "Work", "me@example.com")),
-        )
+        val twoCalendars =
+            FakeCalendarGateway(
+                calendars =
+                    listOf(
+                        CalendarInfo(1L, "Home", "me@example.com"),
+                        CalendarInfo(2L, "Work", "me@example.com"),
+                    ),
+            )
         val sync = CalendarSynchronizer(twoCalendars)
         val first = sync.sync(enabled, listOf(calendarSource()), emptyList(), now)
         val oldEvent = first.upserts.single().eventId!!
 
-        val moved = sync.sync(
-            enabled.copy(calendarId = 2L),
-            listOf(calendarSource()),
-            first.upserts,
-            now,
-        )
+        val moved =
+            sync.sync(
+                enabled.copy(calendarId = 2L),
+                listOf(calendarSource()),
+                first.upserts,
+                now,
+            )
 
         assertEquals(listOf(oldEvent), twoCalendars.deleted)
         assertEquals(2L, moved.upserts.single().calendarId)
@@ -209,17 +225,20 @@ class CalendarSynchronizerTest {
         val eventId = first.upserts.single().eventId!!
         val resaved = calendarSource(schedule = calendarSchedule(modifiedAt = Instant.parse("2026-03-20T08:00:00Z")))
 
-        val second = syncAt(
-            sources = listOf(resaved),
-            links = first.upserts,
-            at = Instant.parse("2026-03-20T09:00:00Z"),
-        )
+        val second =
+            syncAt(
+                sources = listOf(resaved),
+                links = first.upserts,
+                at = Instant.parse("2026-03-20T09:00:00Z"),
+            )
 
         assertTrue(second.upserts.isEmpty())
         assertTrue(gateway.updated.isEmpty())
         assertEquals(
             Instant.parse("2026-03-10T08:00:00Z").toEpochMilli(),
-            gateway.events.getValue(eventId).draft.startMillis,
+            gateway.events
+                .getValue(eventId)
+                .draft.startMillis,
         )
     }
 

@@ -6,7 +6,10 @@ import java.util.UUID
 interface OutboxStore {
     suspend fun base(key: ObjectKey): BaseState?
 
-    suspend fun saveBase(key: ObjectKey, state: BaseState)
+    suspend fun saveBase(
+        key: ObjectKey,
+        state: BaseState,
+    )
 
     /** Queued changes for one record, in the order this device made them. */
     suspend fun pending(key: ObjectKey): List<Mutation>

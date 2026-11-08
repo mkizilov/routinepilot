@@ -22,13 +22,15 @@ class FakeRoutineRepository(
     override fun observeRoutines(): Flow<List<Routine>> =
         routines.map { list -> list.sortedWith(compareBy({ it.position }, { it.id.toString() })) }
 
-    override fun observeRoutine(id: UUID): Flow<Routine?> =
-        routines.map { list -> list.firstOrNull { it.id == id } }
+    override fun observeRoutine(id: UUID): Flow<Routine?> = routines.map { list -> list.firstOrNull { it.id == id } }
 
     override fun observeSteps(routineId: UUID): Flow<List<RoutineStep>> =
         steps.map { list -> list.filter { it.routineId == routineId }.sortedBy { it.position } }
 
-    override suspend fun saveRoutine(routine: Routine, steps: List<RoutineStep>) {
+    override suspend fun saveRoutine(
+        routine: Routine,
+        steps: List<RoutineStep>,
+    ) {
         routines.update { list -> list.filterNot { it.id == routine.id } + routine }
         this.steps.update { current -> current.filterNot { it.routineId == routine.id } + steps }
     }
@@ -54,9 +56,10 @@ class FakeRoutineRepository(
         routines.update {
             it + source.copy(id = copyId, title = "${source.title} (copy)", position = it.size, createdAt = now)
         }
-        val copies = steps.value
-            .filter { it.routineId == id }
-            .map { it.copy(id = UUID.randomUUID(), routineId = copyId) }
+        val copies =
+            steps.value
+                .filter { it.routineId == id }
+                .map { it.copy(id = UUID.randomUUID(), routineId = copyId) }
         steps.update { it + copies }
         return copyId
     }

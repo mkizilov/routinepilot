@@ -29,7 +29,9 @@ object SmartScheduler {
 
 private const val BREAK_LABEL = "Break"
 
-private class Planner(private val request: PlanRequest) {
+private class Planner(
+    private val request: PlanRequest,
+) {
     private val grid = request.granularityMinutes
     private val workday = request.workday
 
@@ -37,9 +39,10 @@ private class Planner(private val request: PlanRequest) {
     private val tasks = request.tasks.sortedBy { it.id.toString() }
     private val byId = tasks.associateBy { it.id }
     private val slot = tasks.associate { it.id to alignUp(it.durationMinutes, grid) }
-    private val prerequisites: Map<UUID, List<UUID>> = tasks.associate { task ->
-        task.id to task.dependsOn.filter { it in byId }.sortedBy { it.toString() }
-    }
+    private val prerequisites: Map<UUID, List<UUID>> =
+        tasks.associate { task ->
+            task.id to task.dependsOn.filter { it in byId }.sortedBy { it.toString() }
+        }
     private val dependents: Map<UUID, List<UUID>> = buildDependents()
     private val cyclic: Set<UUID> = tasks.map { it.id }.filter { reaches(it, it) }.toSet()
     private val commitmentBlockers: List<Blocker> =
@@ -59,18 +62,25 @@ private class Planner(private val request: PlanRequest) {
         scheduleAutomatically()
         reportCycles()
         return PlanResult(
-            placements = placed
-                .map { (taskId, range) -> Placement(taskId, range, taskId in pinned) }
-                .sortedWith(compareBy<Placement>({ it.range.start }, { it.taskId.toString() })),
+            placements =
+                placed
+                    .map { (taskId, range) -> Placement(taskId, range, taskId in pinned) }
+                    .sortedWith(compareBy<Placement>({ it.range.start }, { it.taskId.toString() })),
             unplaced = unplaced.toList(),
             overrideConflicts = overrideIssues.map { (taskId, issues) -> OverrideConflict(taskId, issues.toList()) },
-            staleOverrides = request.pins.keys.filter { it !in byId }.sortedBy { it.toString() },
+            staleOverrides =
+                request.pins.keys
+                    .filter { it !in byId }
+                    .sortedBy { it.toString() },
         )
     }
 
     private fun placePins() {
-        val ordered = request.pins.filterKeys { it in byId }.entries
-            .sortedWith(compareBy<Map.Entry<UUID, Int>>({ it.value }, { it.key.toString() }))
+        val ordered =
+            request.pins
+                .filterKeys { it in byId }
+                .entries
+                .sortedWith(compareBy<Map.Entry<UUID, Int>>({ it.value }, { it.key.toString() }))
         for ((taskId, start) in ordered) {
             val issues = pinIssues(taskId, start)
             if (issues.isNotEmpty()) {
@@ -85,7 +95,10 @@ private class Planner(private val request: PlanRequest) {
         }
     }
 
-    private fun pinIssues(taskId: UUID, start: Int): List<PlanIssue> {
+    private fun pinIssues(
+        taskId: UUID,
+        start: Int,
+    ): List<PlanIssue> {
         val end = start + slot.getValue(taskId)
         val issues = mutableListOf<PlanIssue>()
         if (start % grid != 0) issues += PlanIssue.MisalignedStart
@@ -135,10 +148,11 @@ private class Planner(private val request: PlanRequest) {
             fail(taskId, PlanIssue.DependencyUnplaced(failedPrerequisites))
             return
         }
-        val earliest = maxOf(
-            workday.start,
-            prerequisites.getValue(taskId).maxOfOrNull { placed.getValue(it).end } ?: workday.start,
-        )
+        val earliest =
+            maxOf(
+                workday.start,
+                prerequisites.getValue(taskId).maxOfOrNull { placed.getValue(it).end } ?: workday.start,
+            )
         val latest = latestFinish(taskId)
         if (latest < earliest) {
             fail(taskId, PlanIssue.WindowClosed(earliest, latest))
@@ -154,14 +168,23 @@ private class Planner(private val request: PlanRequest) {
         free = subtractAll(free, listOf(range))
     }
 
-    private fun keptStart(taskId: UUID, need: Int, earliest: Int, latest: Int): Int? {
+    private fun keptStart(
+        taskId: UUID,
+        need: Int,
+        earliest: Int,
+        latest: Int,
+    ): Int? {
         val previous = request.previous[taskId] ?: return null
         val inWindow = previous % grid == 0 && previous >= earliest && previous + need <= latest
         if (!inWindow) return null
         return previous.takeIf { start -> free.any { it.start <= start && start + need <= it.end } }
     }
 
-    private fun earliestFit(earliest: Int, latest: Int, need: Int): Int? {
+    private fun earliestFit(
+        earliest: Int,
+        latest: Int,
+        need: Int,
+    ): Int? {
         for (gap in free) {
             val start = alignUp(maxOf(gap.start, earliest), grid)
             if (start + need <= minOf(gap.end, latest)) return start
@@ -169,7 +192,11 @@ private class Planner(private val request: PlanRequest) {
         return null
     }
 
-    private fun insufficientTime(need: Int, earliest: Int, latest: Int): PlanIssue.InsufficientTime {
+    private fun insufficientTime(
+        need: Int,
+        earliest: Int,
+        latest: Int,
+    ): PlanIssue.InsufficientTime {
         val available = free.map { gap -> maxOf(0, minOf(gap.end, latest) - maxOf(gap.start, earliest)) }
         return PlanIssue.InsufficientTime(
             neededMinutes = need,
@@ -190,11 +217,12 @@ private class Planner(private val request: PlanRequest) {
         var latest = byId.getValue(taskId).deadlineMinute ?: workday.end
         for (dependent in dependents.getValue(taskId)) {
             if (dependent in cyclic) continue
-            val bound = if (dependent in pinned) {
-                placed.getValue(dependent).start
-            } else {
-                latestFinish(dependent) - slot.getValue(dependent)
-            }
+            val bound =
+                if (dependent in pinned) {
+                    placed.getValue(dependent).start
+                } else {
+                    latestFinish(dependent) - slot.getValue(dependent)
+                }
             latest = minOf(latest, bound)
         }
         latestFinishes[taskId] = latest
@@ -209,26 +237,32 @@ private class Planner(private val request: PlanRequest) {
         }
     }
 
-    private fun fail(taskId: UUID, issue: PlanIssue) {
+    private fun fail(
+        taskId: UUID,
+        issue: PlanIssue,
+    ) {
         failed += taskId
         unplaced += Unplaced(taskId, listOf(issue))
     }
 
-    private fun blockers(): List<Blocker> = commitmentBlockers + placed.map { (taskId, range) ->
-        val kind = if (taskId in pinned) BlockerKind.PINNED else BlockerKind.PLACED
-        Blocker(byId.getValue(taskId).title, kind, range)
-    }
+    private fun blockers(): List<Blocker> =
+        commitmentBlockers +
+            placed.map { (taskId, range) ->
+                val kind = if (taskId in pinned) BlockerKind.PINNED else BlockerKind.PLACED
+                Blocker(byId.getValue(taskId).title, kind, range)
+            }
 
-    private val placementOrder = Comparator<UUID> { a, b ->
-        compareValuesBy(
-            a,
-            b,
-            { latestFinish(it) },
-            { -byId.getValue(it).priority },
-            { -slot.getValue(it) },
-            { it.toString() },
-        )
-    }
+    private val placementOrder =
+        Comparator<UUID> { a, b ->
+            compareValuesBy(
+                a,
+                b,
+                { latestFinish(it) },
+                { -byId.getValue(it).priority },
+                { -slot.getValue(it) },
+                { it.toString() },
+            )
+        }
 
     private fun buildDependents(): Map<UUID, List<UUID>> {
         val result = tasks.associate { it.id to mutableListOf<UUID>() }
@@ -239,7 +273,10 @@ private class Planner(private val request: PlanRequest) {
     }
 
     /** Whether [from] needs [target] before it can start, directly or through other tasks. */
-    private fun reaches(from: UUID, target: UUID): Boolean {
+    private fun reaches(
+        from: UUID,
+        target: UUID,
+    ): Boolean {
         val seen = mutableSetOf<UUID>()
         val stack = ArrayDeque(prerequisites.getValue(from))
         while (stack.isNotEmpty()) {
@@ -251,12 +288,20 @@ private class Planner(private val request: PlanRequest) {
     }
 }
 
-private fun alignUp(minutes: Int, grid: Int): Int = (minutes + grid - 1) / grid * grid
+private fun alignUp(
+    minutes: Int,
+    grid: Int,
+): Int = (minutes + grid - 1) / grid * grid
 
-private fun subtractAll(ranges: List<TimeRange>, cuts: List<TimeRange>): List<TimeRange> =
-    cuts.fold(ranges) { remaining, cut -> remaining.flatMap { subtractOne(it, cut) } }
+private fun subtractAll(
+    ranges: List<TimeRange>,
+    cuts: List<TimeRange>,
+): List<TimeRange> = cuts.fold(ranges) { remaining, cut -> remaining.flatMap { subtractOne(it, cut) } }
 
-private fun subtractOne(range: TimeRange, cut: TimeRange): List<TimeRange> {
+private fun subtractOne(
+    range: TimeRange,
+    cut: TimeRange,
+): List<TimeRange> {
     if (!range.overlaps(cut)) return listOf(range)
     val parts = mutableListOf<TimeRange>()
     if (cut.start > range.start) parts += TimeRange(range.start, cut.start)

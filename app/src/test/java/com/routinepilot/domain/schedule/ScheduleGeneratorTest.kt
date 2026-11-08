@@ -73,10 +73,11 @@ class ScheduleGeneratorTest {
         val weekdays = schedule(RecurrencePattern.Weekdays(setOf(DayOfWeek.MONDAY)), start = today)
         val rows = ScheduleGenerator.plan(weekdays, emptyList(), now).toInsert.map { materialize(it, weekdays) }
 
-        val edited = weekdays.copy(
-            recurrence = weekdays.recurrence.copy(pattern = RecurrencePattern.Weekdays(setOf(DayOfWeek.FRIDAY))),
-            modifiedAt = now,
-        )
+        val edited =
+            weekdays.copy(
+                recurrence = weekdays.recurrence.copy(pattern = RecurrencePattern.Weekdays(setOf(DayOfWeek.FRIDAY))),
+                modifiedAt = now,
+            )
         val plan = ScheduleGenerator.plan(edited, rows, now)
 
         val removed = rows.filter { it.id in plan.toRemove }
@@ -94,7 +95,13 @@ class ScheduleGeneratorTest {
         val plan = ScheduleGenerator.plan(edited, rows, now)
 
         assertEquals(rows.count { it.scheduledAt >= now }, plan.toRemove.size)
-        assertEquals(plan.toInsert.size, plan.toInsert.map { it.originalScheduledAt }.toSet().size)
+        assertEquals(
+            plan.toInsert.size,
+            plan.toInsert
+                .map { it.originalScheduledAt }
+                .toSet()
+                .size,
+        )
         assertTrue(plan.toInsert.all { it.originalScheduledAt.atZone(utc).hour == 9 })
     }
 
@@ -111,10 +118,18 @@ class ScheduleGeneratorTest {
     @Test
     fun pastPendingItems_areKeptAsMissedHistory_notRemoved() {
         val schedule = schedule(RecurrencePattern.Daily, start = today.minusDays(3))
-        val yesterday = materialize(
-            PlannedOccurrence(today.minusDays(1).atTime(8, 0).atZone(utc).toInstant(), today.minusDays(1)),
-            schedule,
-        )
+        val yesterday =
+            materialize(
+                PlannedOccurrence(
+                    today
+                        .minusDays(1)
+                        .atTime(8, 0)
+                        .atZone(utc)
+                        .toInstant(),
+                    today.minusDays(1),
+                ),
+                schedule,
+            )
 
         val plan = ScheduleGenerator.plan(schedule, listOf(yesterday), now)
 
@@ -125,13 +140,14 @@ class ScheduleGeneratorTest {
     fun rescheduledItem_survivesWhileItsOriginalSlotIsStillProduced() {
         val schedule = schedule(RecurrencePattern.Daily, start = today)
         val rows = ScheduleGenerator.plan(schedule, emptyList(), now).toInsert.map { materialize(it, schedule) }
-        val moved = rows.map {
-            if (it.localDate == today.plusDays(2)) {
-                it.copy(scheduledAt = it.scheduledAt.plusSeconds(3600), status = OccurrenceStatus.RESCHEDULED)
-            } else {
-                it
+        val moved =
+            rows.map {
+                if (it.localDate == today.plusDays(2)) {
+                    it.copy(scheduledAt = it.scheduledAt.plusSeconds(3600), status = OccurrenceStatus.RESCHEDULED)
+                } else {
+                    it
+                }
             }
-        }
 
         val plan = ScheduleGenerator.plan(schedule, moved, now)
 
@@ -154,7 +170,13 @@ class ScheduleGeneratorTest {
         val existingInstants = rows.map { it.originalScheduledAt }.toSet()
         assertTrue(plan.toInsert.none { it.originalScheduledAt in existingInstants })
         assertTrue(plan.toInsert.all { it.originalScheduledAt.atZone(paris).toLocalTime() == LocalTime.of(7, 0) })
-        assertEquals(plan.toInsert.size, plan.toInsert.map { it.originalScheduledAt }.toSet().size)
+        assertEquals(
+            plan.toInsert.size,
+            plan.toInsert
+                .map { it.originalScheduledAt }
+                .toSet()
+                .size,
+        )
     }
 
     private fun schedule(
@@ -171,7 +193,10 @@ class ScheduleGeneratorTest {
         modifiedAt = modifiedAt,
     )
 
-    private fun materialize(planned: PlannedOccurrence, schedule: Schedule) = ScheduledOccurrence(
+    private fun materialize(
+        planned: PlannedOccurrence,
+        schedule: Schedule,
+    ) = ScheduledOccurrence(
         id = UUID.randomUUID(),
         scheduleId = schedule.id,
         routineId = (schedule.target as? ScheduleTarget.RoutineTarget)?.routineId,

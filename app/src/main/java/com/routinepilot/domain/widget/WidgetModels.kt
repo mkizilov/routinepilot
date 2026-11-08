@@ -16,28 +16,36 @@ object WidgetSizing {
     const val LARGE_WIDTH_DP = 320f
     const val LARGE_HEIGHT_DP = 260f
 
-    val DECLARED_SIZES_DP: List<Pair<Float, Float>> = listOf(
-        SMALL_WIDTH_DP to SMALL_HEIGHT_DP,
-        MEDIUM_WIDTH_DP to MEDIUM_HEIGHT_DP,
-        LARGE_WIDTH_DP to LARGE_HEIGHT_DP,
-    )
+    val DECLARED_SIZES_DP: List<Pair<Float, Float>> =
+        listOf(
+            SMALL_WIDTH_DP to SMALL_HEIGHT_DP,
+            MEDIUM_WIDTH_DP to MEDIUM_HEIGHT_DP,
+            LARGE_WIDTH_DP to LARGE_HEIGHT_DP,
+        )
 
-    fun bucketOf(widthDp: Float, heightDp: Float): WidgetSize = when {
-        widthDp >= LARGE_WIDTH_DP && heightDp >= LARGE_HEIGHT_DP -> WidgetSize.LARGE
-        widthDp >= MEDIUM_WIDTH_DP && heightDp >= MEDIUM_HEIGHT_DP -> WidgetSize.MEDIUM
-        else -> WidgetSize.SMALL
-    }
+    fun bucketOf(
+        widthDp: Float,
+        heightDp: Float,
+    ): WidgetSize =
+        when {
+            widthDp >= LARGE_WIDTH_DP && heightDp >= LARGE_HEIGHT_DP -> WidgetSize.LARGE
+            widthDp >= MEDIUM_WIDTH_DP && heightDp >= MEDIUM_HEIGHT_DP -> WidgetSize.MEDIUM
+            else -> WidgetSize.SMALL
+        }
 
     /** How many list rows fit in each bucket. */
-    fun rowLimit(size: WidgetSize): Int = when (size) {
-        WidgetSize.SMALL -> 1
-        WidgetSize.MEDIUM -> 2
-        WidgetSize.LARGE -> 4
-    }
+    fun rowLimit(size: WidgetSize): Int =
+        when (size) {
+            WidgetSize.SMALL -> 1
+            WidgetSize.MEDIUM -> 2
+            WidgetSize.LARGE -> 4
+        }
 }
 
 /** A command a widget button can send to the running routine. Wire values are what travels in action parameters. */
-enum class WidgetCommand(val wire: String) {
+enum class WidgetCommand(
+    val wire: String,
+) {
     PAUSE("pause"),
     SKIP("skip"),
     FINISH("finish"),
@@ -81,7 +89,9 @@ sealed interface RunWidgetState {
      * A run is stored but cannot be shown reliably: its routine plan changed, or it was running when the process that
      * timed it stopped. Opening the app settles it.
      */
-    data class NeedsAttention(val routineTitle: String) : RunWidgetState
+    data class NeedsAttention(
+        val routineTitle: String,
+    ) : RunWidgetState
 
     data class Active(
         val routineId: UUID,
@@ -98,10 +108,15 @@ sealed interface RunWidgetState {
     ) : RunWidgetState
 }
 
-data class QuickStartItem(val routineId: UUID, val title: String)
+data class QuickStartItem(
+    val routineId: UUID,
+    val title: String,
+)
 
 /** Active routines in their saved order. Deleted routines never appear. */
-data class QuickStartState(val routines: List<QuickStartItem>) {
+data class QuickStartState(
+    val routines: List<QuickStartItem>,
+) {
     fun visibleFor(size: WidgetSize): List<QuickStartItem> = routines.take(WidgetSizing.rowLimit(size))
 
     fun hiddenCountFor(size: WidgetSize): Int = (routines.size - visibleFor(size).size).coerceAtLeast(0)
@@ -109,23 +124,27 @@ data class QuickStartState(val routines: List<QuickStartItem>) {
 
 object RunWidgetActions {
     /** Which buttons a run widget shows for a state. Only the actions the state can use are included. */
-    fun availableFor(state: RunWidgetState): List<WidgetRunAction> = when (state) {
-        is RunWidgetState.Active -> when (state.status) {
-            WidgetRunStatus.RUNNING -> listOf(
-                WidgetRunAction.PAUSE,
-                WidgetRunAction.SKIP,
-                WidgetRunAction.FINISH,
-                WidgetRunAction.OPEN_APP,
-            )
-            WidgetRunStatus.PAUSED -> listOf(
-                WidgetRunAction.RESUME_IN_APP,
-                WidgetRunAction.FINISH,
-                WidgetRunAction.OPEN_APP,
-            )
+    fun availableFor(state: RunWidgetState): List<WidgetRunAction> =
+        when (state) {
+            is RunWidgetState.Active ->
+                when (state.status) {
+                    WidgetRunStatus.RUNNING ->
+                        listOf(
+                            WidgetRunAction.PAUSE,
+                            WidgetRunAction.SKIP,
+                            WidgetRunAction.FINISH,
+                            WidgetRunAction.OPEN_APP,
+                        )
+                    WidgetRunStatus.PAUSED ->
+                        listOf(
+                            WidgetRunAction.RESUME_IN_APP,
+                            WidgetRunAction.FINISH,
+                            WidgetRunAction.OPEN_APP,
+                        )
+                }
+            RunWidgetState.NoActiveRun, RunWidgetState.RoutineMissing, is RunWidgetState.NeedsAttention ->
+                listOf(WidgetRunAction.OPEN_APP)
         }
-        RunWidgetState.NoActiveRun, RunWidgetState.RoutineMissing, is RunWidgetState.NeedsAttention ->
-            listOf(WidgetRunAction.OPEN_APP)
-    }
 }
 
 /**

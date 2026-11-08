@@ -26,7 +26,10 @@ sealed interface Conflict {
      * Needs the user. This device edited a record that the server has since deleted. The edit waits. The user restores
      * it with [Decision.RESTORE_EDITS], or drops it with [Decision.DISCARD_EDITS].
      */
-    data class EditOfDeleted(override val key: ObjectKey, override val mutationId: UUID) : Conflict
+    data class EditOfDeleted(
+        override val key: ObjectKey,
+        override val mutationId: UUID,
+    ) : Conflict
 
     /**
      * Needs the user. This device deleted a record that another device edited after this device last saw it. The delete
@@ -79,7 +82,11 @@ data class MergeResult(
  * the device cannot move its base past that request without first absorbing its own log entry.
  */
 object OfflineMerge {
-    fun merge(key: ObjectKey, base: BaseState?, pending: List<Mutation>): MergeResult {
+    fun merge(
+        key: ObjectKey,
+        base: BaseState?,
+        pending: List<Mutation>,
+    ): MergeResult {
         val remote = base ?: BaseState.NEVER_SEEN
         var deleted = remote.deleted
         var fields: MutableMap<String, String?> = if (deleted) mutableMapOf() else remote.fields.toMutableMap()

@@ -86,11 +86,12 @@ class HomeScreenTest {
 
     private fun routine(title: String) = Routine(UUID.randomUUID(), title, 0, Instant.EPOCH)
 
-    private fun navigation(onRun: (UUID) -> Unit = {}) = HomeNavigation(
-        onEdit = {},
-        onRun = onRun,
-        onNew = {},
-    )
+    private fun navigation(onRun: (UUID) -> Unit = {}) =
+        HomeNavigation(
+            onEdit = {},
+            onRun = onRun,
+            onNew = {},
+        )
 
     private fun setScreen(
         state: HomeUiState,

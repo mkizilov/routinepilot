@@ -11,7 +11,10 @@ import androidx.glance.LocalContext
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.Column
+import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.padding
 import com.routinepilot.R
 import com.routinepilot.domain.widget.QuickStartState
 import com.routinepilot.domain.widget.WidgetSizing
@@ -24,14 +27,19 @@ private const val TAG = "QuickStartWidget"
  * the Start button. The app never starts a timer from the background.
  */
 class QuickStartWidget : GlanceAppWidget() {
-    override val sizeMode: SizeMode = SizeMode.Responsive(
-        WidgetSizing.DECLARED_SIZES_DP.map { (width, height) -> DpSize(width.dp, height.dp) }.toSet(),
-    )
+    override val sizeMode: SizeMode =
+        SizeMode.Responsive(
+            WidgetSizing.DECLARED_SIZES_DP.map { (width, height) -> DpSize(width.dp, height.dp) }.toSet(),
+        )
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val state = runCatching { context.widgetEntryPoint().widgetStateLoader().quickStart() }
-            .onFailure { Log.w(TAG, "Could not load routines", it) }
-            .getOrNull()
+    override suspend fun provideGlance(
+        context: Context,
+        id: GlanceId,
+    ) {
+        val state =
+            runCatching { context.widgetEntryPoint().widgetStateLoader().quickStart() }
+                .onFailure { Log.w(TAG, "Could not load routines", it) }
+                .getOrNull()
         provideContent {
             if (state == null) WidgetText(str(R.string.widget_load_failed)) else QuickStartContent(state)
         }

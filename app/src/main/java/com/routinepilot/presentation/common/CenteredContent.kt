@@ -15,7 +15,10 @@ private val MAX_CONTENT_WIDTH = 640.dp
 
 /** Places a screen's content at the top, inside the scaffold padding, and no wider than [MAX_CONTENT_WIDTH]. */
 @Composable
-fun CenteredContent(padding: PaddingValues, content: @Composable () -> Unit) {
+fun CenteredContent(
+    padding: PaddingValues,
+    content: @Composable () -> Unit,
+) {
     Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
         Box(Modifier.widthIn(max = MAX_CONTENT_WIDTH).fillMaxSize()) { content() }
     }

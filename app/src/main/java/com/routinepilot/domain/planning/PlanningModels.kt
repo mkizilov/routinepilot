@@ -5,7 +5,10 @@ import java.util.UUID
 const val MINUTES_PER_DAY = 1_440
 
 /** A span of minutes after midnight on the planned day, from [start] inclusive to [end] exclusive. */
-data class TimeRange(val start: Int, val end: Int) {
+data class TimeRange(
+    val start: Int,
+    val end: Int,
+) {
     init {
         require(start >= 0 && start < end && end <= MINUTES_PER_DAY) { "Invalid time range $start-$end" }
     }
@@ -17,7 +20,10 @@ data class TimeRange(val start: Int, val end: Int) {
 }
 
 /** Something a flexible task must work around: an appointment, or a routine's start time with its length. */
-data class FixedCommitment(val title: String, val range: TimeRange)
+data class FixedCommitment(
+    val title: String,
+    val range: TimeRange,
+)
 
 /**
  * A task to place on the planned day. [priority] runs from 1 (low) to 5 (high).

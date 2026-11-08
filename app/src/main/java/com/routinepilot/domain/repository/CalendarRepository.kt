@@ -29,5 +29,8 @@ interface CalendarRepository {
     suspend fun removeAllEvents(): CalendarSyncReport
 
     /** Forgets the link to an event the user deleted, then exports the schedule again as a new event. */
-    suspend fun exportAgain(scheduleId: UUID, now: Instant): CalendarSyncReport
+    suspend fun exportAgain(
+        scheduleId: UUID,
+        now: Instant,
+    ): CalendarSyncReport
 }

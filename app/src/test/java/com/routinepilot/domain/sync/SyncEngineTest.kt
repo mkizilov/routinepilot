@@ -260,7 +260,15 @@ class SyncEngineTest {
         remote: FakeSyncRemote = FakeSyncRemote(server),
     ): SimulatedDevice = SimulatedDevice(name, server, namespace, remote).also { it.pull() }
 
-    private fun first(aFirst: Boolean, a: SimulatedDevice, b: SimulatedDevice) = if (aFirst) a else b
+    private fun first(
+        aFirst: Boolean,
+        a: SimulatedDevice,
+        b: SimulatedDevice,
+    ) = if (aFirst) a else b
 
-    private fun second(aFirst: Boolean, a: SimulatedDevice, b: SimulatedDevice) = if (aFirst) b else a
+    private fun second(
+        aFirst: Boolean,
+        a: SimulatedDevice,
+        b: SimulatedDevice,
+    ) = if (aFirst) b else a
 }

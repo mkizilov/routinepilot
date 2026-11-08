@@ -17,40 +17,42 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
-class TaskRepositoryImpl @Inject constructor(
-    private val database: RoutinePilotDatabase,
-) : TaskRepository {
-    private val taskDao = database.taskDao()
-    private val replica = OfflineReplica(RoomOutboxStore(database.syncOutboxDao()))
+class TaskRepositoryImpl
+    @Inject
+    constructor(
+        private val database: RoutinePilotDatabase,
+    ) : TaskRepository {
+        private val taskDao = database.taskDao()
+        private val replica = OfflineReplica(RoomOutboxStore(database.syncOutboxDao()))
 
-    override fun observeTasks(): Flow<List<Task>> =
-        taskDao.observeActive().map { tasks -> tasks.map { it.toDomain() } }
+        override fun observeTasks(): Flow<List<Task>> =
+            taskDao.observeActive().map { tasks -> tasks.map { it.toDomain() } }
 
-    override suspend fun saveTask(task: Task) {
-        val now = Instant.now()
-        database.withTransaction {
-            val before = taskDao.findActive(task.id)?.toDomain()
-            taskDao.upsert(task.toEntity(now))
-            replica.record(
-                ObjectKey(SyncType.TASK, task.id),
-                before?.let { SyncFieldMapping.task(it) },
-                SyncFieldMapping.task(task),
-                now.toEpochMilli(),
-            )
+        override suspend fun saveTask(task: Task) {
+            val now = Instant.now()
+            database.withTransaction {
+                val before = taskDao.findActive(task.id)?.toDomain()
+                taskDao.upsert(task.toEntity(now))
+                replica.record(
+                    ObjectKey(SyncType.TASK, task.id),
+                    before?.let { SyncFieldMapping.task(it) },
+                    SyncFieldMapping.task(task),
+                    now.toEpochMilli(),
+                )
+            }
+        }
+
+        override suspend fun deleteTask(id: UUID) {
+            val now = Instant.now()
+            database.withTransaction {
+                val before = taskDao.findActive(id)?.toDomain()
+                taskDao.markDeleted(id, now)
+                replica.record(
+                    ObjectKey(SyncType.TASK, id),
+                    before?.let { SyncFieldMapping.task(it) },
+                    null,
+                    now.toEpochMilli(),
+                )
+            }
         }
     }
-
-    override suspend fun deleteTask(id: UUID) {
-        val now = Instant.now()
-        database.withTransaction {
-            val before = taskDao.findActive(id)?.toDomain()
-            taskDao.markDeleted(id, now)
-            replica.record(
-                ObjectKey(SyncType.TASK, id),
-                before?.let { SyncFieldMapping.task(it) },
-                null,
-                now.toEpochMilli(),
-            )
-        }
-    }
-}

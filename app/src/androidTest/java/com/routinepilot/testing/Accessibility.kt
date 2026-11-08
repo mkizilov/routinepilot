@@ -18,16 +18,20 @@ import org.junit.Assert.assertTrue
 fun ComposeContentTestRule.assertEveryClickableIsLabelled() {
     onAllNodes(hasClickAction()).fetchSemanticsNodes().forEach { node ->
         val config = node.config
-        val labelled = config.contains(SemanticsProperties.ContentDescription) ||
-            config.contains(SemanticsProperties.Text) ||
-            config.contains(SemanticsProperties.EditableText)
+        val labelled =
+            config.contains(SemanticsProperties.ContentDescription) ||
+                config.contains(SemanticsProperties.Text) ||
+                config.contains(SemanticsProperties.EditableText)
         assertTrue("Clickable element ${node.id} has no label", labelled)
     }
 }
 
 /** Renders [content] with the font scale multiplied, as a user with large text sees it. */
 @Composable
-fun WithFontScale(fontScale: Float, content: @Composable () -> Unit) {
+fun WithFontScale(
+    fontScale: Float,
+    content: @Composable () -> Unit,
+) {
     val density = LocalDensity.current
     val scaled = Density(density.density, fontScale)
     CompositionLocalProvider(LocalDensity provides scaled, content = content)

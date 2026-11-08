@@ -15,13 +15,16 @@ import dagger.assisted.AssistedInject
  * next sign-in schedules a pass. A pass that could not reach the server is retried by WorkManager's backoff.
  */
 @HiltWorker
-class SyncWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val engine: SyncEngine,
-) : CoroutineWorker(appContext, params) {
-    override suspend fun doWork(): Result = when (engine.runCycle()) {
-        CycleResult.Done, CycleResult.NotSignedIn, CycleResult.NeedsSignIn -> Result.success()
-        CycleResult.Retry -> Result.retry()
+class SyncWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted params: WorkerParameters,
+        private val engine: SyncEngine,
+    ) : CoroutineWorker(appContext, params) {
+        override suspend fun doWork(): Result =
+            when (engine.runCycle()) {
+                CycleResult.Done, CycleResult.NotSignedIn, CycleResult.NeedsSignIn -> Result.success()
+                CycleResult.Retry -> Result.retry()
+            }
     }
-}

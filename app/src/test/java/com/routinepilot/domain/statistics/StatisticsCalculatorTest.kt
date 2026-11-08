@@ -31,30 +31,33 @@ class StatisticsCalculatorTest {
 
     @Test
     fun completion_isCompletedOverCompletedPlusMissed_andSkippedIsLeftOut() {
-        val stats = StatisticsCalculator.compute(
-            input(occurrences = mapOf(today to OccurrenceTotals(completed = 3, skipped = 2, missed = 1))),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(occurrences = mapOf(today to OccurrenceTotals(completed = 3, skipped = 2, missed = 1))),
+                today,
+            )
 
         assertEquals(75, stats.today.completionPercent)
     }
 
     @Test
     fun completion_isNullWhenOnlySkippedItemsExist() {
-        val stats = StatisticsCalculator.compute(
-            input(occurrences = mapOf(today to OccurrenceTotals(completed = 0, skipped = 2, missed = 0))),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(occurrences = mapOf(today to OccurrenceTotals(completed = 0, skipped = 2, missed = 0))),
+                today,
+            )
 
         assertNull(stats.today.completionPercent)
     }
 
     @Test
     fun partialCompletion_roundsToTheNearestPercent() {
-        val stats = StatisticsCalculator.compute(
-            input(occurrences = mapOf(today to OccurrenceTotals(completed = 2, skipped = 0, missed = 1))),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(occurrences = mapOf(today to OccurrenceTotals(completed = 2, skipped = 0, missed = 1))),
+                today,
+            )
 
         assertEquals(67, stats.today.completionPercent)
     }
@@ -62,10 +65,11 @@ class StatisticsCalculatorTest {
     @Test
     fun partialCompletion_keepsTheDayWhenAnyItemIsDone() {
         val yesterday = day(1)
-        val stats = StatisticsCalculator.compute(
-            input(occurrences = mapOf(yesterday to OccurrenceTotals(completed = 1, skipped = 0, missed = 2))),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(occurrences = mapOf(yesterday to OccurrenceTotals(completed = 1, skipped = 0, missed = 2))),
+                today,
+            )
 
         val dayStats = stats.calendar.single { it.date == yesterday }
         assertEquals(DayStatus.KEPT, dayStats.status)
@@ -75,10 +79,11 @@ class StatisticsCalculatorTest {
     @Test
     fun sessions_onlyFinishedCountsAsCompletedCancelledIsCountedApart() {
         val yesterday = day(1)
-        val stats = StatisticsCalculator.compute(
-            input(sessions = mapOf(yesterday to SessionTotals(finished = 1, cancelled = 2, focusedMillis = 0L))),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(sessions = mapOf(yesterday to SessionTotals(finished = 1, cancelled = 2, focusedMillis = 0L))),
+                today,
+            )
 
         val dayStats = stats.calendar.single { it.date == yesterday }
         assertEquals(1, dayStats.finishedSessions)
@@ -96,15 +101,17 @@ class StatisticsCalculatorTest {
     fun focusedTime_isSummedOverTheWeekAcrossFinishedAndCancelledSessions() {
         val monday = LocalDate.of(2026, 11, 2)
         val tuesday = LocalDate.of(2026, 11, 3)
-        val stats = StatisticsCalculator.compute(
-            input(
-                sessions = mapOf(
-                    monday to SessionTotals(finished = 1, cancelled = 0, focusedMillis = 600_000L),
-                    tuesday to SessionTotals(finished = 0, cancelled = 1, focusedMillis = 300_000L),
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    sessions =
+                        mapOf(
+                            monday to SessionTotals(finished = 1, cancelled = 0, focusedMillis = 600_000L),
+                            tuesday to SessionTotals(finished = 0, cancelled = 1, focusedMillis = 300_000L),
+                        ),
                 ),
-            ),
-            today,
-        )
+                today,
+            )
 
         assertEquals(900_000L, stats.weeks.last().focusedMillis)
         assertEquals(900_000L, stats.last7Days.focusedMillis)
@@ -112,17 +119,19 @@ class StatisticsCalculatorTest {
 
     @Test
     fun periodTotals_countEachDayOnceAndRespectTheWindow() {
-        val stats = StatisticsCalculator.compute(
-            input(
-                occurrences = mapOf(
-                    LocalDate.of(2026, 10, 28) to OccurrenceTotals(completed = 5, skipped = 0, missed = 0),
-                    LocalDate.of(2026, 10, 29) to OccurrenceTotals(completed = 2, skipped = 0, missed = 0),
-                    today to OccurrenceTotals(completed = 1, skipped = 0, missed = 1),
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    occurrences =
+                        mapOf(
+                            LocalDate.of(2026, 10, 28) to OccurrenceTotals(completed = 5, skipped = 0, missed = 0),
+                            LocalDate.of(2026, 10, 29) to OccurrenceTotals(completed = 2, skipped = 0, missed = 0),
+                            today to OccurrenceTotals(completed = 1, skipped = 0, missed = 1),
+                        ),
+                    sessions = mapOf(LocalDate.of(2026, 11, 1) to SessionTotals(1, 0, 0L)),
                 ),
-                sessions = mapOf(LocalDate.of(2026, 11, 1) to SessionTotals(1, 0, 0L)),
-            ),
-            today,
-        )
+                today,
+            )
 
         assertEquals(75, stats.last7Days.completionPercent)
         assertEquals(1, stats.last7Days.finishedSessions)
@@ -147,12 +156,17 @@ class StatisticsCalculatorTest {
 
     @Test
     fun streak_skippedDayIsTransparent() {
-        val stats = StatisticsCalculator.compute(
-            input(
-                occurrences = kept(0, 2) + mapOf(day(1) to OccurrenceTotals(completed = 0, skipped = 1, missed = 0)),
-            ),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    occurrences =
+                        kept(
+                            0,
+                            2,
+                        ) + mapOf(day(1) to OccurrenceTotals(completed = 0, skipped = 1, missed = 0)),
+                ),
+                today,
+            )
 
         assertEquals(DayStatus.EXCUSED, stats.calendar.single { it.date == day(1) }.status)
         assertEquals(2 to 2, streakOf(stats))
@@ -160,12 +174,17 @@ class StatisticsCalculatorTest {
 
     @Test
     fun streak_missedItemBreaksIt() {
-        val stats = StatisticsCalculator.compute(
-            input(
-                occurrences = kept(0, 2) + mapOf(day(1) to OccurrenceTotals(completed = 0, skipped = 0, missed = 1)),
-            ),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    occurrences =
+                        kept(
+                            0,
+                            2,
+                        ) + mapOf(day(1) to OccurrenceTotals(completed = 0, skipped = 0, missed = 1)),
+                ),
+                today,
+            )
 
         assertEquals(DayStatus.BROKEN, stats.calendar.single { it.date == day(1) }.status)
         assertEquals(1 to 1, streakOf(stats))
@@ -173,12 +192,13 @@ class StatisticsCalculatorTest {
 
     @Test
     fun streak_todayWithAMissedItemBreaksTheCurrentStreakButNotTheLongest() {
-        val stats = StatisticsCalculator.compute(
-            input(
-                occurrences = kept(1, 2) + mapOf(today to OccurrenceTotals(completed = 0, skipped = 0, missed = 1)),
-            ),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    occurrences = kept(1, 2) + mapOf(today to OccurrenceTotals(completed = 0, skipped = 0, missed = 1)),
+                ),
+                today,
+            )
 
         assertEquals(DayStatus.BROKEN, stats.today.status)
         assertEquals(0 to 2, streakOf(stats))
@@ -193,13 +213,14 @@ class StatisticsCalculatorTest {
 
     @Test
     fun streak_aCancelledOnlyDayBreaksItAndDoesNotCount() {
-        val stats = StatisticsCalculator.compute(
-            input(
-                occurrences = kept(0),
-                sessions = mapOf(day(1) to SessionTotals(finished = 0, cancelled = 1, focusedMillis = 0L)),
-            ),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    occurrences = kept(0),
+                    sessions = mapOf(day(1) to SessionTotals(finished = 0, cancelled = 1, focusedMillis = 0L)),
+                ),
+                today,
+            )
 
         assertEquals(DayStatus.BROKEN, stats.calendar.single { it.date == day(1) }.status)
         assertEquals(1 to 1, streakOf(stats))
@@ -208,13 +229,14 @@ class StatisticsCalculatorTest {
     @Test
     fun streak_futureDataNeverExtendsIt() {
         val tomorrow = today.plusDays(1)
-        val stats = StatisticsCalculator.compute(
-            input(
-                occurrences = kept(0),
-                sessions = mapOf(tomorrow to SessionTotals(finished = 1, cancelled = 0, focusedMillis = 0L)),
-            ),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    occurrences = kept(0),
+                    sessions = mapOf(tomorrow to SessionTotals(finished = 1, cancelled = 0, focusedMillis = 0L)),
+                ),
+                today,
+            )
 
         assertEquals(DayStatus.FUTURE, stats.calendar.single { it.date == tomorrow }.status)
         assertEquals(1 to 1, streakOf(stats))
@@ -250,12 +272,14 @@ class StatisticsCalculatorTest {
     @Test
     fun recurringRoutine_aMissedFridayShowsInItsWeekAndBreaksTheStreak() {
         val friday = LocalDate.of(2026, 10, 30)
-        val stats = StatisticsCalculator.compute(
-            input(
-                occurrences = kept(0, 1, 2) + mapOf(friday to OccurrenceTotals(completed = 0, skipped = 0, missed = 1)),
-            ),
-            today,
-        )
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    occurrences =
+                        kept(0, 1, 2) + mapOf(friday to OccurrenceTotals(completed = 0, skipped = 0, missed = 1)),
+                ),
+                today,
+            )
 
         assertEquals(100, stats.weeks.last().completionPercent)
         assertEquals(0, stats.weeks[10].completionPercent)
@@ -266,15 +290,17 @@ class StatisticsCalculatorTest {
     fun consistency_isCompletedOverDueWithinEachRoutine() {
         val withDue = UUID.fromString("00000000-0000-4000-8000-000000000001")
         val nothingDue = UUID.fromString("00000000-0000-4000-8000-000000000002")
-        val stats = StatisticsCalculator.compute(
-            input(
-                routines = listOf(
-                    RoutineTotals(withDue, completed = 3, missed = 1),
-                    RoutineTotals(nothingDue, completed = 0, missed = 0),
+        val stats =
+            StatisticsCalculator.compute(
+                input(
+                    routines =
+                        listOf(
+                            RoutineTotals(withDue, completed = 3, missed = 1),
+                            RoutineTotals(nothingDue, completed = 0, missed = 0),
+                        ),
                 ),
-            ),
-            today,
-        )
+                today,
+            )
 
         assertEquals(75, stats.consistency.single { it.routineId == withDue }.percent)
         assertNull(stats.consistency.single { it.routineId == nothingDue }.percent)

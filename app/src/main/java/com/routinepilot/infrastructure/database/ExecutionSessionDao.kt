@@ -22,5 +22,8 @@ interface ExecutionSessionDao {
     suspend fun upsert(session: ExecutionSessionEntity)
 
     @Query("UPDATE execution_sessions SET deletedAt = :at, modifiedAt = :at WHERE id = :id")
-    suspend fun markDeleted(id: UUID, at: Instant)
+    suspend fun markDeleted(
+        id: UUID,
+        at: Instant,
+    )
 }

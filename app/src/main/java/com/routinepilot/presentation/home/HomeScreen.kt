@@ -65,11 +65,12 @@ fun HomeRoute(
         viewModel.events.collect { event ->
             when (event) {
                 is HomeEvent.RoutineDeleted -> {
-                    val result = snackbarHostState.showSnackbar(
-                        message = deletedMessage,
-                        actionLabel = undoLabel,
-                        withDismissAction = true,
-                    )
+                    val result =
+                        snackbarHostState.showSnackbar(
+                            message = deletedMessage,
+                            actionLabel = undoLabel,
+                            withDismissAction = true,
+                        )
                     if (result == SnackbarResult.ActionPerformed) viewModel.undoDelete(event.id)
                 }
                 HomeEvent.RoutineDuplicated -> snackbarHostState.showSnackbar(duplicatedMessage)
@@ -175,7 +176,11 @@ private fun RoutineRow(
 }
 
 @Composable
-private fun RoutineActionsMenu(onRun: () -> Unit, onDuplicate: () -> Unit, onDelete: () -> Unit) {
+private fun RoutineActionsMenu(
+    onRun: () -> Unit,
+    onDuplicate: () -> Unit,
+    onDelete: () -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) {

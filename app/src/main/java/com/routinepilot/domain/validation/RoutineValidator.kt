@@ -8,11 +8,12 @@ object RoutineValidator {
     const val MAX_DURATION_MINUTES = 480
     private const val SECONDS_PER_MINUTE = 60
 
-    fun validateTitle(title: String): RoutineValidationError? = when {
-        title.isBlank() -> RoutineValidationError.BLANK_TITLE
-        title.trim().length > MAX_TITLE_LENGTH -> RoutineValidationError.TITLE_TOO_LONG
-        else -> null
-    }
+    fun validateTitle(title: String): RoutineValidationError? =
+        when {
+            title.isBlank() -> RoutineValidationError.BLANK_TITLE
+            title.trim().length > MAX_TITLE_LENGTH -> RoutineValidationError.TITLE_TOO_LONG
+            else -> null
+        }
 
     fun validateDescription(description: String): RoutineValidationError? =
         if (description.trim().length > MAX_DESCRIPTION_LENGTH) RoutineValidationError.DESCRIPTION_TOO_LONG else null

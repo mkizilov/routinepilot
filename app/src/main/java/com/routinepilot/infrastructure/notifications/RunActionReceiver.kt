@@ -15,7 +15,10 @@ import javax.inject.Inject
 class RunActionReceiver : BroadcastReceiver() {
     @Inject lateinit var coordinator: RoutineRunCoordinator
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         when (intent.action) {
             RunIntents.ACTION_PAUSE -> coordinator.pause()
             RunIntents.ACTION_SKIP -> coordinator.skip()

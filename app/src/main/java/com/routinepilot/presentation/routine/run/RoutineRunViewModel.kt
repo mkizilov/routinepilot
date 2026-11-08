@@ -46,46 +46,51 @@ interface RoutineRunActions {
  * screen never pauses it.
  */
 @HiltViewModel
-class RoutineRunViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    private val coordinator: RoutineRunCoordinator,
-) : ViewModel(), RoutineRunActions {
-    private val routineId: UUID = UUID.fromString(checkNotNull(savedStateHandle.get<String>(ROUTINE_ID_ARG)))
+class RoutineRunViewModel
+    @Inject
+    constructor(
+        savedStateHandle: SavedStateHandle,
+        private val coordinator: RoutineRunCoordinator,
+    ) : ViewModel(),
+        RoutineRunActions {
+        private val routineId: UUID = UUID.fromString(checkNotNull(savedStateHandle.get<String>(ROUTINE_ID_ARG)))
 
-    val uiState: StateFlow<RoutineRunUiState> = coordinator.snapshot
-        .map { it.toUiState() }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, RoutineRunUiState())
+        val uiState: StateFlow<RoutineRunUiState> =
+            coordinator.snapshot
+                .map { it.toUiState() }
+                .stateIn(viewModelScope, SharingStarted.Eagerly, RoutineRunUiState())
 
-    init {
-        coordinator.open(routineId)
+        init {
+            coordinator.open(routineId)
+        }
+
+        override fun start() = coordinator.start()
+
+        override fun pause() = coordinator.pause()
+
+        override fun resume() = coordinator.resume()
+
+        override fun skip() = coordinator.skip()
+
+        override fun previous() = coordinator.previous()
+
+        override fun finish() = coordinator.finish()
+
+        override fun cancel() = coordinator.cancel()
+
+        fun onForeground() = coordinator.onForeground()
+
+        fun onBackground() = coordinator.onBackground()
     }
 
-    override fun start() = coordinator.start()
-
-    override fun pause() = coordinator.pause()
-
-    override fun resume() = coordinator.resume()
-
-    override fun skip() = coordinator.skip()
-
-    override fun previous() = coordinator.previous()
-
-    override fun finish() = coordinator.finish()
-
-    override fun cancel() = coordinator.cancel()
-
-    fun onForeground() = coordinator.onForeground()
-
-    fun onBackground() = coordinator.onBackground()
-}
-
 /** While another routine is running this screen shows no timer and no title, so it cannot be confused with that run. */
-private fun RunSnapshot.toUiState() = RoutineRunUiState(
-    routineTitle = if (blockedByOtherRun) "" else routineTitle,
-    timer = if (blockedByOtherRun) TimerState() else timer,
-    isLoading = isLoading,
-    isMissing = isMissing,
-    blockedByOtherRun = blockedByOtherRun,
-    isClosed = isClosed,
-    foregroundUnavailable = foregroundUnavailable,
-)
+private fun RunSnapshot.toUiState() =
+    RoutineRunUiState(
+        routineTitle = if (blockedByOtherRun) "" else routineTitle,
+        timer = if (blockedByOtherRun) TimerState() else timer,
+        isLoading = isLoading,
+        isMissing = isMissing,
+        blockedByOtherRun = blockedByOtherRun,
+        isClosed = isClosed,
+        foregroundUnavailable = foregroundUnavailable,
+    )

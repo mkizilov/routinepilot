@@ -16,7 +16,10 @@ interface RoutineRepository {
      * Saves the routine and makes [steps] its complete set of active steps in one transaction.
      * Active steps missing from [steps] are soft-deleted.
      */
-    suspend fun saveRoutine(routine: Routine, steps: List<RoutineStep>)
+    suspend fun saveRoutine(
+        routine: Routine,
+        steps: List<RoutineStep>,
+    )
 
     /** Soft-deletes the routine and its steps. [restoreRoutine] undoes it. */
     suspend fun deleteRoutine(id: UUID)

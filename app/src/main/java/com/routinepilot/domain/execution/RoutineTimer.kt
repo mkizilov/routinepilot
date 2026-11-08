@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
  *
  * Commands that do not apply to the current status are ignored and return no events.
  */
-class RoutineTimer(private val clock: MonotonicClock) {
+class RoutineTimer(
+    private val clock: MonotonicClock,
+) {
     private var steps: List<TimedStep> = emptyList()
     private var status = ExecutionStatus.NOT_STARTED
     private var index = 0
@@ -49,7 +51,12 @@ class RoutineTimer(private val clock: MonotonicClock) {
      * Restores an interrupted run. It comes back paused so the user decides when time counts again. [focusedMillis] is
      * the total running time at the checkpoint, of which [elapsedMillis] belongs to the current step.
      */
-    fun restore(plan: List<TimedStep>, stepIndex: Int, elapsedMillis: Long, focusedMillis: Long = elapsedMillis) {
+    fun restore(
+        plan: List<TimedStep>,
+        stepIndex: Int,
+        elapsedMillis: Long,
+        focusedMillis: Long = elapsedMillis,
+    ) {
         if (status != ExecutionStatus.NOT_STARTED || stepIndex !in plan.indices) return
         steps = plan
         index = stepIndex
@@ -59,63 +66,70 @@ class RoutineTimer(private val clock: MonotonicClock) {
         publish(clock.elapsedMillis())
     }
 
-    fun start(): List<TimerEvent> = mutate { now, _ ->
-        if (status == ExecutionStatus.NOT_STARTED && steps.isNotEmpty()) {
-            status = ExecutionStatus.RUNNING
-            index = 0
-            accumulatedMillis = 0L
-            runningSinceMillis = now
+    fun start(): List<TimerEvent> =
+        mutate { now, _ ->
+            if (status == ExecutionStatus.NOT_STARTED && steps.isNotEmpty()) {
+                status = ExecutionStatus.RUNNING
+                index = 0
+                accumulatedMillis = 0L
+                runningSinceMillis = now
+            }
         }
-    }
 
-    fun pause(): List<TimerEvent> = mutate { now, _ ->
-        if (status == ExecutionStatus.RUNNING) {
-            accumulatedMillis = elapsedAt(now)
-            runningSinceMillis = null
-            status = ExecutionStatus.PAUSED
+    fun pause(): List<TimerEvent> =
+        mutate { now, _ ->
+            if (status == ExecutionStatus.RUNNING) {
+                accumulatedMillis = elapsedAt(now)
+                runningSinceMillis = null
+                status = ExecutionStatus.PAUSED
+            }
         }
-    }
 
-    fun resume(): List<TimerEvent> = mutate { now, _ ->
-        if (status == ExecutionStatus.PAUSED) {
-            runningSinceMillis = now
-            status = ExecutionStatus.RUNNING
+    fun resume(): List<TimerEvent> =
+        mutate { now, _ ->
+            if (status == ExecutionStatus.PAUSED) {
+                runningSinceMillis = now
+                status = ExecutionStatus.RUNNING
+            }
         }
-    }
 
-    fun skip(): List<TimerEvent> = mutate { now, events ->
-        if (status.isActive) {
-            events += TimerEvent.StepSkipped(steps[index].id, now)
-            advance(now, events)
+    fun skip(): List<TimerEvent> =
+        mutate { now, events ->
+            if (status.isActive) {
+                events += TimerEvent.StepSkipped(steps[index].id, now)
+                advance(now, events)
+            }
         }
-    }
 
     /** Moves back one step, or restarts the first step. The step reached always starts from zero. */
-    fun previous(): List<TimerEvent> = mutate { now, _ ->
-        if (status.isActive) {
-            closeSegment(now)
-            if (index > 0) index--
+    fun previous(): List<TimerEvent> =
+        mutate { now, _ ->
+            if (status.isActive) {
+                closeSegment(now)
+                if (index > 0) index--
+            }
         }
-    }
 
     /** Ends the routine now. The current step counts as completed; later steps are left unrecorded. */
-    fun finish(): List<TimerEvent> = mutate { now, events ->
-        if (status.isActive) {
-            events += TimerEvent.StepCompleted(steps[index].id, now)
-            complete(now, events)
+    fun finish(): List<TimerEvent> =
+        mutate { now, events ->
+            if (status.isActive) {
+                events += TimerEvent.StepCompleted(steps[index].id, now)
+                complete(now, events)
+            }
         }
-    }
 
     /** Ends the routine without recording the current step as completed. Focus accrued so far is kept. */
-    fun cancel(): List<TimerEvent> = mutate { now, events ->
-        if (status.isActive) {
-            closedFocusMillis += elapsedAt(now)
-            accumulatedMillis = 0L
-            runningSinceMillis = null
-            status = ExecutionStatus.CANCELLED
-            events += TimerEvent.Cancelled(now)
+    fun cancel(): List<TimerEvent> =
+        mutate { now, events ->
+            if (status.isActive) {
+                closedFocusMillis += elapsedAt(now)
+                accumulatedMillis = 0L
+                runningSinceMillis = null
+                status = ExecutionStatus.CANCELLED
+                events += TimerEvent.Cancelled(now)
+            }
         }
-    }
 
     /** Applies any expiry that has happened since the last command. Safe to call at any frequency. */
     fun tick(): List<TimerEvent> = mutate { _, _ -> }
@@ -134,7 +148,10 @@ class RoutineTimer(private val clock: MonotonicClock) {
         return events.toList()
     }
 
-    private fun settle(now: Long, events: MutableList<TimerEvent>) {
+    private fun settle(
+        now: Long,
+        events: MutableList<TimerEvent>,
+    ) {
         while (status == ExecutionStatus.RUNNING) {
             val duration = steps[index].durationMillis ?: return
             val elapsed = elapsedAt(now)
@@ -146,7 +163,10 @@ class RoutineTimer(private val clock: MonotonicClock) {
     }
 
     /** Moves to the next step, which starts at [at]. Completes the routine after the last step. */
-    private fun advance(at: Long, events: MutableList<TimerEvent>) {
+    private fun advance(
+        at: Long,
+        events: MutableList<TimerEvent>,
+    ) {
         if (index == steps.lastIndex) {
             complete(at, events)
         } else {
@@ -162,7 +182,10 @@ class RoutineTimer(private val clock: MonotonicClock) {
         runningSinceMillis = if (status == ExecutionStatus.RUNNING) at else null
     }
 
-    private fun complete(at: Long, events: MutableList<TimerEvent>) {
+    private fun complete(
+        at: Long,
+        events: MutableList<TimerEvent>,
+    ) {
         closedFocusMillis += elapsedAt(at)
         accumulatedMillis = 0L
         runningSinceMillis = null
@@ -178,23 +201,27 @@ class RoutineTimer(private val clock: MonotonicClock) {
         val current = steps.getOrNull(index)
         val elapsed = elapsedAt(now)
         val showsCountdown = status == ExecutionStatus.NOT_STARTED || status.isActive
-        val remaining = current?.durationMillis
-            ?.takeIf { showsCountdown }
-            ?.let { (it - elapsed).coerceAtLeast(0L) }
-        _state.value = TimerState(
-            status = status,
-            steps = steps,
-            currentIndex = index,
-            currentElapsedMillis = elapsed,
-            currentRemainingMillis = remaining,
-            totalRemainingMillis = totalRemaining(remaining),
-        )
+        val remaining =
+            current
+                ?.durationMillis
+                ?.takeIf { showsCountdown }
+                ?.let { (it - elapsed).coerceAtLeast(0L) }
+        _state.value =
+            TimerState(
+                status = status,
+                steps = steps,
+                currentIndex = index,
+                currentElapsedMillis = elapsed,
+                currentRemainingMillis = remaining,
+                totalRemainingMillis = totalRemaining(remaining),
+            )
     }
 
-    private fun totalRemaining(currentRemaining: Long?): Long = when (status) {
-        ExecutionStatus.NOT_STARTED -> steps.sumOf { it.durationMillis ?: 0L }
-        ExecutionStatus.RUNNING, ExecutionStatus.PAUSED ->
-            (currentRemaining ?: 0L) + steps.drop(index + 1).sumOf { it.durationMillis ?: 0L }
-        ExecutionStatus.COMPLETED, ExecutionStatus.CANCELLED -> 0L
-    }
+    private fun totalRemaining(currentRemaining: Long?): Long =
+        when (status) {
+            ExecutionStatus.NOT_STARTED -> steps.sumOf { it.durationMillis ?: 0L }
+            ExecutionStatus.RUNNING, ExecutionStatus.PAUSED ->
+                (currentRemaining ?: 0L) + steps.drop(index + 1).sumOf { it.durationMillis ?: 0L }
+            ExecutionStatus.COMPLETED, ExecutionStatus.CANCELLED -> 0L
+        }
 }

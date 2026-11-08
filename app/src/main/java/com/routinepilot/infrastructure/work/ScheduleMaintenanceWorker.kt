@@ -19,26 +19,33 @@ import java.util.concurrent.TimeUnit
  * so a late or repeated run changes nothing that is already planned.
  */
 @HiltWorker
-class ScheduleMaintenanceWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val scheduleRepository: ScheduleRepository,
-    private val clock: Clock,
-) : CoroutineWorker(appContext, params) {
-    override suspend fun doWork(): Result {
-        scheduleRepository.ensureOccurrences(Instant.now(clock), clock.zone)
-        return Result.success()
-    }
+class ScheduleMaintenanceWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted params: WorkerParameters,
+        private val scheduleRepository: ScheduleRepository,
+        private val clock: Clock,
+    ) : CoroutineWorker(appContext, params) {
+        override suspend fun doWork(): Result {
+            scheduleRepository.ensureOccurrences(Instant.now(clock), clock.zone)
+            return Result.success()
+        }
 
-    companion object {
-        const val UNIQUE_NAME = "schedule-maintenance"
-        private const val REPEAT_HOURS = 12L
+        companion object {
+            const val UNIQUE_NAME = "schedule-maintenance"
+            private const val REPEAT_HOURS = 12L
 
-        /** KEEP leaves an existing job in place, so repeated app starts never stack a second one. */
-        fun enqueue(context: Context) {
-            val request = PeriodicWorkRequestBuilder<ScheduleMaintenanceWorker>(REPEAT_HOURS, TimeUnit.HOURS).build()
-            WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork(UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            /** KEEP leaves an existing job in place, so repeated app starts never stack a second one. */
+            fun enqueue(context: Context) {
+                val request =
+                    PeriodicWorkRequestBuilder<ScheduleMaintenanceWorker>(
+                        REPEAT_HOURS,
+                        TimeUnit.HOURS,
+                    ).build()
+                WorkManager
+                    .getInstance(context)
+                    .enqueueUniquePeriodicWork(UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            }
         }
     }
-}

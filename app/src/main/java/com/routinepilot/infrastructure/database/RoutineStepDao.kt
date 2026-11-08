@@ -23,26 +23,39 @@ interface RoutineStepDao {
 
     /** Steps removed by the same routine deletion, which a restore brings back. */
     @Query("SELECT * FROM routine_steps WHERE routineId = :routineId AND deletedAt = :deletedAt")
-    suspend fun deletedSnapshot(routineId: UUID, deletedAt: Instant): List<RoutineStepEntity>
+    suspend fun deletedSnapshot(
+        routineId: UUID,
+        deletedAt: Instant,
+    ): List<RoutineStepEntity>
 
     @Upsert
     suspend fun upsert(steps: List<RoutineStepEntity>)
 
     @Query("UPDATE routine_steps SET deletedAt = :at, modifiedAt = :at WHERE id = :id")
-    suspend fun markDeleted(id: UUID, at: Instant)
+    suspend fun markDeleted(
+        id: UUID,
+        at: Instant,
+    )
 
     @Query(
         "UPDATE routine_steps SET deletedAt = :at, modifiedAt = :at " +
             "WHERE routineId = :routineId AND deletedAt IS NULL",
     )
-    suspend fun markDeletedForRoutine(routineId: UUID, at: Instant)
+    suspend fun markDeletedForRoutine(
+        routineId: UUID,
+        at: Instant,
+    )
 
     /** Restores only steps tombstoned by the same routine deletion, leaving earlier step deletions intact. */
     @Query(
         "UPDATE routine_steps SET deletedAt = NULL, modifiedAt = :at " +
             "WHERE routineId = :routineId AND deletedAt = :deletedAt",
     )
-    suspend fun restoreDeletedAt(routineId: UUID, deletedAt: Instant, at: Instant)
+    suspend fun restoreDeletedAt(
+        routineId: UUID,
+        deletedAt: Instant,
+        at: Instant,
+    )
 
     /** Hard delete, used only by sync purge. Fails while completion events reference the step. */
     @Query("DELETE FROM routine_steps WHERE id = :id")

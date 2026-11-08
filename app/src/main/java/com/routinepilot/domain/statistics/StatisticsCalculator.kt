@@ -41,7 +41,10 @@ object StatisticsCalculator {
     private const val CALENDAR_WEEKS = 5
     private const val LAST_DAYS = 7
 
-    fun compute(input: StatisticsInput, today: LocalDate): Statistics {
+    fun compute(
+        input: StatisticsInput,
+        today: LocalDate,
+    ): Statistics {
         val windowStart = today.minusDays(LOOKBACK_DAYS - 1L)
         val window = (0 until LOOKBACK_DAYS).map { dayOf(windowStart.plusDays(it.toLong()), input, today) }
         val (current, longest) = streaks(window.map { it.status })
@@ -50,25 +53,40 @@ object StatisticsCalculator {
         return Statistics(
             today = dayOf(today, input, today),
             last7Days = period(today.minusDays(LAST_DAYS - 1L), today, input, today),
-            weeks = (TREND_WEEKS - 1 downTo 0).map { weeksAgo ->
-                val start = monday.minusWeeks(weeksAgo.toLong())
-                period(start, start.plusDays(6), input, today)
-            },
-            months = (TREND_MONTHS - 1 downTo 0).map { monthsAgo ->
-                val month = YearMonth.from(today).minusMonths(monthsAgo.toLong())
-                period(month.atDay(1), month.atEndOfMonth(), input, today)
-            },
-            calendar = (0 until CALENDAR_WEEKS * 7).map { dayOf(calendarStart.plusDays(it.toLong()), input, today) },
+            weeks =
+                (TREND_WEEKS - 1 downTo 0).map { weeksAgo ->
+                    val start = monday.minusWeeks(weeksAgo.toLong())
+                    period(start, start.plusDays(6), input, today)
+                },
+            months =
+                (TREND_MONTHS - 1 downTo 0).map { monthsAgo ->
+                    val month = YearMonth.from(today).minusMonths(monthsAgo.toLong())
+                    period(month.atDay(1), month.atEndOfMonth(), input, today)
+                },
+            calendar =
+                (0 until CALENDAR_WEEKS * 7).map {
+                    dayOf(
+                        calendarStart.plusDays(it.toLong()),
+                        input,
+                        today,
+                    )
+                },
             currentStreak = current,
             longestStreak = longest,
-            consistency = input.routines.map {
-                val due = it.completed + it.missed
-                RoutineConsistency(it.routineId, it.completed, it.missed, percentOf(it.completed, due))
-            },
+            consistency =
+                input.routines.map {
+                    val due = it.completed + it.missed
+                    RoutineConsistency(it.routineId, it.completed, it.missed, percentOf(it.completed, due))
+                },
         )
     }
 
-    internal fun statusOf(date: LocalDate, occ: OccurrenceTotals, sess: SessionTotals, today: LocalDate): DayStatus =
+    internal fun statusOf(
+        date: LocalDate,
+        occ: OccurrenceTotals,
+        sess: SessionTotals,
+        today: LocalDate,
+    ): DayStatus =
         when {
             date.isAfter(today) -> DayStatus.FUTURE
             sess.finished >= 1 || occ.completed >= 1 -> DayStatus.KEPT
@@ -102,10 +120,16 @@ object StatisticsCalculator {
         return current to longest
     }
 
-    internal fun percentOf(completed: Int, due: Int): Int? =
-        if (due == 0) null else (completed * 100.0 / due).roundToInt()
+    internal fun percentOf(
+        completed: Int,
+        due: Int,
+    ): Int? = if (due == 0) null else (completed * 100.0 / due).roundToInt()
 
-    private fun dayOf(date: LocalDate, input: StatisticsInput, today: LocalDate): DayStats {
+    private fun dayOf(
+        date: LocalDate,
+        input: StatisticsInput,
+        today: LocalDate,
+    ): DayStats {
         val occ = input.occurrences[date] ?: OccurrenceTotals.NONE
         val sess = input.sessions[date] ?: SessionTotals.NONE
         return DayStats(

@@ -11,23 +11,25 @@ import javax.inject.Singleton
 
 /** Turns run transitions into notifications for the whole process, whether or not a screen is showing. */
 @Singleton
-class RunEventNotifier @Inject constructor(
-    private val coordinator: RoutineRunCoordinator,
-    private val presenter: RunNotificationPresenter,
-    @ApplicationScope private val scope: CoroutineScope,
-) {
-    private var started = false
+class RunEventNotifier
+    @Inject
+    constructor(
+        private val coordinator: RoutineRunCoordinator,
+        private val presenter: RunNotificationPresenter,
+        @ApplicationScope private val scope: CoroutineScope,
+    ) {
+        private var started = false
 
-    fun start() {
-        if (started) return
-        started = true
-        scope.launch {
-            coordinator.events.collect { event ->
-                when (event) {
-                    is RunEvent.StepCompleted -> presenter.showStepCompleted(event)
-                    is RunEvent.RoutineFinished -> presenter.showRoutineFinished(event)
+        fun start() {
+            if (started) return
+            started = true
+            scope.launch {
+                coordinator.events.collect { event ->
+                    when (event) {
+                        is RunEvent.StepCompleted -> presenter.showStepCompleted(event)
+                        is RunEvent.RoutineFinished -> presenter.showRoutineFinished(event)
+                    }
                 }
             }
         }
     }
-}

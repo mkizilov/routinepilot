@@ -42,11 +42,16 @@ object CalendarEventMapper {
      * Null only if the schedule has no occurrence within the search window, which valid rules do not produce.
      * [previous] is the link the schedule already has, if any, so its series start can be kept.
      */
-    fun draftFor(source: CalendarSource, allDay: Boolean, previous: CalendarLink?): CalendarEventDraft? {
+    fun draftFor(
+        source: CalendarSource,
+        allDay: Boolean,
+        previous: CalendarLink?,
+    ): CalendarEventDraft? {
         val schedule = source.schedule
-        val firstDate = previous?.takeIf { it.ruleKey == ruleKeyFor(schedule) }?.let { startDateOf(it, schedule.zone) }
-            ?: firstOccurrence(schedule)
-            ?: return null
+        val firstDate =
+            previous?.takeIf { it.ruleKey == ruleKeyFor(schedule) }?.let { startDateOf(it, schedule.zone) }
+                ?: firstOccurrence(schedule)
+                ?: return null
         return CalendarEventDraft(
             uid = uidFor(schedule.id),
             title = source.title,
@@ -59,12 +64,13 @@ object CalendarEventMapper {
         )
     }
 
-    fun ruleFor(pattern: RecurrencePattern): String = when (pattern) {
-        RecurrencePattern.Daily -> "FREQ=DAILY"
-        is RecurrencePattern.Weekdays ->
-            "FREQ=WEEKLY;BYDAY=" + pattern.days.sortedBy { it.value }.joinToString(",") { byDay(it) }
-        is RecurrencePattern.EveryNDays -> "FREQ=DAILY;INTERVAL=${pattern.intervalDays}"
-    }
+    fun ruleFor(pattern: RecurrencePattern): String =
+        when (pattern) {
+            RecurrencePattern.Daily -> "FREQ=DAILY"
+            is RecurrencePattern.Weekdays ->
+                "FREQ=WEEKLY;BYDAY=" + pattern.days.sortedBy { it.value }.joinToString(",") { byDay(it) }
+            is RecurrencePattern.EveryNDays -> "FREQ=DAILY;INTERVAL=${pattern.intervalDays}"
+        }
 
     /** Everything that defines the series start. Changing any part moves the start to the day the rule was saved. */
     fun ruleKeyFor(schedule: Schedule): String {
@@ -81,10 +87,18 @@ object CalendarEventMapper {
      * The same rule, ended at [endAt]. A timed series stops at that instant. An all-day series stops before the day of
      * [endAt], so the event does not show a day that has already been stopped.
      */
-    fun endedRule(rrule: String, endAt: Instant, allDay: Boolean): String = "$rrule;UNTIL=${untilValue(endAt, allDay)}"
+    fun endedRule(
+        rrule: String,
+        endAt: Instant,
+        allDay: Boolean,
+    ): String = "$rrule;UNTIL=${untilValue(endAt, allDay)}"
 
     /** True when ending at [endAt] would leave no occurrence, so the event has nothing left to show. */
-    fun endsBeforeFirstOccurrence(startMillis: Long, endAt: Instant, allDay: Boolean): Boolean {
+    fun endsBeforeFirstOccurrence(
+        startMillis: Long,
+        endAt: Instant,
+        allDay: Boolean,
+    ): Boolean {
         val start = Instant.ofEpochMilli(startMillis)
         return if (allDay) {
             untilDate(endAt).isBefore(start.atZone(ZoneOffset.UTC).toLocalDate())
@@ -95,17 +109,19 @@ object CalendarEventMapper {
 
     /** A hash over every field the calendar stores. Equal hashes mean an update would change nothing. */
     fun contentHash(draft: CalendarEventDraft): String {
-        val canonical = listOf(
-            draft.uid,
-            draft.title,
-            draft.description,
-            draft.timeZoneId,
-            draft.allDay.toString(),
-            draft.startMillis.toString(),
-            draft.durationText,
-            draft.rrule,
-        ).joinToString(SEPARATOR)
-        return MessageDigest.getInstance("SHA-256")
+        val canonical =
+            listOf(
+                draft.uid,
+                draft.title,
+                draft.description,
+                draft.timeZoneId,
+                draft.allDay.toString(),
+                draft.startMillis.toString(),
+                draft.durationText,
+                draft.rrule,
+            ).joinToString(SEPARATOR)
+        return MessageDigest
+            .getInstance("SHA-256")
             .digest(canonical.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
     }
@@ -117,17 +133,27 @@ object CalendarEventMapper {
     }
 
     /** The local date a stored series starts on, read back from its start in the form it was stored in. */
-    private fun startDateOf(link: CalendarLink, zone: ZoneId): LocalDate =
+    private fun startDateOf(
+        link: CalendarLink,
+        zone: ZoneId,
+    ): LocalDate =
         Instant.ofEpochMilli(link.startMillis).atZone(if (link.allDay) ZoneOffset.UTC else zone).toLocalDate()
 
-    private fun startMillisOn(date: LocalDate, schedule: Schedule, allDay: Boolean): Long =
+    private fun startMillisOn(
+        date: LocalDate,
+        schedule: Schedule,
+        allDay: Boolean,
+    ): Long =
         if (allDay) {
             date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         } else {
             ScheduleCalendar.instantAt(date, schedule.recurrence.time, schedule.zone).toEpochMilli()
         }
 
-    private fun untilValue(endAt: Instant, allDay: Boolean): String =
+    private fun untilValue(
+        endAt: Instant,
+        allDay: Boolean,
+    ): String =
         if (allDay) {
             untilDate(endAt).format(DateTimeFormatter.BASIC_ISO_DATE)
         } else {
@@ -145,24 +171,26 @@ object CalendarEventMapper {
 
     private fun descriptionFor(source: CalendarSource): String {
         if (source.isTask) return "Task from RoutinePilot."
-        val steps = source.steps.mapIndexed { index, step ->
-            val minutes = step.durationSeconds?.let { " (${ceilMinutes(it)} min)" }.orEmpty()
-            "${index + 1}. ${step.title}$minutes"
-        }
+        val steps =
+            source.steps.mapIndexed { index, step ->
+                val minutes = step.durationSeconds?.let { " (${ceilMinutes(it)} min)" }.orEmpty()
+                "${index + 1}. ${step.title}$minutes"
+            }
         return (listOf("Routine from RoutinePilot.") + steps).joinToString("\n")
     }
 
     private fun ceilMinutes(seconds: Int): Int = (seconds + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE
 
-    private fun byDay(day: DayOfWeek): String = when (day) {
-        DayOfWeek.MONDAY -> "MO"
-        DayOfWeek.TUESDAY -> "TU"
-        DayOfWeek.WEDNESDAY -> "WE"
-        DayOfWeek.THURSDAY -> "TH"
-        DayOfWeek.FRIDAY -> "FR"
-        DayOfWeek.SATURDAY -> "SA"
-        DayOfWeek.SUNDAY -> "SU"
-    }
+    private fun byDay(day: DayOfWeek): String =
+        when (day) {
+            DayOfWeek.MONDAY -> "MO"
+            DayOfWeek.TUESDAY -> "TU"
+            DayOfWeek.WEDNESDAY -> "WE"
+            DayOfWeek.THURSDAY -> "TH"
+            DayOfWeek.FRIDAY -> "FR"
+            DayOfWeek.SATURDAY -> "SA"
+            DayOfWeek.SUNDAY -> "SU"
+        }
 
     private const val SEPARATOR = "\u001F"
 

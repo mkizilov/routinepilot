@@ -17,7 +17,12 @@ class OfflineReplica(
      * [after] is a delete. A null [before] means the record was not live on this device, so the change writes the whole
      * record.
      */
-    suspend fun record(key: ObjectKey, before: FieldMap?, after: FieldMap?, nowMillis: Long) {
+    suspend fun record(
+        key: ObjectKey,
+        before: FieldMap?,
+        after: FieldMap?,
+        nowMillis: Long,
+    ) {
         if (before == null && after == null) return
         val changes = if (before != null && after != null) diff(before, after) else emptyMap()
         if (before != null && after != null && changes.isEmpty()) return
@@ -41,10 +46,14 @@ class OfflineReplica(
         )
     }
 
-    private fun diff(before: FieldMap, after: FieldMap): Map<String, FieldChange> =
-        (before.keys + after.keys).mapNotNull { name ->
-            val old = before[name]
-            val new = after[name]
-            if (old == new) null else name to FieldChange(old, new)
-        }.toMap()
+    private fun diff(
+        before: FieldMap,
+        after: FieldMap,
+    ): Map<String, FieldChange> =
+        (before.keys + after.keys)
+            .mapNotNull { name ->
+                val old = before[name]
+                val new = after[name]
+                if (old == new) null else name to FieldChange(old, new)
+            }.toMap()
 }

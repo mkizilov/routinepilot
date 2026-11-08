@@ -1,6 +1,8 @@
 package com.routinepilot.infrastructure.widget
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -20,15 +22,32 @@ import com.routinepilot.domain.widget.WidgetCommand
 import com.routinepilot.domain.widget.WidgetSize
 import com.routinepilot.domain.widget.WidgetSizing
 
-/** Fixed colours for every launcher. Widgets do not follow Material You in this version. */
+/** Text colors for every launcher. They follow the system light or dark setting, not Material You. */
 internal object WidgetStyle {
-    private val ink = ColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5))
+    private val ink = DayNightColor(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5))
     val body = TextStyle(color = ink, fontSize = 13.sp)
     val heading = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Bold)
 }
 
+/**
+ * Picks the day or night color from the system night mode. Glance 1.2 provides no day and night factory, so the color
+ * provider is written here against the library's single-method interface.
+ */
+private class DayNightColor(
+    private val day: Color,
+    private val night: Color,
+) : ColorProvider {
+    override fun getColor(context: Context): Color {
+        val nightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        return if (nightMode == Configuration.UI_MODE_NIGHT_YES) night else day
+    }
+}
+
 @Composable
-internal fun str(@StringRes id: Int, vararg args: Any): String = LocalContext.current.getString(id, *args)
+internal fun str(
+    @StringRes id: Int,
+    vararg args: Any,
+): String = LocalContext.current.getString(id, *args)
 
 /** The layout bucket for the size the launcher gave this widget. */
 @Composable
@@ -38,28 +57,39 @@ internal fun currentWidgetSize(): WidgetSize {
 }
 
 @Composable
-internal fun WidgetText(text: String, style: TextStyle = WidgetStyle.body) {
+internal fun WidgetText(
+    text: String,
+    style: TextStyle = WidgetStyle.body,
+) {
     Text(text = text, style = style)
 }
 
 /** Sends a command to the running routine. The command travels as a parameter and is checked on arrival. */
 @Composable
-internal fun CommandButton(text: String, command: WidgetCommand) {
+internal fun CommandButton(
+    text: String,
+    command: WidgetCommand,
+) {
     Button(
         text = text,
-        onClick = actionRunCallback<WidgetCommandAction>(
-            actionParametersOf(WidgetCommandAction.COMMAND_KEY to command.wire),
-        ),
+        onClick =
+            actionRunCallback<WidgetCommandAction>(
+                actionParametersOf(WidgetCommandAction.COMMAND_KEY to command.wire),
+            ),
     )
 }
 
 /** Opens the app through an explicit intent to MainActivity. Used for Start, Resume, and the run screen. */
 @Composable
-internal fun ActivityButton(text: String, intent: Intent) {
+internal fun ActivityButton(
+    text: String,
+    intent: Intent,
+) {
     Button(text = text, onClick = actionStartActivity(intent))
 }
 
 @Composable
 internal fun OpenAppButton(text: String) {
-    Button(text = text, onClick = actionStartActivity<MainActivity>())
+    val context = LocalContext.current
+    Button(text = text, onClick = actionStartActivity(Intent(context, MainActivity::class.java)))
 }

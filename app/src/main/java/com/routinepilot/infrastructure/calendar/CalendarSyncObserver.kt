@@ -24,31 +24,35 @@ private const val DEBOUNCE_MILLIS = 500L
  * writes that only record the last sync are left out of the key, so a sync never triggers another sync.
  */
 @Singleton
-class CalendarSyncObserver @Inject constructor(
-    private val calendarRepository: CalendarRepository,
-    private val scheduleRepository: ScheduleRepository,
-    private val routineRepository: RoutineRepository,
-    private val taskRepository: TaskRepository,
-    private val clock: Clock,
-    @ApplicationScope private val scope: CoroutineScope,
-) {
-    private var started = false
+class CalendarSyncObserver
+    @Inject
+    constructor(
+        private val calendarRepository: CalendarRepository,
+        private val scheduleRepository: ScheduleRepository,
+        private val routineRepository: RoutineRepository,
+        private val taskRepository: TaskRepository,
+        private val clock: Clock,
+        @ApplicationScope private val scope: CoroutineScope,
+    ) {
+        private var started = false
 
-    fun start() {
-        if (started) return
-        started = true
-        scope.launch {
-            val exportKey = calendarRepository.observeSettings()
-                .map { Triple(it.enabled, it.calendarId, it.allDay) }
-                .distinctUntilChanged()
-            combine(
-                exportKey,
-                scheduleRepository.observeSchedules(),
-                routineRepository.observeRoutines(),
-                taskRepository.observeTasks(),
-            ) { _, _, _, _ -> }
-                .debounce(DEBOUNCE_MILLIS)
-                .collect { calendarRepository.sync(Instant.now(clock)) }
+        fun start() {
+            if (started) return
+            started = true
+            scope.launch {
+                val exportKey =
+                    calendarRepository
+                        .observeSettings()
+                        .map { Triple(it.enabled, it.calendarId, it.allDay) }
+                        .distinctUntilChanged()
+                combine(
+                    exportKey,
+                    scheduleRepository.observeSchedules(),
+                    routineRepository.observeRoutines(),
+                    taskRepository.observeTasks(),
+                ) { _, _, _, _ -> }
+                    .debounce(DEBOUNCE_MILLIS)
+                    .collect { calendarRepository.sync(Instant.now(clock)) }
+            }
         }
     }
-}

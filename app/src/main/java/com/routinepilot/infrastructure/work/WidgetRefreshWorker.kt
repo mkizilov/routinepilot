@@ -18,25 +18,28 @@ import java.util.concurrent.TimeUnit
  * the device is idle.
  */
 @HiltWorker
-class WidgetRefreshWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val refresher: WidgetRefresher,
-) : CoroutineWorker(appContext, params) {
-    override suspend fun doWork(): Result {
-        refresher.refreshAll()
-        return Result.success()
-    }
+class WidgetRefreshWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted params: WorkerParameters,
+        private val refresher: WidgetRefresher,
+    ) : CoroutineWorker(appContext, params) {
+        override suspend fun doWork(): Result {
+            refresher.refreshAll()
+            return Result.success()
+        }
 
-    companion object {
-        const val UNIQUE_NAME = "widget-refresh"
-        private const val REPEAT_MINUTES = 30L
+        companion object {
+            const val UNIQUE_NAME = "widget-refresh"
+            private const val REPEAT_MINUTES = 30L
 
-        /** KEEP leaves an existing job alone, so repeated app starts never stack a second job. */
-        fun enqueue(context: Context) {
-            val request = PeriodicWorkRequestBuilder<WidgetRefreshWorker>(REPEAT_MINUTES, TimeUnit.MINUTES).build()
-            WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork(UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            /** KEEP leaves an existing job alone, so repeated app starts never stack a second job. */
+            fun enqueue(context: Context) {
+                val request = PeriodicWorkRequestBuilder<WidgetRefreshWorker>(REPEAT_MINUTES, TimeUnit.MINUTES).build()
+                WorkManager
+                    .getInstance(context)
+                    .enqueueUniquePeriodicWork(UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            }
         }
     }
-}

@@ -9,7 +9,9 @@ typealias FieldMap = Map<String, String?>
  * The record types that take part in offline tracking. [fields] lists every value tracked for the type, so a change to
  * any of them is a change to the record. Timestamps that only say when a device saved are not tracked.
  */
-enum class SyncType(val fields: List<String>) {
+enum class SyncType(
+    val fields: List<String>,
+) {
     ROUTINE(listOf("title", "description", "position")),
     ROUTINE_STEP(listOf("routineId", "title", "description", "durationSeconds", "position")),
     TASK(listOf("title", "isCompleted", "routineId", "position")),
@@ -28,19 +30,29 @@ enum class SyncType(val fields: List<String>) {
 }
 
 /** The stable identity of a record. The id never changes, even when the record is renamed or moved. */
-data class ObjectKey(val type: SyncType, val id: UUID)
+data class ObjectKey(
+    val type: SyncType,
+    val id: UUID,
+)
 
 /**
  * What the server last reported for one record. [version] 0 means the server has never reported the record. A tombstone
  * keeps its version and has no fields, so a later write can still be checked against it.
  */
-data class BaseState(val version: Long, val deleted: Boolean, val fields: FieldMap) {
+data class BaseState(
+    val version: Long,
+    val deleted: Boolean,
+    val fields: FieldMap,
+) {
     companion object {
         val NEVER_SEEN = BaseState(version = 0, deleted = false, fields = emptyMap())
     }
 }
 
-data class FieldChange(val before: String?, val after: String?)
+data class FieldChange(
+    val before: String?,
+    val after: String?,
+)
 
 enum class MutationKind { UPSERT, DELETE }
 

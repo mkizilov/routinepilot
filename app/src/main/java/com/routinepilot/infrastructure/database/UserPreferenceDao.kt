@@ -22,5 +22,8 @@ interface UserPreferenceDao {
         "UPDATE user_preferences SET deletedAt = :at, modifiedAt = :at " +
             "WHERE name = :name AND deletedAt IS NULL",
     )
-    suspend fun markDeletedByName(name: String, at: Instant)
+    suspend fun markDeletedByName(
+        name: String,
+        at: Instant,
+    )
 }

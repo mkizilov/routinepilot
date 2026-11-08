@@ -58,7 +58,8 @@ class OnboardingScreenTest {
     fun pageTitles_areMarkedAsHeadings() {
         setScreen {}
 
-        composeTestRule.onNodeWithText("Welcome to RoutinePilot")
+        composeTestRule
+            .onNodeWithText("Welcome to RoutinePilot")
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
     }
 

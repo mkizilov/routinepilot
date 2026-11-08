@@ -56,66 +56,70 @@ private data class AccessSnapshot(
  * state are read from the provider each time the screen resumes, because the user can change access outside the app.
  */
 @HiltViewModel
-class CalendarSettingsViewModel @Inject constructor(
-    private val calendarRepository: CalendarRepository,
-    private val clock: Clock,
-) : ViewModel(), CalendarSettingsActions {
-    private val snapshot = MutableStateFlow(AccessSnapshot())
+class CalendarSettingsViewModel
+    @Inject
+    constructor(
+        private val calendarRepository: CalendarRepository,
+        private val clock: Clock,
+    ) : ViewModel(),
+        CalendarSettingsActions {
+        private val snapshot = MutableStateFlow(AccessSnapshot())
 
-    val uiState: StateFlow<CalendarSettingsUiState> = combine(
-        calendarRepository.observeSettings(),
-        calendarRepository.observeLinkedEvents(),
-        snapshot,
-    ) { settings, events, access ->
-        CalendarSettingsUiState(
-            loaded = access.loaded,
-            settings = settings,
-            hasAccess = access.hasAccess,
-            calendars = access.calendars,
-            syncState = access.syncState,
-            events = events,
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), CalendarSettingsUiState())
+        val uiState: StateFlow<CalendarSettingsUiState> =
+            combine(
+                calendarRepository.observeSettings(),
+                calendarRepository.observeLinkedEvents(),
+                snapshot,
+            ) { settings, events, access ->
+                CalendarSettingsUiState(
+                    loaded = access.loaded,
+                    settings = settings,
+                    hasAccess = access.hasAccess,
+                    calendars = access.calendars,
+                    syncState = access.syncState,
+                    events = events,
+                )
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), CalendarSettingsUiState())
 
-    override fun refresh() {
-        viewModelScope.launch {
-            val hasAccess = calendarRepository.hasAccess()
-            val calendars = calendarRepository.writableCalendars()
-            val report = calendarRepository.sync(Instant.now(clock))
-            snapshot.value = AccessSnapshot(
-                loaded = true,
-                hasAccess = hasAccess,
-                calendars = calendars,
-                syncState = report.state,
-            )
+        override fun refresh() {
+            viewModelScope.launch {
+                val hasAccess = calendarRepository.hasAccess()
+                val calendars = calendarRepository.writableCalendars()
+                val report = calendarRepository.sync(Instant.now(clock))
+                snapshot.value =
+                    AccessSnapshot(
+                        loaded = true,
+                        hasAccess = hasAccess,
+                        calendars = calendars,
+                        syncState = report.state,
+                    )
+            }
+        }
+
+        override fun setEnabled(enabled: Boolean) = update { it.copy(enabled = enabled) }
+
+        override fun selectCalendar(calendar: CalendarInfo) = update { it.copy(calendarId = calendar.id) }
+
+        override fun setAllDay(allDay: Boolean) = update { it.copy(allDay = allDay) }
+
+        override fun exportAgain(scheduleId: UUID) {
+            viewModelScope.launch {
+                calendarRepository.exportAgain(scheduleId, Instant.now(clock))
+                refresh()
+            }
+        }
+
+        override fun removeAllEvents() {
+            viewModelScope.launch {
+                calendarRepository.removeAllEvents()
+                refresh()
+            }
+        }
+
+        private fun update(change: (CalendarSettings) -> CalendarSettings) {
+            viewModelScope.launch {
+                calendarRepository.updateSettings(change)
+                refresh()
+            }
         }
     }
-
-    override fun setEnabled(enabled: Boolean) = update { it.copy(enabled = enabled) }
-
-    override fun selectCalendar(calendar: CalendarInfo) =
-        update { it.copy(calendarId = calendar.id) }
-
-    override fun setAllDay(allDay: Boolean) = update { it.copy(allDay = allDay) }
-
-    override fun exportAgain(scheduleId: UUID) {
-        viewModelScope.launch {
-            calendarRepository.exportAgain(scheduleId, Instant.now(clock))
-            refresh()
-        }
-    }
-
-    override fun removeAllEvents() {
-        viewModelScope.launch {
-            calendarRepository.removeAllEvents()
-            refresh()
-        }
-    }
-
-    private fun update(change: (CalendarSettings) -> CalendarSettings) {
-        viewModelScope.launch {
-            calendarRepository.updateSettings(change)
-            refresh()
-        }
-    }
-}

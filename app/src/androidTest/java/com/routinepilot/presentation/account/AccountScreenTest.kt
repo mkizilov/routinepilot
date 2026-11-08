@@ -120,7 +120,8 @@ class AccountScreenTest {
     fun syncPhase_isAnnouncedAsALiveRegion() {
         setScreen(signedInWith(SyncState(SyncPhase.WAITING_FOR_NETWORK, pendingChanges = 0, lastSyncedAtMillis = null)))
 
-        composeTestRule.onNodeWithTag(TAG_ACCOUNT_PHASE)
+        composeTestRule
+            .onNodeWithTag(TAG_ACCOUNT_PHASE)
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.LiveRegion))
     }
 
@@ -177,20 +178,22 @@ class AccountScreenTest {
 
     private fun idleSync() = SyncState(SyncPhase.UP_TO_DATE, pendingChanges = 0, lastSyncedAtMillis = null)
 
-    private fun signedInWith(conflict: Conflict) = signedInWith(
-        SyncState(
-            phase = SyncPhase.NEEDS_ATTENTION,
-            pendingChanges = 1,
-            lastSyncedAtMillis = null,
-            heldConflicts = listOf(conflict),
-        ),
-    )
+    private fun signedInWith(conflict: Conflict) =
+        signedInWith(
+            SyncState(
+                phase = SyncPhase.NEEDS_ATTENTION,
+                pendingChanges = 1,
+                lastSyncedAtMillis = null,
+                heldConflicts = listOf(conflict),
+            ),
+        )
 
-    private fun deleteOfEdited(): Conflict = Conflict.DeleteOfEdited(
-        key = ObjectKey(SyncType.ROUTINE, UUID.fromString(ID)),
-        mutationId = UUID.fromString(ID),
-        remoteVersion = 2,
-    )
+    private fun deleteOfEdited(): Conflict =
+        Conflict.DeleteOfEdited(
+            key = ObjectKey(SyncType.ROUTINE, UUID.fromString(ID)),
+            mutationId = UUID.fromString(ID),
+            remoteVersion = 2,
+        )
 
     private fun editOfDeleted(): Conflict =
         Conflict.EditOfDeleted(ObjectKey(SyncType.ROUTINE, UUID.fromString(ID)), UUID.fromString(ID))

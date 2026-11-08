@@ -16,15 +16,28 @@ import java.time.ZonedDateTime
  * - Because the local time is kept, a 09:00 routine stays at 09:00 on the wall clock across the change.
  */
 object ScheduleCalendar {
-    fun instantAt(date: LocalDate, time: LocalTime, zone: ZoneId): Instant =
-        ZonedDateTime.of(date, time, zone).toInstant()
+    fun instantAt(
+        date: LocalDate,
+        time: LocalTime,
+        zone: ZoneId,
+    ): Instant = ZonedDateTime.of(date, time, zone).toInstant()
 
-    fun startOfDay(date: LocalDate, zone: ZoneId): Instant = date.atStartOfDay(zone).toInstant()
+    fun startOfDay(
+        date: LocalDate,
+        zone: ZoneId,
+    ): Instant = date.atStartOfDay(zone).toInstant()
 
-    fun dateOf(instant: Instant, zone: ZoneId): LocalDate = instant.atZone(zone).toLocalDate()
+    fun dateOf(
+        instant: Instant,
+        zone: ZoneId,
+    ): LocalDate = instant.atZone(zone).toLocalDate()
 
     /** Dates from [from] to [to], both inclusive, on which [recurrence] happens. */
-    fun occurrenceDates(recurrence: Recurrence, from: LocalDate, to: LocalDate): List<LocalDate> {
+    fun occurrenceDates(
+        recurrence: Recurrence,
+        from: LocalDate,
+        to: LocalDate,
+    ): List<LocalDate> {
         val dates = mutableListOf<LocalDate>()
         var date = if (from.isBefore(recurrence.startDate)) recurrence.startDate else from
         while (!date.isAfter(to)) {

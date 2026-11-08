@@ -38,12 +38,14 @@ class CalendarEventMapperTest {
 
     @Test
     fun timedStart_afterDaylightSavingKeepsTheNineOClockWallClock() {
-        val source = calendarSource(
-            schedule = calendarSchedule(
-                startDate = LocalDate.of(2026, 4, 1),
-                modifiedAt = Instant.parse("2026-04-01T06:00:00Z"),
-            ),
-        )
+        val source =
+            calendarSource(
+                schedule =
+                    calendarSchedule(
+                        startDate = LocalDate.of(2026, 4, 1),
+                        modifiedAt = Instant.parse("2026-04-01T06:00:00Z"),
+                    ),
+            )
 
         val draft = CalendarEventMapper.draftFor(source, allDay = false, previous = null)!!
 
@@ -132,8 +134,11 @@ class CalendarEventMapperTest {
         val timedStart = Instant.parse("2026-03-10T08:00:00Z").toEpochMilli()
         val allDayStart = Instant.parse("2026-03-10T00:00:00Z").toEpochMilli()
 
-        fun endsBefore(start: Long, endAt: String, allDay: Boolean) =
-            CalendarEventMapper.endsBeforeFirstOccurrence(start, Instant.parse(endAt), allDay)
+        fun endsBefore(
+            start: Long,
+            endAt: String,
+            allDay: Boolean,
+        ) = CalendarEventMapper.endsBeforeFirstOccurrence(start, Instant.parse(endAt), allDay)
 
         assertTrue(endsBefore(timedStart, "2026-03-10T07:59:59Z", allDay = false))
         assertTrue(endsBefore(timedStart, "2026-03-10T08:00:00Z", allDay = false))
@@ -170,12 +175,14 @@ class CalendarEventMapperTest {
     fun ruleChange_movesTheSeriesStartToTheSaveDay() {
         val first = CalendarEventMapper.draftFor(calendarSource(), false, null)!!
         val link = linkWith(first)
-        val changed = calendarSource(
-            schedule = calendarSchedule(
-                time = LocalTime.of(10, 0),
-                modifiedAt = Instant.parse("2026-03-20T08:00:00Z"),
-            ),
-        )
+        val changed =
+            calendarSource(
+                schedule =
+                    calendarSchedule(
+                        time = LocalTime.of(10, 0),
+                        modifiedAt = Instant.parse("2026-03-20T08:00:00Z"),
+                    ),
+            )
 
         val draft = CalendarEventMapper.draftFor(changed, false, link)!!
 
@@ -194,17 +201,18 @@ class CalendarEventMapperTest {
         assertEquals(timed.startMillis, back.startMillis)
     }
 
-    private fun linkWith(draft: CalendarEventDraft) = CalendarLink(
-        scheduleId = calendarScheduleId,
-        calendarId = 1L,
-        eventId = 100L,
-        uid = draft.uid,
-        allDay = draft.allDay,
-        rrule = draft.rrule,
-        startMillis = draft.startMillis,
-        ruleKey = CalendarEventMapper.ruleKeyFor(calendarSchedule()),
-        contentHash = CalendarEventMapper.contentHash(draft),
-        status = CalendarLinkStatus.LINKED,
-        updatedAt = now,
-    )
+    private fun linkWith(draft: CalendarEventDraft) =
+        CalendarLink(
+            scheduleId = calendarScheduleId,
+            calendarId = 1L,
+            eventId = 100L,
+            uid = draft.uid,
+            allDay = draft.allDay,
+            rrule = draft.rrule,
+            startMillis = draft.startMillis,
+            ruleKey = CalendarEventMapper.ruleKeyFor(calendarSchedule()),
+            contentHash = CalendarEventMapper.contentHash(draft),
+            status = CalendarLinkStatus.LINKED,
+            updatedAt = now,
+        )
 }

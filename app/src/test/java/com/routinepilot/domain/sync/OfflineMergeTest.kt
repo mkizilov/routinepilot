@@ -141,16 +141,31 @@ class OfflineMergeTest {
         assertEquals(0L, result.nextVersion)
     }
 
-    private fun merge(base: BaseState?, vararg queued: Mutation) = OfflineMerge.merge(key, base, queued.toList())
+    private fun merge(
+        base: BaseState?,
+        vararg queued: Mutation,
+    ) = OfflineMerge.merge(key, base, queued.toList())
 
-    private fun live(version: Long, fields: FieldMap) = BaseState(version, deleted = false, fields = fields)
+    private fun live(
+        version: Long,
+        fields: FieldMap,
+    ) = BaseState(version, deleted = false, fields = fields)
 
     private fun mutationId(seq: Long): UUID = UUID(MUTATION_NAMESPACE, seq)
 
-    private fun titleEdit(seq: Long, from: String, to: String, seen: Long) =
-        edit(seq, before = routineFields(title = from), after = routineFields(title = to), seen = seen)
+    private fun titleEdit(
+        seq: Long,
+        from: String,
+        to: String,
+        seen: Long,
+    ) = edit(seq, before = routineFields(title = from), after = routineFields(title = to), seen = seen)
 
-    private fun edit(seq: Long, before: FieldMap, after: FieldMap, seen: Long) = Mutation(
+    private fun edit(
+        seq: Long,
+        before: FieldMap,
+        after: FieldMap,
+        seen: Long,
+    ) = Mutation(
         mutationId = mutationId(seq),
         key = key,
         localSequence = seq,
@@ -162,7 +177,11 @@ class OfflineMergeTest {
         createdAtMillis = 0,
     )
 
-    private fun whole(seq: Long, snapshot: FieldMap, seen: Long) = Mutation(
+    private fun whole(
+        seq: Long,
+        snapshot: FieldMap,
+        seen: Long,
+    ) = Mutation(
         mutationId = mutationId(seq),
         key = key,
         localSequence = seq,
@@ -174,7 +193,10 @@ class OfflineMergeTest {
         createdAtMillis = 0,
     )
 
-    private fun deletion(seq: Long, seen: Long) = Mutation(
+    private fun deletion(
+        seq: Long,
+        seen: Long,
+    ) = Mutation(
         mutationId = mutationId(seq),
         key = key,
         localSequence = seq,
@@ -186,10 +208,14 @@ class OfflineMergeTest {
         createdAtMillis = 0,
     )
 
-    private fun diffOf(before: FieldMap, after: FieldMap): Map<String, FieldChange> =
-        (before.keys + after.keys).mapNotNull { name ->
-            if (before[name] == after[name]) null else name to FieldChange(before[name], after[name])
-        }.toMap()
+    private fun diffOf(
+        before: FieldMap,
+        after: FieldMap,
+    ): Map<String, FieldChange> =
+        (before.keys + after.keys)
+            .mapNotNull { name ->
+                if (before[name] == after[name]) null else name to FieldChange(before[name], after[name])
+            }.toMap()
 
     private companion object {
         const val MUTATION_NAMESPACE = 7L

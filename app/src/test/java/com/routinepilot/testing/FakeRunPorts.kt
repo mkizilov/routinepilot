@@ -20,7 +20,9 @@ class FakePausedRunReminders : PausedRunReminders {
 }
 
 /** Counts foreground requests. [accepts] simulates the platform refusing a background start. */
-class FakeRunForegroundLauncher(var accepts: Boolean = true) : RunForegroundLauncher {
+class FakeRunForegroundLauncher(
+    var accepts: Boolean = true,
+) : RunForegroundLauncher {
     var requests = 0
         private set
 

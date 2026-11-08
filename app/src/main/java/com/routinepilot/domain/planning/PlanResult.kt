@@ -2,12 +2,20 @@ package com.routinepilot.domain.planning
 
 import java.util.UUID
 
-data class Placement(val taskId: UUID, val range: TimeRange, val pinned: Boolean)
+data class Placement(
+    val taskId: UUID,
+    val range: TimeRange,
+    val pinned: Boolean,
+)
 
 enum class BlockerKind { COMMITMENT, BREAK, PLACED, PINNED }
 
 /** Something that occupies time in the window a task was trying to use. */
-data class Blocker(val label: String, val kind: BlockerKind, val range: TimeRange)
+data class Blocker(
+    val label: String,
+    val kind: BlockerKind,
+    val range: TimeRange,
+)
 
 /**
  * Why a task could not be placed, or why a manual override cannot be honored. Times are minutes after midnight.
@@ -22,16 +30,25 @@ sealed interface PlanIssue {
     data object OutsideWorkday : PlanIssue
 
     /** A pinned block overlaps a commitment, a break, or another pinned block. */
-    data class OverlapsBlocker(val blockers: List<Blocker>) : PlanIssue
+    data class OverlapsBlocker(
+        val blockers: List<Blocker>,
+    ) : PlanIssue
 
     /** A pinned block would finish after the task's deadline. */
-    data class PastDeadline(val deadlineMinute: Int) : PlanIssue
+    data class PastDeadline(
+        val deadlineMinute: Int,
+    ) : PlanIssue
 
     /** A pinned block starts before one of its prerequisites, which is also pinned, has finished. */
-    data class PrerequisiteAfterStart(val prerequisites: List<UUID>) : PlanIssue
+    data class PrerequisiteAfterStart(
+        val prerequisites: List<UUID>,
+    ) : PlanIssue
 
     /** The prerequisites finish after the latest time this task can finish, so no time is left. */
-    data class WindowClosed(val earliestStart: Int, val latestFinish: Int) : PlanIssue
+    data class WindowClosed(
+        val earliestStart: Int,
+        val latestFinish: Int,
+    ) : PlanIssue
 
     /**
      * Not enough free time before the latest finish. [freeMinutes] is the free time in the
@@ -48,17 +65,27 @@ sealed interface PlanIssue {
     ) : PlanIssue
 
     /** A prerequisite could not be placed, so this task cannot start in order. */
-    data class DependencyUnplaced(val prerequisites: List<UUID>) : PlanIssue
+    data class DependencyUnplaced(
+        val prerequisites: List<UUID>,
+    ) : PlanIssue
 
     /** These tasks depend on each other in a loop, so no order exists. */
-    data class CyclicDependency(val members: List<UUID>) : PlanIssue
+    data class CyclicDependency(
+        val members: List<UUID>,
+    ) : PlanIssue
 }
 
 /** A task that could not be placed automatically, with every reason found. */
-data class Unplaced(val taskId: UUID, val issues: List<PlanIssue>)
+data class Unplaced(
+    val taskId: UUID,
+    val issues: List<PlanIssue>,
+)
 
 /** A manual override that cannot be honored. The task keeps the user's choice until the conflict is resolved. */
-data class OverrideConflict(val taskId: UUID, val issues: List<PlanIssue>)
+data class OverrideConflict(
+    val taskId: UUID,
+    val issues: List<PlanIssue>,
+)
 
 data class PlanResult(
     val placements: List<Placement>,

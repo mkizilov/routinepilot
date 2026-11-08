@@ -4,12 +4,19 @@ import java.util.UUID
 
 sealed interface SubmitResult {
     /** [duplicate] means the server already had this change. [version] is the version it was applied at. */
-    data class Accepted(val version: Long, val duplicate: Boolean) : SubmitResult
+    data class Accepted(
+        val version: Long,
+        val duplicate: Boolean,
+    ) : SubmitResult
 
     /** The change did not apply. [head] is the server's current state, and the change must be merged again. */
-    data class Conflict(val head: BaseState) : SubmitResult
+    data class Conflict(
+        val head: BaseState,
+    ) : SubmitResult
 
-    data class Rejected(val reason: String) : SubmitResult
+    data class Rejected(
+        val reason: String,
+    ) : SubmitResult
 }
 
 /** The server side of a submission. The real implementation posts the change to the sync API. */
@@ -68,7 +75,10 @@ class OfflineSync(
     }
 
     /** Applies a user decision to a held change. A superseded field resolves on its own and takes no decision. */
-    suspend fun resolve(conflict: Conflict, decision: Decision) {
+    suspend fun resolve(
+        conflict: Conflict,
+        decision: Decision,
+    ) {
         val base = store.base(conflict.key) ?: BaseState.NEVER_SEEN
         when (conflict) {
             is Conflict.DeleteOfEdited -> {
@@ -125,7 +135,8 @@ class OfflineSync(
         val base = store.base(key) ?: BaseState.NEVER_SEEN
         val advanced = version == base.version + 1
         if (advanced) store.saveBase(key, BaseState(version, kind == MutationKind.DELETE, payload.orEmpty()))
-        store.pending(key)
+        store
+            .pending(key)
             .filter { it.seenVersion == version - 1 }
             .forEach { store.replace(it.copy(seenVersion = version)) }
         return advanced

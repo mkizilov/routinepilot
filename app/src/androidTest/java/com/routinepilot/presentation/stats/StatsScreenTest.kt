@@ -23,15 +23,17 @@ class StatsScreenTest {
 
     @Test
     fun today_showsCompletionAndTheCurrentStreakFromRecordedHistory() {
-        val input = StatisticsInput(
-            occurrences = mapOf(
-                today to OccurrenceTotals(completed = 3, skipped = 0, missed = 1),
-                today.minusDays(1) to OccurrenceTotals(completed = 1, skipped = 0, missed = 0),
-            ),
-            sessions = emptyMap(),
-            steps = emptyMap(),
-            routines = emptyList(),
-        )
+        val input =
+            StatisticsInput(
+                occurrences =
+                    mapOf(
+                        today to OccurrenceTotals(completed = 3, skipped = 0, missed = 1),
+                        today.minusDays(1) to OccurrenceTotals(completed = 1, skipped = 0, missed = 0),
+                    ),
+                sessions = emptyMap(),
+                steps = emptyMap(),
+                routines = emptyList(),
+            )
 
         setScreen(StatsUiState(loaded = true, statistics = StatisticsCalculator.compute(input, today)))
 
@@ -54,12 +56,13 @@ class StatsScreenTest {
     @Test
     fun consistency_showsEachRoutineByTitle() {
         val routineId = UUID.fromString("00000000-0000-4000-8000-0000000000cc")
-        val input = StatisticsInput(
-            occurrences = emptyMap(),
-            sessions = emptyMap(),
-            steps = emptyMap(),
-            routines = listOf(RoutineTotals(routineId, completed = 3, missed = 1)),
-        )
+        val input =
+            StatisticsInput(
+                occurrences = emptyMap(),
+                sessions = emptyMap(),
+                steps = emptyMap(),
+                routines = listOf(RoutineTotals(routineId, completed = 3, missed = 1)),
+            )
 
         setScreen(
             StatsUiState(

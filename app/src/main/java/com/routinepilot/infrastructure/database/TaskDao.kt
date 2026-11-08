@@ -19,5 +19,8 @@ interface TaskDao {
     suspend fun upsert(task: TaskEntity)
 
     @Query("UPDATE tasks SET deletedAt = :at, modifiedAt = :at WHERE id = :id")
-    suspend fun markDeleted(id: UUID, at: Instant)
+    suspend fun markDeleted(
+        id: UUID,
+        at: Instant,
+    )
 }

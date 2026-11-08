@@ -71,13 +71,14 @@ fun RoutineRunRoute(
     }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, viewModel) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> viewModel.onForeground()
-                Lifecycle.Event.ON_STOP -> viewModel.onBackground()
-                else -> Unit
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> viewModel.onForeground()
+                    Lifecycle.Event.ON_STOP -> viewModel.onBackground()
+                    else -> Unit
+                }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -88,21 +89,23 @@ fun RoutineRunRoute(
             viewModel.resume()
         }
     }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        // The run starts whether or not the user allows notifications. Only the alerts depend on the answer.
-        viewModel.start()
-    }
-    val actions = remember(viewModel, permissionLauncher) {
-        object : RoutineRunActions by viewModel {
-            override fun start() {
-                if (NotificationAccess.isPermissionGranted(context)) {
-                    viewModel.start()
-                } else {
-                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            // The run starts whether or not the user allows notifications. Only the alerts depend on the answer.
+            viewModel.start()
+        }
+    val actions =
+        remember(viewModel, permissionLauncher) {
+            object : RoutineRunActions by viewModel {
+                override fun start() {
+                    if (NotificationAccess.isPermissionGranted(context)) {
+                        viewModel.start()
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
                 }
             }
         }
-    }
     var startHandled by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(autoStart, state.isLoading, state.timer.status) {
         // A widget's Start opens the run and begins it once, through the same permission path as the Start button.
@@ -161,7 +164,11 @@ fun RoutineRunScreen(
 }
 
 @Composable
-private fun ActiveContent(state: RoutineRunUiState, actions: RoutineRunActions, notificationsAllowed: Boolean) {
+private fun ActiveContent(
+    state: RoutineRunUiState,
+    actions: RoutineRunActions,
+    notificationsAllowed: Boolean,
+) {
     val timer = state.timer
     val current = timer.currentStep
     Text(stepHeading(timer), style = MaterialTheme.typography.titleMedium)
@@ -217,7 +224,10 @@ private fun ActiveContent(state: RoutineRunUiState, actions: RoutineRunActions, 
 }
 
 @Composable
-private fun Controls(state: RoutineRunUiState, actions: RoutineRunActions) {
+private fun Controls(
+    state: RoutineRunUiState,
+    actions: RoutineRunActions,
+) {
     var confirmingCancel by rememberSaveable { mutableStateOf(false) }
     val status = state.timer.status
     if (status == ExecutionStatus.NOT_STARTED) {
@@ -272,11 +282,12 @@ private fun CompletedContent(onClose: () -> Unit) {
 }
 
 @Composable
-private fun stepHeading(timer: TimerState): String = when {
-    timer.steps.isEmpty() -> ""
-    timer.status == ExecutionStatus.NOT_STARTED -> stringResource(R.string.run_ready)
-    else -> stringResource(R.string.run_step_progress, timer.currentIndex + 1, timer.steps.size)
-}
+private fun stepHeading(timer: TimerState): String =
+    when {
+        timer.steps.isEmpty() -> ""
+        timer.status == ExecutionStatus.NOT_STARTED -> stringResource(R.string.run_ready)
+        else -> stringResource(R.string.run_step_progress, timer.currentIndex + 1, timer.steps.size)
+    }
 
 @Composable
 private fun nextText(timer: TimerState): String {

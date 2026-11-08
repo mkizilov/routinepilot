@@ -21,14 +21,22 @@ object TodayWidgetStateBuilder {
     private val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
 
     /** Due-now items first, then upcoming. Done, skipped, and earlier items are left out, as on the agenda. */
-    fun build(agenda: List<AgendaItem>, now: Instant, zone: ZoneId): TodayWidgetState {
+    fun build(
+        agenda: List<AgendaItem>,
+        now: Instant,
+        zone: ZoneId,
+    ): TodayWidgetState {
         val split = AgendaBuilder.build(agenda, now)
-        val all = split.current.map { it.toWidgetItem(zone, isDueNow = true) } +
-            split.upcoming.map { it.toWidgetItem(zone, isDueNow = false) }
+        val all =
+            split.current.map { it.toWidgetItem(zone, isDueNow = true) } +
+                split.upcoming.map { it.toWidgetItem(zone, isDueNow = false) }
         return TodayWidgetState(items = all.take(MAX_ITEMS), totalCount = all.size)
     }
 
-    private fun AgendaItem.toWidgetItem(zone: ZoneId, isDueNow: Boolean) = TodayWidgetItem(
+    private fun AgendaItem.toWidgetItem(
+        zone: ZoneId,
+        isDueNow: Boolean,
+    ) = TodayWidgetItem(
         title = title,
         timeLabel = TIME.format(scheduledAt.atZone(zone)),
         isDueNow = isDueNow,
@@ -59,15 +67,17 @@ object RunWidgetStateBuilder {
         if (active == null) return RunWidgetState.NoActiveRun
         val title = routineTitle ?: return RunWidgetState.RoutineMissing
         val resolved = active.stepIds.mapNotNull { id -> plan.firstOrNull { it.id == id } }
-        val planMatches = active.stepIds.isNotEmpty() &&
-            resolved.size == active.stepIds.size &&
-            active.stepIndex in resolved.indices
+        val planMatches =
+            active.stepIds.isNotEmpty() &&
+                resolved.size == active.stepIds.size &&
+                active.stepIndex in resolved.indices
         val checkpointAge = nowEpochMillis - active.savedAtEpochMillis
-        val status = when (active.status) {
-            ExecutionStatus.RUNNING -> WidgetRunStatus.RUNNING
-            ExecutionStatus.PAUSED -> WidgetRunStatus.PAUSED
-            ExecutionStatus.NOT_STARTED, ExecutionStatus.COMPLETED, ExecutionStatus.CANCELLED -> null
-        }
+        val status =
+            when (active.status) {
+                ExecutionStatus.RUNNING -> WidgetRunStatus.RUNNING
+                ExecutionStatus.PAUSED -> WidgetRunStatus.PAUSED
+                ExecutionStatus.NOT_STARTED, ExecutionStatus.COMPLETED, ExecutionStatus.CANCELLED -> null
+            }
         val isStaleRunning = status == WidgetRunStatus.RUNNING && checkpointAge > STALE_CHECKPOINT_MILLIS
         if (!planMatches || status == null || isStaleRunning) return RunWidgetState.NeedsAttention(title)
 
@@ -96,9 +106,10 @@ object RunWidgetStateBuilder {
 
 object QuickStartStateBuilder {
     /** Routines in saved order. Deleted routines are not in [routines], because the repository hides them. */
-    fun build(routines: List<Routine>): QuickStartState = QuickStartState(
-        routines
-            .sortedWith(compareBy({ it.position }, { it.id.toString() }))
-            .map { QuickStartItem(it.id, it.title) },
-    )
+    fun build(routines: List<Routine>): QuickStartState =
+        QuickStartState(
+            routines
+                .sortedWith(compareBy({ it.position }, { it.id.toString() }))
+                .map { QuickStartItem(it.id, it.title) },
+        )
 }

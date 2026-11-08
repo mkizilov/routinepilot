@@ -29,44 +29,55 @@ class TaskRepositoryTest {
     }
 
     @Test
-    fun saveTask_updatesCompletionAndKeepsCreatedAt() = runBlocking {
-        val task = newTask(title = "Buy filters")
-        repository.saveTask(task)
+    fun saveTask_updatesCompletionAndKeepsCreatedAt() =
+        runBlocking {
+            val task = newTask(title = "Buy filters")
+            repository.saveTask(task)
 
-        repository.saveTask(task.copy(isCompleted = true))
+            repository.saveTask(task.copy(isCompleted = true))
 
-        assertEquals(listOf(task.copy(isCompleted = true)), repository.observeTasks().first())
-    }
-
-    @Test
-    fun observeTasks_ordersByPosition() = runBlocking {
-        repository.saveTask(newTask(title = "Second", position = 1))
-        repository.saveTask(newTask(title = "First", position = 0))
-
-        assertEquals(listOf("First", "Second"), repository.observeTasks().first().map { it.title })
-    }
+            assertEquals(listOf(task.copy(isCompleted = true)), repository.observeTasks().first())
+        }
 
     @Test
-    fun deleteTask_hidesTaskFromObservers() = runBlocking {
-        val task = newTask(title = "Temporary")
-        repository.saveTask(task)
+    fun observeTasks_ordersByPosition() =
+        runBlocking {
+            repository.saveTask(newTask(title = "Second", position = 1))
+            repository.saveTask(newTask(title = "First", position = 0))
 
-        repository.deleteTask(task.id)
-
-        assertEquals(emptyList<Task>(), repository.observeTasks().first())
-        assertEquals(1L, db.scalar("SELECT COUNT(*) FROM tasks WHERE deletedAt IS NOT NULL"))
-    }
+            assertEquals(listOf("First", "Second"), repository.observeTasks().first().map { it.title })
+        }
 
     @Test
-    fun taskLinkedToRoutine_isStoredWithRoutineId() = runBlocking {
-        val routine = newRoutine()
-        RoutineRepositoryImpl(db).saveRoutine(routine, emptyList())
-        val task = newTask(title = "Linked", routineId = routine.id)
+    fun deleteTask_hidesTaskFromObservers() =
+        runBlocking {
+            val task = newTask(title = "Temporary")
+            repository.saveTask(task)
 
-        repository.saveTask(task)
+            repository.deleteTask(task.id)
 
-        assertEquals(routine.id, repository.observeTasks().first().single().routineId)
-    }
+            assertEquals(emptyList<Task>(), repository.observeTasks().first())
+            assertEquals(1L, db.scalar("SELECT COUNT(*) FROM tasks WHERE deletedAt IS NOT NULL"))
+        }
+
+    @Test
+    fun taskLinkedToRoutine_isStoredWithRoutineId() =
+        runBlocking {
+            val routine = newRoutine()
+            RoutineRepositoryImpl(db).saveRoutine(routine, emptyList())
+            val task = newTask(title = "Linked", routineId = routine.id)
+
+            repository.saveTask(task)
+
+            assertEquals(
+                routine.id,
+                repository
+                    .observeTasks()
+                    .first()
+                    .single()
+                    .routineId,
+            )
+        }
 
     private fun newTask(
         title: String,

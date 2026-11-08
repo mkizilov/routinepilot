@@ -23,9 +23,13 @@ class RunBootReceiver : BroadcastReceiver() {
 
     @Inject lateinit var presenter: RunNotificationPresenter
 
-    @Inject @field:ApplicationScope lateinit var scope: CoroutineScope
+    @Inject @field:ApplicationScope
+    lateinit var scope: CoroutineScope
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val pending = goAsync()
         scope.launch {

@@ -35,36 +35,39 @@ data class StatsUiState(
  * item updates the screen without a refresh. A one-minute tick rolls "today" over and keeps overdue items current.
  */
 @HiltViewModel
-class StatsViewModel @Inject constructor(
-    statsRepository: StatsRepository,
-    routineRepository: RoutineRepository,
-    private val clock: Clock,
-) : ViewModel() {
-    val uiState: StateFlow<StatsUiState> = minuteTicks()
-        .flatMapLatest { now ->
-            val today = LocalDate.ofInstant(now, clock.zone)
-            combine(
-                statsRepository.observeInput(
-                    from = today.minusDays(StatisticsCalculator.LOOKBACK_DAYS - 1L),
-                    to = today,
-                    consistencyFrom = today.minusDays(StatisticsCalculator.CONSISTENCY_DAYS - 1L),
-                    now = now,
-                ),
-                routineRepository.observeRoutines(),
-            ) { input, routines ->
-                StatsUiState(
-                    loaded = true,
-                    statistics = StatisticsCalculator.compute(input, today),
-                    routineTitles = routines.associate { it.id to it.title },
-                )
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StatsUiState())
+class StatsViewModel
+    @Inject
+    constructor(
+        statsRepository: StatsRepository,
+        routineRepository: RoutineRepository,
+        private val clock: Clock,
+    ) : ViewModel() {
+        val uiState: StateFlow<StatsUiState> =
+            minuteTicks()
+                .flatMapLatest { now ->
+                    val today = LocalDate.ofInstant(now, clock.zone)
+                    combine(
+                        statsRepository.observeInput(
+                            from = today.minusDays(StatisticsCalculator.LOOKBACK_DAYS - 1L),
+                            to = today,
+                            consistencyFrom = today.minusDays(StatisticsCalculator.CONSISTENCY_DAYS - 1L),
+                            now = now,
+                        ),
+                        routineRepository.observeRoutines(),
+                    ) { input, routines ->
+                        StatsUiState(
+                            loaded = true,
+                            statistics = StatisticsCalculator.compute(input, today),
+                            routineTitles = routines.associate { it.id to it.title },
+                        )
+                    }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StatsUiState())
 
-    private fun minuteTicks(): Flow<Instant> = flow {
-        while (true) {
-            emit(Instant.now(clock))
-            delay(MINUTE_MILLIS)
-        }
+        private fun minuteTicks(): Flow<Instant> =
+            flow {
+                while (true) {
+                    emit(Instant.now(clock))
+                    delay(MINUTE_MILLIS)
+                }
+            }
     }
-}

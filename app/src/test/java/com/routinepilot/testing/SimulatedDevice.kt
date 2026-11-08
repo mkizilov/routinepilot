@@ -41,18 +41,22 @@ class SimulatedDevice(
     private val local = storage.local
     private val replica = OfflineReplica(store) { UUID(namespace, ++storage.counter) }
     private val syncer = OfflineSync(store, remote) { UUID(namespace, ++storage.counter) }
-    private val writer = object : LocalRecordWriter {
-        override suspend fun write(view: MergeResult) {
-            if (view.exists) local[view.key] = view.fields else local.remove(view.key)
+    private val writer =
+        object : LocalRecordWriter {
+            override suspend fun write(view: MergeResult) {
+                if (view.exists) local[view.key] = view.fields else local.remove(view.key)
+            }
         }
-    }
     private val engine = SyncEngine(store, remote, account, account, writer) { clockMillis }
 
     /** The device's clock. Tests set it to show that merge outcomes do not depend on it. */
     var clockMillis: Long = 0
 
     /** Saves a record as the app does: the local data changes, then the outbox records the change. */
-    suspend fun save(key: ObjectKey, fields: FieldMap) {
+    suspend fun save(
+        key: ObjectKey,
+        fields: FieldMap,
+    ) {
         val before = local.put(key, fields)
         replica.record(key, before, fields, clockMillis)
     }
@@ -75,7 +79,10 @@ class SimulatedDevice(
 
     val syncState get() = engine.state
 
-    suspend fun resolve(conflict: Conflict, decision: Decision) = engine.resolve(conflict, decision)
+    suspend fun resolve(
+        conflict: Conflict,
+        decision: Decision,
+    ) = engine.resolve(conflict, decision)
 
     suspend fun view(key: ObjectKey): MergeResult = OfflineMerge.merge(key, store.base(key), store.pending(key))
 

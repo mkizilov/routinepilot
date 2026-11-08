@@ -14,26 +14,29 @@ import com.routinepilot.domain.sync.FieldMap
  * [com.routinepilot.domain.sync.SyncType] appears here. An empty value is null, so clearing a field is a change.
  */
 object SyncFieldMapping {
-    fun routine(routine: Routine): FieldMap = mapOf(
-        "title" to routine.title,
-        "description" to routine.description,
-        "position" to routine.position.toString(),
-    )
+    fun routine(routine: Routine): FieldMap =
+        mapOf(
+            "title" to routine.title,
+            "description" to routine.description,
+            "position" to routine.position.toString(),
+        )
 
-    fun step(step: RoutineStep): FieldMap = mapOf(
-        "routineId" to step.routineId.toString(),
-        "title" to step.title,
-        "description" to step.description,
-        "durationSeconds" to step.durationSeconds?.toString(),
-        "position" to step.position.toString(),
-    )
+    fun step(step: RoutineStep): FieldMap =
+        mapOf(
+            "routineId" to step.routineId.toString(),
+            "title" to step.title,
+            "description" to step.description,
+            "durationSeconds" to step.durationSeconds?.toString(),
+            "position" to step.position.toString(),
+        )
 
-    fun task(task: Task): FieldMap = mapOf(
-        "title" to task.title,
-        "isCompleted" to task.isCompleted.toString(),
-        "routineId" to task.routineId?.toString(),
-        "position" to task.position.toString(),
-    )
+    fun task(task: Task): FieldMap =
+        mapOf(
+            "title" to task.title,
+            "isCompleted" to task.isCompleted.toString(),
+            "routineId" to task.routineId?.toString(),
+            "position" to task.position.toString(),
+        )
 
     fun schedule(schedule: Schedule): FieldMap {
         val pattern = schedule.recurrence.pattern

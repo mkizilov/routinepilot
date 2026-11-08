@@ -89,10 +89,11 @@ class WidgetModelsTest {
 
     @Test
     fun todayAndQuickStart_hideRowsBeyondTheSizeLimit() {
-        val today = TodayWidgetState(
-            items = List(4) { TodayWidgetItem("Item $it", "07:00", isDueNow = false, isMoved = false) },
-            totalCount = 6,
-        )
+        val today =
+            TodayWidgetState(
+                items = List(4) { TodayWidgetItem("Item $it", "07:00", isDueNow = false, isMoved = false) },
+                totalCount = 6,
+            )
         assertEquals(1, today.visibleFor(WidgetSize.SMALL).size)
         assertEquals(5, today.hiddenCountFor(WidgetSize.SMALL))
         assertEquals(4, today.hiddenCountFor(WidgetSize.MEDIUM))
@@ -104,16 +105,17 @@ class WidgetModelsTest {
         assertEquals(2, quick.hiddenCountFor(WidgetSize.LARGE))
     }
 
-    private fun active(status: WidgetRunStatus) = RunWidgetState.Active(
-        routineId = UUID.randomUUID(),
-        sessionId = UUID.randomUUID(),
-        routineTitle = "Morning",
-        status = status,
-        stepTitle = "Stretch",
-        stepNumber = 1,
-        stepCount = 2,
-        minutesLeftInStep = 1,
-        minutesLeftTotal = 2,
-        nextStepTitle = "Water",
-    )
+    private fun active(status: WidgetRunStatus) =
+        RunWidgetState.Active(
+            routineId = UUID.randomUUID(),
+            sessionId = UUID.randomUUID(),
+            routineTitle = "Morning",
+            status = status,
+            stepTitle = "Stretch",
+            stepNumber = 1,
+            stepCount = 2,
+            minutesLeftInStep = 1,
+            minutesLeftTotal = 2,
+            nextStepTitle = "Water",
+        )
 }

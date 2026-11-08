@@ -235,18 +235,24 @@ class OfflineSyncSimulationTest {
 
     @Test
     fun threeDevices_editingDifferentFields_convergeInEverySyncOrder() {
-        val orders = listOf(
-            listOf("A", "B", "C"), listOf("A", "C", "B"), listOf("B", "A", "C"),
-            listOf("B", "C", "A"), listOf("C", "A", "B"), listOf("C", "B", "A"),
-        )
+        val orders =
+            listOf(
+                listOf("A", "B", "C"),
+                listOf("A", "C", "B"),
+                listOf("B", "A", "C"),
+                listOf("B", "C", "A"),
+                listOf("C", "A", "B"),
+                listOf("C", "B", "A"),
+            )
         for (order in orders) {
             runBlocking {
                 val server = seededServer()
-                val devices = mapOf(
-                    "A" to device("A", server, 2),
-                    "B" to device("B", server, 3),
-                    "C" to device("C", server, 4),
-                )
+                val devices =
+                    mapOf(
+                        "A" to device("A", server, 2),
+                        "B" to device("B", server, 3),
+                        "C" to device("C", server, 4),
+                    )
                 devices.getValue("A").save(key, routineFields(title = "Evening", description = "Old", position = 1))
                 val bView = routineFields(title = "Morning", description = "New walk", position = 1)
                 devices.getValue("B").save(key, bView)
@@ -318,13 +324,26 @@ class OfflineSyncSimulationTest {
         return server
     }
 
-    private suspend fun device(name: String, server: FakeSyncServer, namespace: Long): SimulatedDevice =
-        SimulatedDevice(name, server, namespace).also { it.pull() }
+    private suspend fun device(
+        name: String,
+        server: FakeSyncServer,
+        namespace: Long,
+    ): SimulatedDevice = SimulatedDevice(name, server, namespace).also { it.pull() }
 
-    private fun first(aFirst: Boolean, a: SimulatedDevice, b: SimulatedDevice) = if (aFirst) a else b
+    private fun first(
+        aFirst: Boolean,
+        a: SimulatedDevice,
+        b: SimulatedDevice,
+    ) = if (aFirst) a else b
 
-    private fun second(aFirst: Boolean, a: SimulatedDevice, b: SimulatedDevice) = if (aFirst) b else a
+    private fun second(
+        aFirst: Boolean,
+        a: SimulatedDevice,
+        b: SimulatedDevice,
+    ) = if (aFirst) b else a
 
-    private fun positionOf(server: FakeSyncServer, key: ObjectKey): String? =
-        server.head(key)?.fields?.get("position")
+    private fun positionOf(
+        server: FakeSyncServer,
+        key: ObjectKey,
+    ): String? = server.head(key)?.fields?.get("position")
 }

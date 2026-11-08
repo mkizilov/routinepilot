@@ -18,7 +18,8 @@ class HelpScreenTest {
     fun firstTopic_isListed_withItsHeadingMarked() {
         setScreen()
 
-        composeTestRule.onNodeWithText("Routines and steps")
+        composeTestRule
+            .onNodeWithText("Routines and steps")
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
         composeTestRule.onNodeWithText("Running a routine").assertIsDisplayed()
     }

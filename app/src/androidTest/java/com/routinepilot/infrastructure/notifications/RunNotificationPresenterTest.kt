@@ -61,17 +61,19 @@ class RunNotificationPresenterTest {
         assertNotNull(notification.contentIntent)
     }
 
-    private fun runningSnapshot(remainingMillis: Long?) = RunSnapshot(
-        routineId = UUID.randomUUID(),
-        routineTitle = "Morning",
-        timer = TimerState(
-            status = ExecutionStatus.RUNNING,
-            steps = listOf(TimedStep(UUID.randomUUID(), "Stretch", if (remainingMillis == null) null else 60)),
-            currentIndex = 0,
-            currentElapsedMillis = 0L,
-            currentRemainingMillis = remainingMillis,
-            totalRemainingMillis = remainingMillis ?: 0L,
-        ),
-        isLoading = false,
-    )
+    private fun runningSnapshot(remainingMillis: Long?) =
+        RunSnapshot(
+            routineId = UUID.randomUUID(),
+            routineTitle = "Morning",
+            timer =
+                TimerState(
+                    status = ExecutionStatus.RUNNING,
+                    steps = listOf(TimedStep(UUID.randomUUID(), "Stretch", if (remainingMillis == null) null else 60)),
+                    currentIndex = 0,
+                    currentElapsedMillis = 0L,
+                    currentRemainingMillis = remainingMillis,
+                    totalRemainingMillis = remainingMillis ?: 0L,
+                ),
+            isLoading = false,
+        )
 }

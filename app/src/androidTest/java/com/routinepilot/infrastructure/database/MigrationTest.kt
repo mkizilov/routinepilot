@@ -37,104 +37,121 @@ class MigrationTest {
     }
 
     @Test
-    fun migration1To2_convertsRoutinesToUuidIdsInOriginalOrder() = runBlocking {
-        createVersion1Database { legacy ->
-            legacy.execSQL("INSERT INTO `routines` (`title`) VALUES ('Morning walk'), ('Evening review')")
-        }
-
-        val db = openMigratedDatabase()
-        try {
-            val routines = db.routineDao().observeActive().first()
-
-            assertEquals(listOf("Morning walk", "Evening review"), routines.map { it.title })
-            assertEquals(listOf(1, 2), routines.map { it.position })
-            assertTrue(routines.all { it.id.version() == 4 })
-            assertEquals(routines.size, routines.map { it.id }.toSet().size)
-            assertEquals(0L, db.scalar("SELECT COUNT(*) FROM routine_steps"))
-        } finally {
-            db.close()
-        }
-    }
-
-    @Test
-    fun migration1To2_keepsForeignKeysEnforced() = runBlocking {
-        createVersion1Database { }
-
-        val db = openMigratedDatabase()
-        try {
-            val orphanStep = RoutineStepEntity(
-                id = UUID.randomUUID(),
-                routineId = UUID.randomUUID(),
-                title = "Orphan",
-                position = 0,
-                createdAt = TEST_TIME,
-                modifiedAt = TEST_TIME,
-            )
-
-            assertThrows(SQLiteConstraintException::class.java) {
-                runBlocking { db.routineStepDao().upsert(listOf(orphanStep)) }
+    fun migration1To2_convertsRoutinesToUuidIdsInOriginalOrder() =
+        runBlocking {
+            createVersion1Database { legacy ->
+                legacy.execSQL("INSERT INTO `routines` (`title`) VALUES ('Morning walk'), ('Evening review')")
             }
-        } finally {
-            db.close()
+
+            val db = openMigratedDatabase()
+            try {
+                val routines = db.routineDao().observeActive().first()
+
+                assertEquals(listOf("Morning walk", "Evening review"), routines.map { it.title })
+                assertEquals(listOf(1, 2), routines.map { it.position })
+                assertTrue(routines.all { it.id.version() == 4 })
+                assertEquals(routines.size, routines.map { it.id }.toSet().size)
+                assertEquals(0L, db.scalar("SELECT COUNT(*) FROM routine_steps"))
+            } finally {
+                db.close()
+            }
         }
-    }
 
     @Test
-    fun migration2To3_addsNullableDescriptionAndDuration() = runBlocking {
-        createVersion1Database { it.execSQL("INSERT INTO `routines` (`title`) VALUES ('Morning walk')") }
+    fun migration1To2_keepsForeignKeysEnforced() =
+        runBlocking {
+            createVersion1Database { }
 
-        val db = openMigratedDatabase()
-        try {
-            val routine = db.routineDao().observeActive().first().single()
-            assertEquals(null, routine.description)
-            db.routineStepDao().upsert(
-                listOf(
+            val db = openMigratedDatabase()
+            try {
+                val orphanStep =
                     RoutineStepEntity(
                         id = UUID.randomUUID(),
-                        routineId = routine.id,
-                        title = "Brush",
+                        routineId = UUID.randomUUID(),
+                        title = "Orphan",
                         position = 0,
                         createdAt = TEST_TIME,
                         modifiedAt = TEST_TIME,
-                        description = "Teeth",
-                        durationSeconds = 120,
-                    ),
-                ),
-            )
-            assertEquals(120L, db.scalar("SELECT durationSeconds FROM routine_steps WHERE title = ?", "Brush"))
-            assertEquals("Teeth", db.routineStepDao().activeSnapshot(routine.id).single().description)
-        } finally {
-            db.close()
+                    )
+
+                assertThrows(SQLiteConstraintException::class.java) {
+                    runBlocking { db.routineStepDao().upsert(listOf(orphanStep)) }
+                }
+            } finally {
+                db.close()
+            }
         }
-    }
 
     @Test
-    fun migratedDatabase_acceptsTheOutboxAndPlanningRows_addedByTheLaterMigrations() = runBlocking {
-        createVersion1Database { }
-        val db = openMigratedDatabase()
-        try {
-            val taskId = UUID.randomUUID()
-            db.syncOutboxDao().insertMutation(
-                MutationOutboxEntity(
-                    mutationId = UUID.randomUUID(),
-                    objectType = SyncType.TASK,
-                    objectId = taskId,
-                    seenVersion = 0,
-                    kind = MutationKind.UPSERT,
-                    expectation = Expectation.ABSENT,
-                    createdAtMillis = 1L,
-                ),
-            )
-            db.planningDao().upsertTask(
-                PlanningTaskEntity(taskId, durationMinutes = 30, priority = 3, deadlineMinute = null),
-            )
+    fun migration2To3_addsNullableDescriptionAndDuration() =
+        runBlocking {
+            createVersion1Database { it.execSQL("INSERT INTO `routines` (`title`) VALUES ('Morning walk')") }
 
-            assertEquals(1L, db.scalar("SELECT COUNT(*) FROM mutation_outbox"))
-            assertEquals(1L, db.scalar("SELECT COUNT(*) FROM planning_task"))
-        } finally {
-            db.close()
+            val db = openMigratedDatabase()
+            try {
+                val routine =
+                    db
+                        .routineDao()
+                        .observeActive()
+                        .first()
+                        .single()
+                assertEquals(null, routine.description)
+                db.routineStepDao().upsert(
+                    listOf(
+                        RoutineStepEntity(
+                            id = UUID.randomUUID(),
+                            routineId = routine.id,
+                            title = "Brush",
+                            position = 0,
+                            createdAt = TEST_TIME,
+                            modifiedAt = TEST_TIME,
+                            description = "Teeth",
+                            durationSeconds = 120,
+                        ),
+                    ),
+                )
+                assertEquals(120L, db.scalar("SELECT durationSeconds FROM routine_steps WHERE title = ?", "Brush"))
+                assertEquals(
+                    "Teeth",
+                    db
+                        .routineStepDao()
+                        .activeSnapshot(routine.id)
+                        .single()
+                        .description,
+                )
+            } finally {
+                db.close()
+            }
         }
-    }
+
+    @Test
+    fun migratedDatabase_acceptsTheOutboxAndPlanningRows_addedByTheLaterMigrations() =
+        runBlocking {
+            createVersion1Database { }
+            val db = openMigratedDatabase()
+            try {
+                val taskId = UUID.randomUUID()
+                db.syncOutboxDao().insertMutation(
+                    MutationOutboxEntity(
+                        mutationId = UUID.randomUUID(),
+                        objectType = SyncType.TASK,
+                        objectId = taskId,
+                        seenVersion = 0,
+                        kind = MutationKind.UPSERT,
+                        expectation = Expectation.ABSENT,
+                        createdAtMillis = 1L,
+                    ),
+                )
+                db.planningDao().upsertTask(
+                    PlanningTaskEntity(taskId, durationMinutes = 30, priority = 3, deadlineMinute = null),
+                )
+
+                assertEquals(1L, db.scalar("SELECT COUNT(*) FROM mutation_outbox"))
+                assertEquals(1L, db.scalar("SELECT COUNT(*) FROM planning_task"))
+            } finally {
+                db.close()
+            }
+        }
 
     private fun createVersion1Database(seed: (SQLiteDatabase) -> Unit) {
         SQLiteDatabase.openOrCreateDatabase(context.getDatabasePath(TEST_DB), null).use { legacy ->
@@ -148,7 +165,8 @@ class MigrationTest {
     }
 
     private fun openMigratedDatabase(): RoutinePilotDatabase =
-        Room.databaseBuilder(context, RoutinePilotDatabase::class.java, TEST_DB)
+        Room
+            .databaseBuilder(context, RoutinePilotDatabase::class.java, TEST_DB)
             .addMigrations(
                 MIGRATION_1_2,
                 MIGRATION_2_3,
@@ -157,8 +175,7 @@ class MigrationTest {
                 MIGRATION_5_6,
                 MIGRATION_6_7,
                 MIGRATION_7_8,
-            )
-            .addCallback(ForeignKeysCallback)
+            ).addCallback(ForeignKeysCallback)
             .build()
 
     private companion object {

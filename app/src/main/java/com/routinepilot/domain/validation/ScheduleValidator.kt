@@ -16,7 +16,10 @@ enum class ScheduleValidationError {
 
 /** Parsing for schedule form fields. Each parser returns null for input it cannot accept. */
 object ScheduleValidator {
-    fun parseTime(hour: String, minute: String): LocalTime? {
+    fun parseTime(
+        hour: String,
+        minute: String,
+    ): LocalTime? {
         val h = hour.trim().toIntOrNull() ?: return null
         val m = minute.trim().toIntOrNull() ?: return null
         return if (h in 0..MAX_HOUR && m in 0..MAX_MINUTE) LocalTime.of(h, m) else null
@@ -26,11 +29,12 @@ object ScheduleValidator {
         text.trim().toIntOrNull()?.takeIf { it in 1..RecurrencePattern.EveryNDays.MAX_INTERVAL_DAYS }
 
     /** Accepts ISO dates (yyyy-mm-dd) only, so the same text always means the same date in every locale. */
-    fun parseStartDate(text: String): LocalDate? = try {
-        LocalDate.parse(text.trim())
-    } catch (malformed: DateTimeParseException) {
-        null
-    }
+    fun parseStartDate(text: String): LocalDate? =
+        try {
+            LocalDate.parse(text.trim())
+        } catch (malformed: DateTimeParseException) {
+            null
+        }
 
     private const val MAX_HOUR = 23
     private const val MAX_MINUTE = 59

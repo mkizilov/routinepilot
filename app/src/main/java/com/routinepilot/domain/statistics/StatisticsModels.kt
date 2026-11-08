@@ -4,21 +4,33 @@ import java.time.LocalDate
 import java.util.UUID
 
 /** Scheduled items on one day, by status. [missed] means still pending after its time has passed. */
-data class OccurrenceTotals(val completed: Int, val skipped: Int, val missed: Int) {
+data class OccurrenceTotals(
+    val completed: Int,
+    val skipped: Int,
+    val missed: Int,
+) {
     companion object {
         val NONE = OccurrenceTotals(0, 0, 0)
     }
 }
 
 /** Routine sessions that ended on one day. [focusedMillis] covers finished and cancelled sessions. */
-data class SessionTotals(val finished: Int, val cancelled: Int, val focusedMillis: Long) {
+data class SessionTotals(
+    val finished: Int,
+    val cancelled: Int,
+    val focusedMillis: Long,
+) {
     companion object {
         val NONE = SessionTotals(0, 0, 0L)
     }
 }
 
 /** Scheduled items of one routine over the consistency window. */
-data class RoutineTotals(val routineId: UUID, val completed: Int, val missed: Int)
+data class RoutineTotals(
+    val routineId: UUID,
+    val completed: Int,
+    val missed: Int,
+)
 
 /** Raw aggregates from Room, keyed by device-zone date. Missing keys mean zero. */
 data class StatisticsInput(
@@ -63,7 +75,12 @@ data class PeriodStats(
     val partial: Boolean,
 )
 
-data class RoutineConsistency(val routineId: UUID, val completed: Int, val missed: Int, val percent: Int?)
+data class RoutineConsistency(
+    val routineId: UUID,
+    val completed: Int,
+    val missed: Int,
+    val percent: Int?,
+)
 
 data class Statistics(
     val today: DayStats,

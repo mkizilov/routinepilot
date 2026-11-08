@@ -44,59 +44,85 @@ class StatsViewModelTest {
     }
 
     @Test
-    fun uiState_reflectsTheRecordedHistory() = runTest(dispatcher) {
-        val repository = FakeStatsRepository(completedToday(3, 1))
-        val viewModel = viewModel(repository, emptyList())
+    fun uiState_reflectsTheRecordedHistory() =
+        runTest(dispatcher) {
+            val repository = FakeStatsRepository(completedToday(3, 1))
+            val viewModel = viewModel(repository, emptyList())
 
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        runCurrent()
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
 
-        val state = viewModel.uiState.value
-        assertTrue(state.loaded)
-        assertEquals(75, state.statistics!!.today.completionPercent)
-    }
-
-    @Test
-    fun uiState_updatesWhenHistoryChanges_withoutReloading() = runTest(dispatcher) {
-        val repository = FakeStatsRepository(StatisticsInput.EMPTY)
-        val viewModel = viewModel(repository, emptyList())
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        runCurrent()
-        assertNull(viewModel.uiState.value.statistics!!.today.completionPercent)
-
-        repository.input.value = completedToday(1, 0)
-        runCurrent()
-
-        assertEquals(100, viewModel.uiState.value.statistics!!.today.completionPercent)
-        assertEquals(1, viewModel.uiState.value.statistics!!.currentStreak)
-    }
+            val state = viewModel.uiState.value
+            assertTrue(state.loaded)
+            assertEquals(75, state.statistics!!.today.completionPercent)
+        }
 
     @Test
-    fun uiState_resolvesRoutineTitlesForTheConsistencyList() = runTest(dispatcher) {
-        val repository = FakeStatsRepository(
-            StatisticsInput(
-                occurrences = emptyMap(),
-                sessions = emptyMap(),
-                steps = emptyMap(),
-                routines = listOf(RoutineTotals(routineId, completed = 2, missed = 2)),
-            ),
-        )
-        val viewModel = viewModel(repository, listOf(Routine(routineId, "Morning", 0, Instant.EPOCH)))
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        runCurrent()
+    fun uiState_updatesWhenHistoryChanges_withoutReloading() =
+        runTest(dispatcher) {
+            val repository = FakeStatsRepository(StatisticsInput.EMPTY)
+            val viewModel = viewModel(repository, emptyList())
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+            assertNull(
+                viewModel.uiState.value.statistics!!
+                    .today.completionPercent,
+            )
 
-        val state = viewModel.uiState.value
-        assertEquals("Morning", state.routineTitles[routineId])
-        assertEquals(50, state.statistics!!.consistency.single().percent)
-    }
+            repository.input.value = completedToday(1, 0)
+            runCurrent()
 
-    private fun completedToday(completed: Int, missed: Int) = StatisticsInput(
+            assertEquals(
+                100,
+                viewModel.uiState.value.statistics!!
+                    .today.completionPercent,
+            )
+            assertEquals(
+                1,
+                viewModel.uiState.value.statistics!!
+                    .currentStreak,
+            )
+        }
+
+    @Test
+    fun uiState_resolvesRoutineTitlesForTheConsistencyList() =
+        runTest(dispatcher) {
+            val repository =
+                FakeStatsRepository(
+                    StatisticsInput(
+                        occurrences = emptyMap(),
+                        sessions = emptyMap(),
+                        steps = emptyMap(),
+                        routines = listOf(RoutineTotals(routineId, completed = 2, missed = 2)),
+                    ),
+                )
+            val viewModel = viewModel(repository, listOf(Routine(routineId, "Morning", 0, Instant.EPOCH)))
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            val state = viewModel.uiState.value
+            assertEquals("Morning", state.routineTitles[routineId])
+            assertEquals(
+                50,
+                state.statistics!!
+                    .consistency
+                    .single()
+                    .percent,
+            )
+        }
+
+    private fun completedToday(
+        completed: Int,
+        missed: Int,
+    ) = StatisticsInput(
         occurrences = mapOf(today to OccurrenceTotals(completed = completed, skipped = 0, missed = missed)),
         sessions = emptyMap(),
         steps = emptyMap(),
         routines = emptyList(),
     )
 
-    private fun viewModel(repository: FakeStatsRepository, routines: List<Routine>): StatsViewModel =
-        StatsViewModel(repository, FakeRoutineRepository(routines), clock)
+    private fun viewModel(
+        repository: FakeStatsRepository,
+        routines: List<Routine>,
+    ): StatsViewModel = StatsViewModel(repository, FakeRoutineRepository(routines), clock)
 }

@@ -33,12 +33,13 @@ class PlanningScreenTest {
 
     @Test
     fun pinThatCannotBeHonored_explainsTheProblem_andBlocksApply() {
-        val result = PlanResult(
-            placements = emptyList(),
-            unplaced = emptyList(),
-            overrideConflicts = listOf(OverrideConflict(TASK, listOf(PlanIssue.MisalignedStart))),
-            staleOverrides = emptyList(),
-        )
+        val result =
+            PlanResult(
+                placements = emptyList(),
+                unplaced = emptyList(),
+                overrideConflicts = listOf(OverrideConflict(TASK, listOf(PlanIssue.MisalignedStart))),
+                staleOverrides = emptyList(),
+            )
         setScreen(PlanningUiState(date = DATE, settings = SETTINGS, result = result, pins = mapOf(TASK to 541)))
 
         composeTestRule.onNodeWithText("Pinned times that need a change").assertIsDisplayed()
@@ -50,7 +51,8 @@ class PlanningScreenTest {
     fun sectionHeadings_areMarkedForScreenReaders() {
         setScreen(PlanningUiState(date = DATE, settings = SETTINGS))
 
-        composeTestRule.onNodeWithText("Recommended times")
+        composeTestRule
+            .onNodeWithText("Recommended times")
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
     }
 
@@ -68,7 +70,10 @@ class PlanningScreenTest {
         composeTestRule.onNodeWithText(NOTE).assertIsDisplayed()
     }
 
-    private fun setScreen(state: PlanningUiState, fontScale: Float = 1f) {
+    private fun setScreen(
+        state: PlanningUiState,
+        fontScale: Float = 1f,
+    ) {
         composeTestRule.setContent {
             WithFontScale(fontScale) {
                 RoutinePilotTheme {
@@ -89,8 +94,9 @@ class PlanningScreenTest {
     }
 
     private companion object {
-        const val NOTE = "Suggestions only. Nothing changes until you apply the plan. " +
-            "Fixed items, breaks, and your pins always win."
+        const val NOTE =
+            "Suggestions only. Nothing changes until you apply the plan. " +
+                "Fixed items, breaks, and your pins always win."
         val DATE: LocalDate = LocalDate.of(2026, 11, 8)
         val SETTINGS = PlanningSettings(TimeRange(540, 1080), emptyList())
         val TASK: UUID = UUID.fromString("00000000-0000-4000-8000-0000000000a1")

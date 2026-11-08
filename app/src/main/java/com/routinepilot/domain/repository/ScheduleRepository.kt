@@ -14,27 +14,53 @@ interface ScheduleRepository {
     fun observeSchedule(id: UUID): Flow<Schedule?>
 
     /** Items whose scheduled time falls in [from, to), with titles resolved. Items of deleted targets are omitted. */
-    fun observeAgenda(from: Instant, to: Instant): Flow<List<AgendaItem>>
+    fun observeAgenda(
+        from: Instant,
+        to: Instant,
+    ): Flow<List<AgendaItem>>
 
     fun observeOccurrences(routineId: UUID): Flow<List<ScheduledOccurrence>>
 
     /** Stores the rule and brings its pending occurrences in line with it, in one transaction. */
-    suspend fun saveSchedule(schedule: Schedule, now: Instant)
+    suspend fun saveSchedule(
+        schedule: Schedule,
+        now: Instant,
+    )
 
     /** Stops the schedule and removes its pending occurrences. Completed and skipped history is kept. */
-    suspend fun deleteSchedule(id: UUID, now: Instant)
+    suspend fun deleteSchedule(
+        id: UUID,
+        now: Instant,
+    )
 
     /**
      * Generates occurrences for every active schedule and re-anchors any schedule saved in another zone. Safe to
      * call repeatedly. Returns how many occurrences were created.
      */
-    suspend fun ensureOccurrences(now: Instant, zone: ZoneId): Int
+    suspend fun ensureOccurrences(
+        now: Instant,
+        zone: ZoneId,
+    ): Int
 
-    suspend fun completeOccurrence(id: UUID, now: Instant)
+    suspend fun completeOccurrence(
+        id: UUID,
+        now: Instant,
+    )
 
-    suspend fun skipOccurrence(id: UUID, now: Instant)
+    suspend fun skipOccurrence(
+        id: UUID,
+        now: Instant,
+    )
 
-    suspend fun rescheduleOccurrence(id: UUID, newTime: Instant, zone: ZoneId, now: Instant)
+    suspend fun rescheduleOccurrence(
+        id: UUID,
+        newTime: Instant,
+        zone: ZoneId,
+        now: Instant,
+    )
 
-    suspend fun deleteOccurrence(id: UUID, now: Instant)
+    suspend fun deleteOccurrence(
+        id: UUID,
+        now: Instant,
+    )
 }

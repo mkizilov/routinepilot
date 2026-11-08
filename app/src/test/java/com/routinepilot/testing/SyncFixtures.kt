@@ -28,18 +28,24 @@ fun stepFields(
     durationSeconds: Int? = 120,
     position: Int = 1,
     routine: UUID = routineId,
-): FieldMap = mapOf(
-    "routineId" to routine.toString(),
-    "title" to title,
-    "description" to description,
-    "durationSeconds" to durationSeconds?.toString(),
-    "position" to position.toString(),
-)
+): FieldMap =
+    mapOf(
+        "routineId" to routine.toString(),
+        "title" to title,
+        "description" to description,
+        "durationSeconds" to durationSeconds?.toString(),
+        "position" to position.toString(),
+    )
 
 /** A full task record. */
-fun taskFields(title: String = "Water plants", isCompleted: Boolean = false, position: Int = 1): FieldMap = mapOf(
-    "title" to title,
-    "isCompleted" to isCompleted.toString(),
-    "routineId" to null,
-    "position" to position.toString(),
-)
+fun taskFields(
+    title: String = "Water plants",
+    isCompleted: Boolean = false,
+    position: Int = 1,
+): FieldMap =
+    mapOf(
+        "title" to title,
+        "isCompleted" to isCompleted.toString(),
+        "routineId" to null,
+        "position" to position.toString(),
+    )

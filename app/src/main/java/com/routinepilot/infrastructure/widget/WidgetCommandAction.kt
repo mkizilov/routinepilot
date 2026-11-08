@@ -13,7 +13,11 @@ import com.routinepilot.domain.widget.WidgetCommandDispatcher
  * the stored run first. Glance delivers this through its own non-exported receiver.
  */
 class WidgetCommandAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
         val command = WidgetCommand.fromWire(parameters[COMMAND_KEY])
         val coordinator = context.widgetEntryPoint().runCoordinator()
         WidgetCommandDispatcher.dispatch(

@@ -35,7 +35,10 @@ data class StepDraft(
         get() = titleError != null || descriptionError != null || durationError != null
 }
 
-data class RemovedStep(val step: StepDraft, val index: Int)
+data class RemovedStep(
+    val step: StepDraft,
+    val index: Int,
+)
 
 data class RoutineEditorUiState(
     val isNewRoutine: Boolean = true,
@@ -64,14 +67,26 @@ interface RoutineEditorActions {
 
     fun onAddStep()
 
-    fun onStepTitleChange(stepId: UUID, value: String)
+    fun onStepTitleChange(
+        stepId: UUID,
+        value: String,
+    )
 
-    fun onStepDescriptionChange(stepId: UUID, value: String)
+    fun onStepDescriptionChange(
+        stepId: UUID,
+        value: String,
+    )
 
-    fun onStepDurationChange(stepId: UUID, value: String)
+    fun onStepDurationChange(
+        stepId: UUID,
+        value: String,
+    )
 
     /** Moves the step by [offset] positions; out-of-range moves are ignored. */
-    fun onMoveStep(stepId: UUID, offset: Int)
+    fun onMoveStep(
+        stepId: UUID,
+        offset: Int,
+    )
 
     fun onRemoveStep(stepId: UUID)
 
@@ -85,150 +100,180 @@ interface RoutineEditorActions {
 }
 
 @HiltViewModel
-class RoutineEditorViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    private val routineRepository: RoutineRepository,
-) : ViewModel(), RoutineEditorActions {
-    private val routineId: UUID? = savedStateHandle.get<String>(ROUTINE_ID_ARG)?.let(UUID::fromString)
-    private val _uiState = MutableStateFlow(RoutineEditorUiState(isNewRoutine = routineId == null))
-    val uiState: StateFlow<RoutineEditorUiState> = _uiState.asStateFlow()
+class RoutineEditorViewModel
+    @Inject
+    constructor(
+        savedStateHandle: SavedStateHandle,
+        private val routineRepository: RoutineRepository,
+    ) : ViewModel(),
+        RoutineEditorActions {
+        private val routineId: UUID? = savedStateHandle.get<String>(ROUTINE_ID_ARG)?.let(UUID::fromString)
+        private val _uiState = MutableStateFlow(RoutineEditorUiState(isNewRoutine = routineId == null))
+        val uiState: StateFlow<RoutineEditorUiState> = _uiState.asStateFlow()
 
-    private var existing: Routine? = null
+        private var existing: Routine? = null
 
-    init {
-        routineId?.let { id -> viewModelScope.launch { load(id) } }
-    }
-
-    private suspend fun load(id: UUID) {
-        val routine = routineRepository.observeRoutine(id).first()
-        if (routine == null) {
-            _uiState.update { it.copy(isLoading = false, isMissing = true) }
-            return
+        init {
+            routineId?.let { id -> viewModelScope.launch { load(id) } }
         }
-        existing = routine
-        val steps = routineRepository.observeSteps(id).first()
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                title = routine.title,
-                description = routine.description.orEmpty(),
-                steps = steps.map { step -> step.toDraft() },
-            ).validated()
-        }
-    }
 
-    override fun onTitleChange(value: String) = updateState { copy(title = value) }
-
-    override fun onDescriptionChange(value: String) = updateState { copy(description = value) }
-
-    override fun onAddStep() = updateState {
-        copy(steps = steps + StepDraft(id = UUID.randomUUID(), createdAt = Instant.now()))
-    }
-
-    override fun onStepTitleChange(stepId: UUID, value: String) = editStep(stepId) { copy(title = value) }
-
-    override fun onStepDescriptionChange(stepId: UUID, value: String) = editStep(stepId) { copy(description = value) }
-
-    override fun onStepDurationChange(stepId: UUID, value: String) = editStep(stepId) { copy(durationMinutes = value) }
-
-    override fun onMoveStep(stepId: UUID, offset: Int) = updateState {
-        val from = steps.indexOfFirst { it.id == stepId }
-        val to = from + offset
-        if (from < 0 || to !in steps.indices) {
-            this
-        } else {
-            copy(steps = steps.toMutableList().apply { add(to, removeAt(from)) })
-        }
-    }
-
-    override fun onRemoveStep(stepId: UUID) = updateState {
-        val index = steps.indexOfFirst { it.id == stepId }
-        if (index < 0) {
-            this
-        } else {
-            copy(steps = steps.filterNot { it.id == stepId }, removedStep = RemovedStep(steps[index], index))
-        }
-    }
-
-    override fun onUndoRemoveStep() = updateState {
-        removedStep?.let { removed ->
-            copy(
-                steps = steps.toMutableList().apply { add(minOf(removed.index, size), removed.step) },
-                removedStep = null,
-            )
-        } ?: this
-    }
-
-    override fun onRemovedStepShown() = updateState { copy(removedStep = null) }
-
-    override fun onSave() {
-        val state = _uiState.value
-        if (state.isLoading || state.isMissing) return
-        if (!state.canSave) {
-            _uiState.update { it.copy(showErrors = true) }
-            return
-        }
-        viewModelScope.launch {
-            val routine = Routine(
-                id = routineId ?: UUID.randomUUID(),
-                title = state.title.trim(),
-                position = existing?.position ?: routineRepository.observeRoutines().first().size,
-                createdAt = existing?.createdAt ?: Instant.now(),
-                description = state.description.trim().ifBlank { null },
-            )
-            val steps = state.steps.mapIndexed { index, draft ->
-                RoutineStep(
-                    id = draft.id,
-                    routineId = routine.id,
-                    title = draft.title.trim(),
-                    position = index,
-                    createdAt = draft.createdAt,
-                    description = draft.description.trim().ifBlank { null },
-                    durationSeconds = RoutineValidator.durationSecondsOf(draft.durationMinutes),
-                )
+        private suspend fun load(id: UUID) {
+            val routine = routineRepository.observeRoutine(id).first()
+            if (routine == null) {
+                _uiState.update { it.copy(isLoading = false, isMissing = true) }
+                return
             }
-            routineRepository.saveRoutine(routine, steps)
-            _uiState.update { it.copy(isClosed = true) }
+            existing = routine
+            val steps = routineRepository.observeSteps(id).first()
+            _uiState.update {
+                it
+                    .copy(
+                        isLoading = false,
+                        title = routine.title,
+                        description = routine.description.orEmpty(),
+                        steps = steps.map { step -> step.toDraft() },
+                    ).validated()
+            }
+        }
+
+        override fun onTitleChange(value: String) = updateState { copy(title = value) }
+
+        override fun onDescriptionChange(value: String) = updateState { copy(description = value) }
+
+        override fun onAddStep() =
+            updateState {
+                copy(steps = steps + StepDraft(id = UUID.randomUUID(), createdAt = Instant.now()))
+            }
+
+        override fun onStepTitleChange(
+            stepId: UUID,
+            value: String,
+        ) = editStep(stepId) { copy(title = value) }
+
+        override fun onStepDescriptionChange(
+            stepId: UUID,
+            value: String,
+        ) = editStep(stepId) { copy(description = value) }
+
+        override fun onStepDurationChange(
+            stepId: UUID,
+            value: String,
+        ) = editStep(stepId) { copy(durationMinutes = value) }
+
+        override fun onMoveStep(
+            stepId: UUID,
+            offset: Int,
+        ) = updateState {
+            val from = steps.indexOfFirst { it.id == stepId }
+            val to = from + offset
+            if (from < 0 || to !in steps.indices) {
+                this
+            } else {
+                copy(steps = steps.toMutableList().apply { add(to, removeAt(from)) })
+            }
+        }
+
+        override fun onRemoveStep(stepId: UUID) =
+            updateState {
+                val index = steps.indexOfFirst { it.id == stepId }
+                if (index < 0) {
+                    this
+                } else {
+                    copy(steps = steps.filterNot { it.id == stepId }, removedStep = RemovedStep(steps[index], index))
+                }
+            }
+
+        override fun onUndoRemoveStep() =
+            updateState {
+                removedStep?.let { removed ->
+                    copy(
+                        steps = steps.toMutableList().apply { add(minOf(removed.index, size), removed.step) },
+                        removedStep = null,
+                    )
+                } ?: this
+            }
+
+        override fun onRemovedStepShown() = updateState { copy(removedStep = null) }
+
+        override fun onSave() {
+            val current = _uiState.value
+            if (current.isLoading || current.isMissing) return
+            // Validate here too: a routine saved without any edit has never been checked by the change handlers.
+            val state = current.validated()
+            if (!state.canSave) {
+                _uiState.value = state.copy(showErrors = true)
+                return
+            }
+            _uiState.value = state
+            viewModelScope.launch {
+                val routine =
+                    Routine(
+                        id = routineId ?: UUID.randomUUID(),
+                        title = state.title.trim(),
+                        position = existing?.position ?: routineRepository.observeRoutines().first().size,
+                        createdAt = existing?.createdAt ?: Instant.now(),
+                        description = state.description.trim().ifBlank { null },
+                    )
+                val steps =
+                    state.steps.mapIndexed { index, draft ->
+                        RoutineStep(
+                            id = draft.id,
+                            routineId = routine.id,
+                            title = draft.title.trim(),
+                            position = index,
+                            createdAt = draft.createdAt,
+                            description = draft.description.trim().ifBlank { null },
+                            durationSeconds = RoutineValidator.durationSecondsOf(draft.durationMinutes),
+                        )
+                    }
+                routineRepository.saveRoutine(routine, steps)
+                _uiState.update { it.copy(isClosed = true) }
+            }
+        }
+
+        override fun onDelete() {
+            val id = routineId ?: return
+            viewModelScope.launch {
+                routineRepository.deleteRoutine(id)
+                _uiState.update { it.copy(isClosed = true) }
+            }
+        }
+
+        private fun updateState(change: RoutineEditorUiState.() -> RoutineEditorUiState) {
+            _uiState.update { it.change().validated() }
+        }
+
+        private fun editStep(
+            stepId: UUID,
+            change: StepDraft.() -> StepDraft,
+        ) = updateState {
+            copy(steps = steps.map { if (it.id == stepId) it.change() else it })
+        }
+
+        private fun RoutineEditorUiState.validated() =
+            copy(
+                titleError = RoutineValidator.validateTitle(title),
+                descriptionError = RoutineValidator.validateDescription(description),
+                steps = steps.map { it.validated() },
+            )
+
+        private fun StepDraft.validated() =
+            copy(
+                titleError = RoutineValidator.validateTitle(title),
+                descriptionError = RoutineValidator.validateDescription(description),
+                durationError = RoutineValidator.validateDurationMinutes(durationMinutes),
+            )
+
+        private fun RoutineStep.toDraft() =
+            StepDraft(
+                id = id,
+                createdAt = createdAt,
+                title = title,
+                description = description.orEmpty(),
+                durationMinutes = durationSeconds?.div(SECONDS_PER_MINUTE)?.toString().orEmpty(),
+            )
+
+        private companion object {
+            const val SECONDS_PER_MINUTE = 60
         }
     }
-
-    override fun onDelete() {
-        val id = routineId ?: return
-        viewModelScope.launch {
-            routineRepository.deleteRoutine(id)
-            _uiState.update { it.copy(isClosed = true) }
-        }
-    }
-
-    private fun updateState(change: RoutineEditorUiState.() -> RoutineEditorUiState) {
-        _uiState.update { it.change().validated() }
-    }
-
-    private fun editStep(stepId: UUID, change: StepDraft.() -> StepDraft) = updateState {
-        copy(steps = steps.map { if (it.id == stepId) it.change() else it })
-    }
-
-    private fun RoutineEditorUiState.validated() = copy(
-        titleError = RoutineValidator.validateTitle(title),
-        descriptionError = RoutineValidator.validateDescription(description),
-        steps = steps.map { it.validated() },
-    )
-
-    private fun StepDraft.validated() = copy(
-        titleError = RoutineValidator.validateTitle(title),
-        descriptionError = RoutineValidator.validateDescription(description),
-        durationError = RoutineValidator.validateDurationMinutes(durationMinutes),
-    )
-
-    private fun RoutineStep.toDraft() = StepDraft(
-        id = id,
-        createdAt = createdAt,
-        title = title,
-        description = description.orEmpty(),
-        durationMinutes = durationSeconds?.div(SECONDS_PER_MINUTE)?.toString().orEmpty(),
-    )
-
-    private companion object {
-        const val SECONDS_PER_MINUTE = 60
-    }
-}

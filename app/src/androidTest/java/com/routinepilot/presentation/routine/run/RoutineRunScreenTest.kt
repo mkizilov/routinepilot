@@ -140,9 +140,10 @@ class RoutineRunScreenTest {
     fun notificationsOff_explainsThatTheTimerStillRuns() {
         setScreen(runState(status = ExecutionStatus.RUNNING, steps = listOf(stretch)), notificationsAllowed = false)
 
-        composeTestRule.onNodeWithText(
-            "Notifications are off. The timer still runs, but you won\u2019t get step alerts.",
-        ).assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(
+                "Notifications are off. The timer still runs, but you won\u2019t get step alerts.",
+            ).assertIsDisplayed()
     }
 
     @Test
@@ -152,9 +153,10 @@ class RoutineRunScreenTest {
                 .copy(foregroundUnavailable = true),
         )
 
-        composeTestRule.onNodeWithText(
-            "Background timing is unavailable right now. Keep the app open to keep timing.",
-        ).assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(
+                "Background timing is unavailable right now. Keep the app open to keep timing.",
+            ).assertIsDisplayed()
     }
 
     @Test
@@ -172,14 +174,15 @@ class RoutineRunScreenTest {
         blocked: Boolean = false,
     ) = RoutineRunUiState(
         routineTitle = "Morning",
-        timer = TimerState(
-            status = status,
-            steps = steps,
-            currentIndex = 0,
-            currentElapsedMillis = 0L,
-            currentRemainingMillis = remaining,
-            totalRemainingMillis = total,
-        ),
+        timer =
+            TimerState(
+                status = status,
+                steps = steps,
+                currentIndex = 0,
+                currentElapsedMillis = 0L,
+                currentRemainingMillis = remaining,
+                totalRemainingMillis = total,
+            ),
         isLoading = false,
         blockedByOtherRun = blocked,
     )

@@ -56,21 +56,24 @@ class SyncEngine(
 
     /** One operation at a time. A background pass and a user action must never interleave on the same outbox. */
     private val lock = Mutex()
-    private val mutableState = MutableStateFlow(
-        SyncState(SyncPhase.UP_TO_DATE, pendingChanges = 0, lastSyncedAtMillis = null),
-    )
+    private val mutableState =
+        MutableStateFlow(
+            SyncState(SyncPhase.UP_TO_DATE, pendingChanges = 0, lastSyncedAtMillis = null),
+        )
     val state: StateFlow<SyncState> = mutableState.asStateFlow()
 
     /** Refreshes the sign-in and pending counts without contacting the server. */
-    suspend fun refreshState() = lock.withLock {
-        val current = mutableState.value
-        val phase = when {
-            !credentials.accountSignedIn() -> SyncPhase.NOT_SIGNED_IN
-            current.phase == SyncPhase.NOT_SIGNED_IN -> SyncPhase.UP_TO_DATE
-            else -> current.phase
+    suspend fun refreshState() =
+        lock.withLock {
+            val current = mutableState.value
+            val phase =
+                when {
+                    !credentials.accountSignedIn() -> SyncPhase.NOT_SIGNED_IN
+                    current.phase == SyncPhase.NOT_SIGNED_IN -> SyncPhase.UP_TO_DATE
+                    else -> current.phase
+                }
+            publish(phase, current.heldConflicts, current.rejectedChanges)
         }
-        publish(phase, current.heldConflicts, current.rejectedChanges)
-    }
 
     suspend fun runCycle(): CycleResult = lock.withLock { cycle() }
 
@@ -112,7 +115,10 @@ class SyncEngine(
     }
 
     /** Applies the user's choice for a held change, then shows the result. The change is sent by the next cycle. */
-    suspend fun resolve(conflict: Conflict, decision: Decision) = lock.withLock {
+    suspend fun resolve(
+        conflict: Conflict,
+        decision: Decision,
+    ) = lock.withLock {
         offline.resolve(conflict, decision)
         applyTouched(setOf(conflict.key))
         val remaining = mutableState.value.heldConflicts.filterNot { it.mutationId == conflict.mutationId }
@@ -122,11 +128,12 @@ class SyncEngine(
     }
 
     /** Applies server changes without sending anything. Used by the first pull after sign-in and by tests. */
-    suspend fun pullRemote() = lock.withLock {
-        val touched = mutableSetOf<ObjectKey>()
-        pullAll(touched)
-        applyTouched(touched)
-    }
+    suspend fun pullRemote() =
+        lock.withLock {
+            val touched = mutableSetOf<ObjectKey>()
+            pullAll(touched)
+            applyTouched(touched)
+        }
 
     private suspend fun pullAll(touched: MutableSet<ObjectKey>) {
         do {
@@ -144,14 +151,19 @@ class SyncEngine(
         }
     }
 
-    private suspend fun publish(phase: SyncPhase, held: List<Conflict> = emptyList(), rejected: Int = 0) {
-        mutableState.value = SyncState(
-            phase = phase,
-            pendingChanges = outbox.pendingCount(),
-            lastSyncedAtMillis = session.lastSyncedAt(),
-            heldConflicts = held,
-            rejectedChanges = rejected,
-        )
+    private suspend fun publish(
+        phase: SyncPhase,
+        held: List<Conflict> = emptyList(),
+        rejected: Int = 0,
+    ) {
+        mutableState.value =
+            SyncState(
+                phase = phase,
+                pendingChanges = outbox.pendingCount(),
+                lastSyncedAtMillis = session.lastSyncedAt(),
+                heldConflicts = held,
+                rejectedChanges = rejected,
+            )
     }
 
     private companion object {

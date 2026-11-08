@@ -33,8 +33,14 @@ interface ScheduleDao {
     suspend fun upsert(schedule: ScheduleEntity)
 
     @Query("UPDATE schedules SET zoneId = :zone WHERE id = :id")
-    suspend fun updateZone(id: UUID, zone: ZoneId)
+    suspend fun updateZone(
+        id: UUID,
+        zone: ZoneId,
+    )
 
     @Query("UPDATE schedules SET deletedAt = :at, modifiedAt = :at WHERE id = :id")
-    suspend fun markDeleted(id: UUID, at: Instant)
+    suspend fun markDeleted(
+        id: UUID,
+        at: Instant,
+    )
 }

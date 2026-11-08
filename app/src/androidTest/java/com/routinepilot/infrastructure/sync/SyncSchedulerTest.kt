@@ -53,8 +53,9 @@ class SyncSchedulerTest {
         scheduler.cancelAll()
 
         val manager = WorkManager.getInstance(context)
-        val infos = manager.getWorkInfosForUniqueWork(SyncScheduler.ONE_TIME_NAME).get() +
-            manager.getWorkInfosForUniqueWork(SyncScheduler.PERIODIC_NAME).get()
+        val infos =
+            manager.getWorkInfosForUniqueWork(SyncScheduler.ONE_TIME_NAME).get() +
+                manager.getWorkInfosForUniqueWork(SyncScheduler.PERIODIC_NAME).get()
         assertTrue(infos.all { it.state == WorkInfo.State.CANCELLED })
     }
 }

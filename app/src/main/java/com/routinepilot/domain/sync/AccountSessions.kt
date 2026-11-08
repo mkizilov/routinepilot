@@ -7,9 +7,15 @@ interface AccountSessions {
     /** The signed-in email, or null when signed out. */
     val email: Flow<String?>
 
-    suspend fun signIn(email: String, password: String): SignInOutcome
+    suspend fun signIn(
+        email: String,
+        password: String,
+    ): SignInOutcome
 
-    suspend fun register(email: String, password: String): SignInOutcome
+    suspend fun register(
+        email: String,
+        password: String,
+    ): SignInOutcome
 
     suspend fun signOut(): SignOutOutcome
 
@@ -24,15 +30,21 @@ sealed interface SignInOutcome {
     data object SignedIn : SignInOutcome
 
     /** The device holds changes for another account that were never sent, so this sign-in was refused. */
-    data class Blocked(val unsyncedChanges: Int) : SignInOutcome
+    data class Blocked(
+        val unsyncedChanges: Int,
+    ) : SignInOutcome
 
-    data class Failed(val problem: AuthProblem) : SignInOutcome
+    data class Failed(
+        val problem: AuthProblem,
+    ) : SignInOutcome
 }
 
 sealed interface DeleteAccountOutcome {
     data object Deleted : DeleteAccountOutcome
 
-    data class Failed(val problem: AuthProblem) : DeleteAccountOutcome
+    data class Failed(
+        val problem: AuthProblem,
+    ) : DeleteAccountOutcome
 }
 
 enum class AuthProblem {
@@ -46,4 +58,6 @@ enum class AuthProblem {
 }
 
 /** [deviceRevoked] is false when the server could not be reached to remove this device from the account. */
-data class SignOutOutcome(val deviceRevoked: Boolean)
+data class SignOutOutcome(
+    val deviceRevoked: Boolean,
+)

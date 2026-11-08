@@ -72,9 +72,10 @@ fun CalendarSettingsRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, viewModel) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
-        }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
+            }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -91,11 +92,12 @@ fun CalendarSettingsScreen(
     val context = LocalContext.current
     var pendingCalendar by remember { mutableStateOf<CalendarInfo?>(null) }
     var confirmRemove by remember { mutableStateOf(false) }
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
-    ) { results ->
-        if (results.values.all { it }) actions.setEnabled(true) else actions.refresh()
-    }
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) { results ->
+            if (results.values.all { it }) actions.setEnabled(true) else actions.refresh()
+        }
     val requestAccess = { permissionLauncher.launch(calendarPermissions) }
     val linkedCount = state.events.count { it.eventId != null }
 
@@ -140,9 +142,10 @@ fun CalendarSettingsScreen(
             }
             if (state.hasAccess) {
                 destinationItems(state) { calendar ->
-                    val moving = state.settings.calendarId != null &&
-                        calendar.id != state.settings.calendarId &&
-                        linkedCount > 0
+                    val moving =
+                        state.settings.calendarId != null &&
+                            calendar.id != state.settings.calendarId &&
+                            linkedCount > 0
                     if (moving) {
                         pendingCalendar = calendar
                     } else {
@@ -187,7 +190,10 @@ fun CalendarSettingsScreen(
     }
 }
 
-private fun LazyListScope.destinationItems(state: CalendarSettingsUiState, onSelect: (CalendarInfo) -> Unit) {
+private fun LazyListScope.destinationItems(
+    state: CalendarSettingsUiState,
+    onSelect: (CalendarInfo) -> Unit,
+) {
     item { Text(stringResource(R.string.calendar_destination_title), style = MaterialTheme.typography.titleMedium) }
     if (state.calendars.isEmpty()) {
         item { Text(stringResource(R.string.calendar_destination_none), style = MaterialTheme.typography.bodyMedium) }
@@ -210,7 +216,10 @@ private fun LazyListScope.eventItems(
 }
 
 @Composable
-private fun ExportRow(enabled: Boolean, onChange: (Boolean) -> Unit) {
+private fun ExportRow(
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             stringResource(R.string.calendar_enable),
@@ -222,7 +231,10 @@ private fun ExportRow(enabled: Boolean, onChange: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun AllDayRow(allDay: Boolean, onChange: (Boolean) -> Unit) {
+private fun AllDayRow(
+    allDay: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.calendar_all_day), style = MaterialTheme.typography.titleMedium)
@@ -233,25 +245,37 @@ private fun AllDayRow(allDay: Boolean, onChange: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun syncStatus(state: CalendarSettingsUiState): String = when {
-    !state.settings.enabled -> stringResource(R.string.calendar_status_off)
-    state.syncState == CalendarState.PERMISSION_MISSING -> stringResource(R.string.calendar_status_permission_missing)
-    state.syncState == CalendarState.NO_DESTINATION -> stringResource(R.string.calendar_status_no_destination)
-    state.syncState == CalendarState.DESTINATION_MISSING -> stringResource(R.string.calendar_status_destination_missing)
-    else -> {
-        val lastSync = state.settings.lastSyncMillis?.let {
-            lastSyncFormat.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))
-        }
-        if (lastSync == null) {
-            stringResource(R.string.calendar_status_pending)
-        } else {
-            stringResource(R.string.calendar_status_synced, lastSync)
+private fun syncStatus(state: CalendarSettingsUiState): String =
+    when {
+        !state.settings.enabled -> stringResource(R.string.calendar_status_off)
+        state.syncState == CalendarState.PERMISSION_MISSING ->
+            stringResource(
+                R.string.calendar_status_permission_missing,
+            )
+        state.syncState == CalendarState.NO_DESTINATION -> stringResource(R.string.calendar_status_no_destination)
+        state.syncState == CalendarState.DESTINATION_MISSING ->
+            stringResource(
+                R.string.calendar_status_destination_missing,
+            )
+        else -> {
+            val lastSync =
+                state.settings.lastSyncMillis?.let {
+                    lastSyncFormat.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))
+                }
+            if (lastSync == null) {
+                stringResource(R.string.calendar_status_pending)
+            } else {
+                stringResource(R.string.calendar_status_synced, lastSync)
+            }
         }
     }
-}
 
 @Composable
-private fun CalendarRow(calendar: CalendarInfo, selected: Boolean, onSelect: () -> Unit) {
+private fun CalendarRow(
+    calendar: CalendarInfo,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onSelect),
         verticalAlignment = Alignment.CenterVertically,
@@ -265,7 +289,11 @@ private fun CalendarRow(calendar: CalendarInfo, selected: Boolean, onSelect: () 
 }
 
 @Composable
-private fun LinkedEventRow(event: LinkedEvent, onOpen: (Long) -> Unit, onExportAgain: (UUID) -> Unit) {
+private fun LinkedEventRow(
+    event: LinkedEvent,
+    onOpen: (Long) -> Unit,
+    onExportAgain: (UUID) -> Unit,
+) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(
@@ -286,16 +314,21 @@ private fun LinkedEventRow(event: LinkedEvent, onOpen: (Long) -> Unit, onExportA
 }
 
 @Composable
-private fun eventStatus(status: CalendarLinkStatus): String = stringResource(
-    when (status) {
-        CalendarLinkStatus.LINKED -> R.string.calendar_event_status_linked
-        CalendarLinkStatus.ENDED -> R.string.calendar_event_status_ended
-        CalendarLinkStatus.REMOVED_IN_CALENDAR -> R.string.calendar_event_status_removed
-    },
-)
+private fun eventStatus(status: CalendarLinkStatus): String =
+    stringResource(
+        when (status) {
+            CalendarLinkStatus.LINKED -> R.string.calendar_event_status_linked
+            CalendarLinkStatus.ENDED -> R.string.calendar_event_status_ended
+            CalendarLinkStatus.REMOVED_IN_CALENDAR -> R.string.calendar_event_status_removed
+        },
+    )
 
 @Composable
-private fun MoveCalendarDialog(linkedCount: Int, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun MoveCalendarDialog(
+    linkedCount: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.calendar_move_title)) },
@@ -306,7 +339,10 @@ private fun MoveCalendarDialog(linkedCount: Int, onConfirm: () -> Unit, onDismis
 }
 
 @Composable
-private fun RemoveEventsDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun RemoveEventsDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.calendar_remove_title)) },
@@ -316,9 +352,13 @@ private fun RemoveEventsDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     )
 }
 
-private fun openEvent(context: Context, eventId: Long) {
-    val intent = Intent(Intent.ACTION_VIEW)
-        .setData(ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId))
+private fun openEvent(
+    context: Context,
+    eventId: Long,
+) {
+    val intent =
+        Intent(Intent.ACTION_VIEW)
+            .setData(ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId))
     try {
         context.startActivity(intent)
     } catch (e: ActivityNotFoundException) {

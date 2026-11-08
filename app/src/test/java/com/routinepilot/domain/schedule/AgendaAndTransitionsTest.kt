@@ -43,14 +43,15 @@ class AgendaAndTransitionsTest {
 
     @Test
     fun agenda_rescheduledItemsAreStillPendingAndMarkedMoved() {
-        val moved = AgendaItem(
-            occurrenceId = UUID.randomUUID(),
-            title = "Item",
-            kind = AgendaKind.TASK,
-            scheduledAt = Instant.parse("2026-03-10T14:00:00Z"),
-            originalScheduledAt = Instant.parse("2026-03-10T09:00:00Z"),
-            status = OccurrenceStatus.RESCHEDULED,
-        )
+        val moved =
+            AgendaItem(
+                occurrenceId = UUID.randomUUID(),
+                title = "Item",
+                kind = AgendaKind.TASK,
+                scheduledAt = Instant.parse("2026-03-10T14:00:00Z"),
+                originalScheduledAt = Instant.parse("2026-03-10T09:00:00Z"),
+                status = OccurrenceStatus.RESCHEDULED,
+            )
 
         val agenda = AgendaBuilder.build(listOf(moved), now)
 
@@ -103,11 +104,12 @@ class AgendaAndTransitionsTest {
     @Test
     fun reschedule_backToTheOriginalTime_returnsToPlanned() {
         val original = Instant.parse("2026-03-10T09:00:00Z")
-        val moved = OccurrenceTransitions.reschedule(
-            occurrence(OccurrenceStatus.PLANNED, at = original),
-            Instant.parse("2026-03-10T15:00:00Z"),
-            utc,
-        )!!
+        val moved =
+            OccurrenceTransitions.reschedule(
+                occurrence(OccurrenceStatus.PLANNED, at = original),
+                Instant.parse("2026-03-10T15:00:00Z"),
+                utc,
+            )!!
 
         val restored = OccurrenceTransitions.reschedule(moved, original, utc)!!
 
@@ -118,11 +120,12 @@ class AgendaAndTransitionsTest {
     @Test
     fun reschedule_updatesTheLocalDateInTheGivenZone() {
         val tokyo = ZoneId.of("Asia/Tokyo")
-        val moved = OccurrenceTransitions.reschedule(
-            occurrence(OccurrenceStatus.PLANNED, at = Instant.parse("2026-03-10T09:00:00Z")),
-            Instant.parse("2026-03-10T16:00:00Z"),
-            tokyo,
-        )!!
+        val moved =
+            OccurrenceTransitions.reschedule(
+                occurrence(OccurrenceStatus.PLANNED, at = Instant.parse("2026-03-10T09:00:00Z")),
+                Instant.parse("2026-03-10T16:00:00Z"),
+                tokyo,
+            )!!
 
         assertEquals(LocalDate.of(2026, 3, 11), moved.localDate)
     }
@@ -134,7 +137,10 @@ class AgendaAndTransitionsTest {
         assertNull(OccurrenceTransitions.reschedule(done, Instant.parse("2026-03-10T15:00:00Z"), utc))
     }
 
-    private fun item(at: String, status: OccurrenceStatus): AgendaItem {
+    private fun item(
+        at: String,
+        status: OccurrenceStatus,
+    ): AgendaItem {
         val instant = Instant.parse(at)
         return AgendaItem(
             occurrenceId = UUID.randomUUID(),
@@ -146,16 +152,18 @@ class AgendaAndTransitionsTest {
         )
     }
 
-    private fun occurrence(status: OccurrenceStatus, at: Instant = Instant.parse("2026-03-10T09:00:00Z")) =
-        ScheduledOccurrence(
-            id = UUID.randomUUID(),
-            scheduleId = null,
-            routineId = UUID.randomUUID(),
-            taskId = null,
-            originalScheduledAt = at,
-            scheduledAt = at,
-            localDate = day,
-            status = status,
-            createdAt = now,
-        )
+    private fun occurrence(
+        status: OccurrenceStatus,
+        at: Instant = Instant.parse("2026-03-10T09:00:00Z"),
+    ) = ScheduledOccurrence(
+        id = UUID.randomUUID(),
+        scheduleId = null,
+        routineId = UUID.randomUUID(),
+        taskId = null,
+        originalScheduledAt = at,
+        scheduledAt = at,
+        localDate = day,
+        status = status,
+        createdAt = now,
+    )
 }

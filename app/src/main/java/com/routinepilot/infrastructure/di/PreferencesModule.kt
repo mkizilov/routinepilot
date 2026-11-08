@@ -18,6 +18,7 @@ private val Context.userPreferencesDataStore by preferencesDataStore(name = "use
 object PreferencesModule {
     @Provides
     @Singleton
-    fun provideUserPreferences(@ApplicationContext context: Context): DataStore<Preferences> =
-        context.userPreferencesDataStore
+    fun provideUserPreferences(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> = context.userPreferencesDataStore
 }

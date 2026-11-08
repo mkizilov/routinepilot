@@ -65,16 +65,18 @@ internal fun Task.toEntity(modifiedAt: Instant) =
     )
 
 internal fun ScheduleEntity.toDomain(): Schedule {
-    val target = if (routineId != null) {
-        ScheduleTarget.RoutineTarget(routineId)
-    } else {
-        ScheduleTarget.TaskTarget(checkNotNull(taskId) { "Schedule $id has no target" })
-    }
-    val pattern = when (kind) {
-        RecurrenceKind.DAILY -> RecurrencePattern.Daily
-        RecurrenceKind.WEEKDAYS -> RecurrencePattern.Weekdays(daysOf(checkNotNull(weekdaysMask)))
-        RecurrenceKind.EVERY_N_DAYS -> RecurrencePattern.EveryNDays(checkNotNull(intervalDays))
-    }
+    val target =
+        if (routineId != null) {
+            ScheduleTarget.RoutineTarget(routineId)
+        } else {
+            ScheduleTarget.TaskTarget(checkNotNull(taskId) { "Schedule $id has no target" })
+        }
+    val pattern =
+        when (kind) {
+            RecurrenceKind.DAILY -> RecurrencePattern.Daily
+            RecurrenceKind.WEEKDAYS -> RecurrencePattern.Weekdays(daysOf(checkNotNull(weekdaysMask)))
+            RecurrenceKind.EVERY_N_DAYS -> RecurrencePattern.EveryNDays(checkNotNull(intervalDays))
+        }
     return Schedule(
         id = id,
         target = target,
@@ -89,10 +91,11 @@ private fun ScheduleEntity.timeOfDay(): LocalTime =
     LocalTime.of(timeOfDayMinutes / MINUTES_PER_HOUR, timeOfDayMinutes % MINUTES_PER_HOUR)
 
 internal fun Schedule.toEntity(): ScheduleEntity {
-    val (routineId, taskId) = when (val target = target) {
-        is ScheduleTarget.RoutineTarget -> target.routineId to null
-        is ScheduleTarget.TaskTarget -> null to target.taskId
-    }
+    val (routineId, taskId) =
+        when (val target = target) {
+            is ScheduleTarget.RoutineTarget -> target.routineId to null
+            is ScheduleTarget.TaskTarget -> null to target.taskId
+        }
     val pattern = recurrence.pattern
     return ScheduleEntity(
         id = id,
@@ -115,18 +118,19 @@ internal fun maskOf(days: Set<DayOfWeek>): Int = days.fold(0) { mask, day -> mas
 internal fun daysOf(mask: Int): Set<DayOfWeek> =
     DayOfWeek.entries.filter { mask and (1 shl (it.value - 1)) != 0 }.toSet()
 
-internal fun ScheduledOccurrenceEntity.toDomain() = ScheduledOccurrence(
-    id = id,
-    scheduleId = scheduleId,
-    routineId = routineId,
-    taskId = taskId,
-    originalScheduledAt = originalScheduledAt,
-    scheduledAt = scheduledAt,
-    localDate = localDate,
-    status = status,
-    createdAt = createdAt,
-    deletedAt = deletedAt,
-)
+internal fun ScheduledOccurrenceEntity.toDomain() =
+    ScheduledOccurrence(
+        id = id,
+        scheduleId = scheduleId,
+        routineId = routineId,
+        taskId = taskId,
+        originalScheduledAt = originalScheduledAt,
+        scheduledAt = scheduledAt,
+        localDate = localDate,
+        status = status,
+        createdAt = createdAt,
+        deletedAt = deletedAt,
+    )
 
 internal fun ScheduledOccurrence.toEntity(modifiedAt: Instant) =
     ScheduledOccurrenceEntity(
@@ -143,17 +147,18 @@ internal fun ScheduledOccurrence.toEntity(modifiedAt: Instant) =
         deletedAt = deletedAt,
     )
 
-internal fun ExecutionSessionEntity.toDomain() = ExecutionSession(
-    id = id,
-    routineId = routineId,
-    occurrenceId = occurrenceId,
-    startedAt = startedAt,
-    endedAt = endedAt,
-    createdAt = createdAt,
-    outcome = outcome,
-    focusedMillis = focusedMillis,
-    localDate = localDate,
-)
+internal fun ExecutionSessionEntity.toDomain() =
+    ExecutionSession(
+        id = id,
+        routineId = routineId,
+        occurrenceId = occurrenceId,
+        startedAt = startedAt,
+        endedAt = endedAt,
+        createdAt = createdAt,
+        outcome = outcome,
+        focusedMillis = focusedMillis,
+        localDate = localDate,
+    )
 
 internal fun ExecutionSession.toEntity(modifiedAt: Instant) =
     ExecutionSessionEntity(
@@ -183,32 +188,34 @@ internal fun StepCompletionEvent.toEntity(modifiedAt: Instant) =
         localDate = localDate,
     )
 
-internal fun CalendarLinkEntity.toDomain() = CalendarLink(
-    scheduleId = scheduleId,
-    calendarId = calendarId,
-    eventId = eventId,
-    uid = uid,
-    allDay = allDay,
-    rrule = rrule,
-    startMillis = startMillis,
-    ruleKey = ruleKey,
-    contentHash = contentHash,
-    status = status,
-    updatedAt = updatedAt,
-)
+internal fun CalendarLinkEntity.toDomain() =
+    CalendarLink(
+        scheduleId = scheduleId,
+        calendarId = calendarId,
+        eventId = eventId,
+        uid = uid,
+        allDay = allDay,
+        rrule = rrule,
+        startMillis = startMillis,
+        ruleKey = ruleKey,
+        contentHash = contentHash,
+        status = status,
+        updatedAt = updatedAt,
+    )
 
-internal fun CalendarLink.toEntity() = CalendarLinkEntity(
-    scheduleId = scheduleId,
-    calendarId = calendarId,
-    eventId = eventId,
-    uid = uid,
-    allDay = allDay,
-    rrule = rrule,
-    startMillis = startMillis,
-    ruleKey = ruleKey,
-    contentHash = contentHash,
-    status = status,
-    updatedAt = updatedAt,
-)
+internal fun CalendarLink.toEntity() =
+    CalendarLinkEntity(
+        scheduleId = scheduleId,
+        calendarId = calendarId,
+        eventId = eventId,
+        uid = uid,
+        allDay = allDay,
+        rrule = rrule,
+        startMillis = startMillis,
+        ruleKey = ruleKey,
+        contentHash = contentHash,
+        status = status,
+        updatedAt = updatedAt,
+    )
 
 private const val MINUTES_PER_HOUR = 60

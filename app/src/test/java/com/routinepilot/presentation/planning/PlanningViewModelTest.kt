@@ -36,21 +36,23 @@ class PlanningViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val clock = Clock.fixed(Instant.parse("2026-11-08T08:00:00Z"), ZoneOffset.UTC)
     private val taskId = UUID.fromString("00000000-0000-4000-8000-0000000000a1")
-    private val task = Task(
-        id = taskId,
-        title = "Stretch",
-        isCompleted = false,
-        routineId = null,
-        position = 0,
-        createdAt = Instant.EPOCH,
-    )
-    private val setting = PlanningTaskSetting(
-        taskId = taskId,
-        durationMinutes = 60,
-        priority = 3,
-        deadlineMinute = null,
-        dependsOn = emptySet(),
-    )
+    private val task =
+        Task(
+            id = taskId,
+            title = "Stretch",
+            isCompleted = false,
+            routineId = null,
+            position = 0,
+            createdAt = Instant.EPOCH,
+        )
+    private val setting =
+        PlanningTaskSetting(
+            taskId = taskId,
+            durationMinutes = 60,
+            priority = 3,
+            deadlineMinute = null,
+            dependsOn = emptySet(),
+        )
 
     @Before
     fun setUp() {
@@ -63,61 +65,75 @@ class PlanningViewModelTest {
     }
 
     @Test
-    fun apply_waitsForAReplanThatIsStillRunning_andRefusesAPinThatConflicts() = runTest(dispatcher) {
-        val repository = FakePlanningRepository(setting)
-        val viewModel = PlanningViewModel(repository, FakeTaskRepository(task), clock)
-        advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.result!!.canApply)
+    fun apply_waitsForAReplanThatIsStillRunning_andRefusesAPinThatConflicts() =
+        runTest(dispatcher) {
+            val repository = FakePlanningRepository(setting)
+            val viewModel = PlanningViewModel(repository, FakeTaskRepository(task), clock)
+            advanceUntilIdle()
+            assertTrue(
+                viewModel.uiState.value.result!!
+                    .canApply,
+            )
 
-        repository.gate = CompletableDeferred()
-        viewModel.pin(taskId, 541)
-        viewModel.apply()
-        advanceUntilIdle()
-        assertEquals(emptyList<PlanResult>(), repository.applied)
+            repository.gate = CompletableDeferred()
+            viewModel.pin(taskId, 541)
+            viewModel.apply()
+            advanceUntilIdle()
+            assertEquals(emptyList<PlanResult>(), repository.applied)
 
-        repository.gate!!.complete(Unit)
-        advanceUntilIdle()
+            repository.gate!!.complete(Unit)
+            advanceUntilIdle()
 
-        assertEquals(emptyList<PlanResult>(), repository.applied)
-        assertEquals(PlanningMessage.CannotApply, viewModel.uiState.value.message)
-    }
-
-    @Test
-    fun apply_writesTheCurrentPlan_whenNoPinConflicts() = runTest(dispatcher) {
-        val repository = FakePlanningRepository(setting)
-        val viewModel = PlanningViewModel(repository, FakeTaskRepository(task), clock)
-        advanceUntilIdle()
-
-        viewModel.apply()
-        advanceUntilIdle()
-
-        assertEquals(1, repository.applied.size)
-        assertEquals(PlanningMessage.Applied, viewModel.uiState.value.message)
-    }
+            assertEquals(emptyList<PlanResult>(), repository.applied)
+            assertEquals(PlanningMessage.CannotApply, viewModel.uiState.value.message)
+        }
 
     @Test
-    fun aNewerReplan_isNotOverwrittenByAnOlderOne() = runTest(dispatcher) {
-        val repository = FakePlanningRepository(setting)
-        val viewModel = PlanningViewModel(repository, FakeTaskRepository(task), clock)
-        advanceUntilIdle()
+    fun apply_writesTheCurrentPlan_whenNoPinConflicts() =
+        runTest(dispatcher) {
+            val repository = FakePlanningRepository(setting)
+            val viewModel = PlanningViewModel(repository, FakeTaskRepository(task), clock)
+            advanceUntilIdle()
 
-        val held = CompletableDeferred<Unit>()
-        repository.gate = held
-        viewModel.pin(taskId, 541)
-        advanceUntilIdle()
+            viewModel.apply()
+            advanceUntilIdle()
 
-        repository.gate = null
-        viewModel.unpin(taskId)
-        advanceUntilIdle()
+            assertEquals(1, repository.applied.size)
+            assertEquals(PlanningMessage.Applied, viewModel.uiState.value.message)
+        }
 
-        held.complete(Unit)
-        advanceUntilIdle()
+    @Test
+    fun aNewerReplan_isNotOverwrittenByAnOlderOne() =
+        runTest(dispatcher) {
+            val repository = FakePlanningRepository(setting)
+            val viewModel = PlanningViewModel(repository, FakeTaskRepository(task), clock)
+            advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.result!!.canApply)
-        assertTrue(viewModel.uiState.value.pins.isEmpty())
-    }
+            val held = CompletableDeferred<Unit>()
+            repository.gate = held
+            viewModel.pin(taskId, 541)
+            advanceUntilIdle()
 
-    private class FakePlanningRepository(private val setting: PlanningTaskSetting) : PlanningRepository {
+            repository.gate = null
+            viewModel.unpin(taskId)
+            advanceUntilIdle()
+
+            held.complete(Unit)
+            advanceUntilIdle()
+
+            assertTrue(
+                viewModel.uiState.value.result!!
+                    .canApply,
+            )
+            assertTrue(
+                viewModel.uiState.value.pins
+                    .isEmpty(),
+            )
+        }
+
+    private class FakePlanningRepository(
+        private val setting: PlanningTaskSetting,
+    ) : PlanningRepository {
         var gate: CompletableDeferred<Unit>? = null
         val applied = mutableListOf<PlanResult>()
         private val settingsFlow = MutableStateFlow(PlanningSettings(TimeRange(540, 1080), emptyList()))
@@ -133,16 +149,21 @@ class PlanningViewModelTest {
 
         override suspend fun removeTaskSetting(taskId: UUID) = Unit
 
-        override suspend fun buildRequest(date: LocalDate, zone: ZoneId, pins: Map<UUID, Int>): PlanRequest {
+        override suspend fun buildRequest(
+            date: LocalDate,
+            zone: ZoneId,
+            pins: Map<UUID, Int>,
+        ): PlanRequest {
             gate?.await()
-            val planned = FlexibleTask(
-                id = setting.taskId,
-                title = "Stretch",
-                durationMinutes = setting.durationMinutes,
-                priority = setting.priority,
-                deadlineMinute = setting.deadlineMinute,
-                dependsOn = setting.dependsOn,
-            )
+            val planned =
+                FlexibleTask(
+                    id = setting.taskId,
+                    title = "Stretch",
+                    durationMinutes = setting.durationMinutes,
+                    priority = setting.priority,
+                    deadlineMinute = setting.deadlineMinute,
+                    dependsOn = setting.dependsOn,
+                )
             return PlanRequest(
                 workday = TimeRange(540, 1080),
                 breaks = emptyList(),
@@ -154,12 +175,17 @@ class PlanningViewModelTest {
 
         override suspend fun storedPins(date: LocalDate): Map<UUID, Int> = emptyMap()
 
-        override suspend fun applyPlan(date: LocalDate, result: PlanResult) {
+        override suspend fun applyPlan(
+            date: LocalDate,
+            result: PlanResult,
+        ) {
             applied += result
         }
     }
 
-    private class FakeTaskRepository(task: Task) : TaskRepository {
+    private class FakeTaskRepository(
+        task: Task,
+    ) : TaskRepository {
         private val tasksFlow = MutableStateFlow(listOf(task))
 
         override fun observeTasks(): Flow<List<Task>> = tasksFlow

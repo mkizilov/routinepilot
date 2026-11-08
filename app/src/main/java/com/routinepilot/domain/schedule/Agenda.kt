@@ -34,7 +34,10 @@ data class Agenda(
 object AgendaBuilder {
     const val CURRENT_WINDOW_MINUTES = 60L
 
-    fun build(items: List<AgendaItem>, now: Instant): Agenda {
+    fun build(
+        items: List<AgendaItem>,
+        now: Instant,
+    ): Agenda {
         val windowStart = now.minus(Duration.ofMinutes(CURRENT_WINDOW_MINUTES))
         val sorted = items.sortedWith(compareBy({ it.scheduledAt }, { it.occurrenceId.toString() }))
         val pending = sorted.filter { it.status.isPending }

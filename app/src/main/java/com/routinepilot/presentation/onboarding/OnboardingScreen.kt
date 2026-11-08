@@ -31,7 +31,10 @@ import com.routinepilot.domain.onboarding.nextPage
 import com.routinepilot.presentation.common.CenteredContent
 
 @Composable
-fun OnboardingRoute(onFinished: () -> Unit, viewModel: OnboardingViewModel = hiltViewModel()) {
+fun OnboardingRoute(
+    onFinished: () -> Unit,
+    viewModel: OnboardingViewModel = hiltViewModel(),
+) {
     OnboardingScreen(
         onFinished = {
             viewModel.finish()
@@ -48,6 +51,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
     var index by rememberSaveable { mutableIntStateOf(0) }
     val page = pages[index]
     val last = nextPage(page) == null
+
     fun advance() {
         if (last) onFinished() else index += 1
     }
@@ -95,15 +99,17 @@ fun OnboardingScreen(onFinished: () -> Unit) {
 }
 
 private val OnboardingPage.titleRes: Int
-    get() = when (this) {
-        OnboardingPage.WELCOME -> R.string.onboarding_welcome_title
-        OnboardingPage.ROUTINES -> R.string.onboarding_routines_title
-        OnboardingPage.PRIVACY -> R.string.onboarding_privacy_title
-    }
+    get() =
+        when (this) {
+            OnboardingPage.WELCOME -> R.string.onboarding_welcome_title
+            OnboardingPage.ROUTINES -> R.string.onboarding_routines_title
+            OnboardingPage.PRIVACY -> R.string.onboarding_privacy_title
+        }
 
 private val OnboardingPage.bodyRes: Int
-    get() = when (this) {
-        OnboardingPage.WELCOME -> R.string.onboarding_welcome_body
-        OnboardingPage.ROUTINES -> R.string.onboarding_routines_body
-        OnboardingPage.PRIVACY -> R.string.onboarding_privacy_body
-    }
+    get() =
+        when (this) {
+            OnboardingPage.WELCOME -> R.string.onboarding_welcome_body
+            OnboardingPage.ROUTINES -> R.string.onboarding_routines_body
+            OnboardingPage.PRIVACY -> R.string.onboarding_privacy_body
+        }

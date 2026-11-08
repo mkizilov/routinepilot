@@ -16,10 +16,10 @@ import com.routinepilot.presentation.calendar.CalendarSettingsRoute
 import com.routinepilot.presentation.help.HelpScreen
 import com.routinepilot.presentation.home.HomeNavigation
 import com.routinepilot.presentation.home.HomeRoute
-import com.routinepilot.presentation.routine.editor.ROUTINE_ID_ARG
 import com.routinepilot.presentation.onboarding.OnboardingRoute
 import com.routinepilot.presentation.onboarding.OnboardingViewModel
 import com.routinepilot.presentation.planning.PlanningRoute
+import com.routinepilot.presentation.routine.editor.ROUTINE_ID_ARG
 import com.routinepilot.presentation.routine.editor.RoutineEditorRoute
 import com.routinepilot.presentation.routine.run.RoutineRunRoute
 import com.routinepilot.presentation.schedule.AgendaRoute
@@ -48,13 +48,20 @@ private const val HELP_ROUTE = "help"
  * A request from a notification or widget tap. [resume] is true for Resume on a paused run. [start] begins the routine
  * once its screen has loaded, through the same path as the Start button.
  */
-data class RunRequest(val routineId: UUID, val resume: Boolean, val start: Boolean = false)
+data class RunRequest(
+    val routineId: UUID,
+    val resume: Boolean,
+    val start: Boolean = false,
+)
 
 internal fun editorRoute(routineId: UUID?): String =
     if (routineId == null) EDITOR_ROUTE else "$EDITOR_ROUTE?$ROUTINE_ID_ARG=$routineId"
 
-internal fun runRoute(routineId: UUID, resume: Boolean = false, start: Boolean = false): String =
-    "$RUN_ROUTE/$routineId?$RESUME_ARG=$resume&$START_ARG=$start"
+internal fun runRoute(
+    routineId: UUID,
+    resume: Boolean = false,
+    start: Boolean = false,
+): String = "$RUN_ROUTE/$routineId?$RESUME_ARG=$resume&$START_ARG=$start"
 
 internal fun scheduleEditorRoute(scheduleId: UUID?): String =
     if (scheduleId == null) SCHEDULE_EDITOR_ROUTE else "$SCHEDULE_EDITOR_ROUTE?$SCHEDULE_ID_ARG=$scheduleId"
@@ -68,10 +75,11 @@ fun RoutinePilotNavHost(
     val onboarding: OnboardingViewModel = hiltViewModel()
     val introNeeded by onboarding.introNeeded.collectAsStateWithLifecycle()
     // Wait for the stored flag before choosing the first screen, so a finished user never sees the introduction.
-    val startDestination = when (introNeeded ?: return) {
-        true -> ONBOARDING_ROUTE
-        false -> AGENDA_ROUTE
-    }
+    val startDestination =
+        when (introNeeded ?: return) {
+            true -> ONBOARDING_ROUTE
+            false -> AGENDA_ROUTE
+        }
     NavHost(navController = navController, startDestination = startDestination) {
         composable(ONBOARDING_ROUTE) {
             OnboardingRoute(
@@ -98,38 +106,41 @@ fun RoutinePilotNavHost(
         }
         composable(HOME_ROUTE) {
             HomeRoute(
-                navigation = HomeNavigation(
-                    onEdit = { navController.navigate(editorRoute(it)) },
-                    onRun = { navController.navigate(runRoute(it)) },
-                    onNew = { navController.navigate(editorRoute(null)) },
-                ),
+                navigation =
+                    HomeNavigation(
+                        onEdit = { navController.navigate(editorRoute(it)) },
+                        onRun = { navController.navigate(runRoute(it)) },
+                        onNew = { navController.navigate(editorRoute(null)) },
+                    ),
             )
         }
         composable(
             route = "$EDITOR_ROUTE?$ROUTINE_ID_ARG={$ROUTINE_ID_ARG}",
-            arguments = listOf(
-                navArgument(ROUTINE_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-            ),
+            arguments =
+                listOf(
+                    navArgument(ROUTINE_ID_ARG) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
         ) {
             RoutineEditorRoute(onClose = { navController.popBackStack() })
         }
         composable(
             route = "$RUN_ROUTE/{$ROUTINE_ID_ARG}?$RESUME_ARG={$RESUME_ARG}&$START_ARG={$START_ARG}",
-            arguments = listOf(
-                navArgument(ROUTINE_ID_ARG) { type = NavType.StringType },
-                navArgument(RESUME_ARG) {
-                    type = NavType.BoolType
-                    defaultValue = false
-                },
-                navArgument(START_ARG) {
-                    type = NavType.BoolType
-                    defaultValue = false
-                },
-            ),
+            arguments =
+                listOf(
+                    navArgument(ROUTINE_ID_ARG) { type = NavType.StringType },
+                    navArgument(RESUME_ARG) {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                    navArgument(START_ARG) {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                ),
         ) { entry ->
             RoutineRunRoute(
                 onClose = { navController.popBackStack() },
@@ -158,13 +169,14 @@ fun RoutinePilotNavHost(
         }
         composable(
             route = "$SCHEDULE_EDITOR_ROUTE?$SCHEDULE_ID_ARG={$SCHEDULE_ID_ARG}",
-            arguments = listOf(
-                navArgument(SCHEDULE_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-            ),
+            arguments =
+                listOf(
+                    navArgument(SCHEDULE_ID_ARG) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
         ) {
             ScheduleEditorRoute(onClose = { navController.popBackStack() })
         }

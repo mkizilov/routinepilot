@@ -108,7 +108,11 @@ fun ScheduleListRoute(
                         Column(Modifier.weight(1f)) {
                             Text(item.title, style = MaterialTheme.typography.titleMedium)
                             Text(
-                                describe(item.schedule.recurrence.pattern, item.schedule.recurrence.time.toString()),
+                                describe(
+                                    item.schedule.recurrence.pattern,
+                                    item.schedule.recurrence.time
+                                        .toString(),
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -191,7 +195,11 @@ fun ScheduleEditorScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ScheduleForm(state: ScheduleEditorUiState, actions: ScheduleEditorActions, modifier: Modifier) {
+private fun ScheduleForm(
+    state: ScheduleEditorUiState,
+    actions: ScheduleEditorActions,
+    modifier: Modifier,
+) {
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = modifier,
@@ -354,23 +362,33 @@ private fun ScheduleForm(state: ScheduleEditorUiState, actions: ScheduleEditorAc
     }
 }
 
-private fun errorText(error: ScheduleValidationError): Int = when (error) {
-    ScheduleValidationError.MISSING_ROUTINE -> R.string.schedule_error_routine
-    ScheduleValidationError.BLANK_TASK_TITLE -> R.string.error_blank_title
-    ScheduleValidationError.NO_WEEKDAYS -> R.string.schedule_error_weekdays
-    ScheduleValidationError.INTERVAL_OUT_OF_RANGE -> R.string.schedule_error_interval
-    ScheduleValidationError.INVALID_TIME -> R.string.schedule_error_time
-    ScheduleValidationError.INVALID_START_DATE -> R.string.schedule_error_start_date
-}
+private fun errorText(error: ScheduleValidationError): Int =
+    when (error) {
+        ScheduleValidationError.MISSING_ROUTINE -> R.string.schedule_error_routine
+        ScheduleValidationError.BLANK_TASK_TITLE -> R.string.error_blank_title
+        ScheduleValidationError.NO_WEEKDAYS -> R.string.schedule_error_weekdays
+        ScheduleValidationError.INTERVAL_OUT_OF_RANGE -> R.string.schedule_error_interval
+        ScheduleValidationError.INVALID_TIME -> R.string.schedule_error_time
+        ScheduleValidationError.INVALID_START_DATE -> R.string.schedule_error_start_date
+    }
 
 @Composable
-private fun describe(pattern: RecurrencePattern, time: String): String = when (pattern) {
-    is RecurrencePattern.Daily -> stringResource(R.string.schedule_describe_daily, time)
-    is RecurrencePattern.Weekdays ->
-        stringResource(
-            R.string.schedule_describe_weekdays,
-            pattern.days.sorted().joinToString(", ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) },
-            time,
-        )
-    is RecurrencePattern.EveryNDays -> stringResource(R.string.schedule_describe_interval, pattern.intervalDays, time)
-}
+private fun describe(
+    pattern: RecurrencePattern,
+    time: String,
+): String =
+    when (pattern) {
+        is RecurrencePattern.Daily -> stringResource(R.string.schedule_describe_daily, time)
+        is RecurrencePattern.Weekdays ->
+            stringResource(
+                R.string.schedule_describe_weekdays,
+                pattern.days.sorted().joinToString(", ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) },
+                time,
+            )
+        is RecurrencePattern.EveryNDays ->
+            stringResource(
+                R.string.schedule_describe_interval,
+                pattern.intervalDays,
+                time,
+            )
+    }

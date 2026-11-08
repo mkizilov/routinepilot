@@ -23,13 +23,18 @@ object RunIntents {
     private const val REQUEST_RESUME_RUN = 4102
     private const val PENDING_FLAGS = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
-    fun openRun(context: Context, routineId: UUID, resume: Boolean): PendingIntent {
+    fun openRun(
+        context: Context,
+        routineId: UUID,
+        resume: Boolean,
+    ): PendingIntent {
         val action = if (resume) ACTION_RESUME_RUN else ACTION_OPEN_RUN
         val requestCode = if (resume) REQUEST_RESUME_RUN else REQUEST_OPEN_RUN
-        val intent = Intent(context, MainActivity::class.java)
-            .setAction(action)
-            .putExtra(EXTRA_ROUTINE_ID, routineId.toString())
-            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val intent =
+            Intent(context, MainActivity::class.java)
+                .setAction(action)
+                .putExtra(EXTRA_ROUTINE_ID, routineId.toString())
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         return PendingIntent.getActivity(context, requestCode, intent, PENDING_FLAGS)
     }
 
@@ -37,13 +42,20 @@ object RunIntents {
      * An explicit intent to MainActivity for the app's own widgets. The routine id travels as an extra and is parsed
      * back to a UUID, so malformed input is ignored rather than trusted.
      */
-    fun activityIntent(context: Context, routineId: UUID?, action: String): Intent =
+    fun activityIntent(
+        context: Context,
+        routineId: UUID?,
+        action: String,
+    ): Intent =
         Intent(context, MainActivity::class.java)
             .setAction(action)
             .putExtra(EXTRA_ROUTINE_ID, routineId?.toString())
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
-    fun command(context: Context, action: String): PendingIntent {
+    fun command(
+        context: Context,
+        action: String,
+    ): PendingIntent {
         val intent = Intent(action).setClass(context, RunActionReceiver::class.java)
         return PendingIntent.getBroadcast(context, action.hashCode(), intent, PENDING_FLAGS)
     }

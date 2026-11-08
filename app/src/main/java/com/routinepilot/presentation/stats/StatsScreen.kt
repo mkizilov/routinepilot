@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -65,7 +66,10 @@ fun StatsRoute(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatsScreen(state: StatsUiState, onBack: () -> Unit) {
+fun StatsScreen(
+    state: StatsUiState,
+    onBack: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -90,7 +94,11 @@ fun StatsScreen(state: StatsUiState, onBack: () -> Unit) {
 }
 
 @Composable
-private fun StatsContent(stats: Statistics, titles: Map<UUID, String>, modifier: Modifier) {
+private fun StatsContent(
+    stats: Statistics,
+    titles: Map<UUID, String>,
+    modifier: Modifier,
+) {
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
@@ -131,7 +139,10 @@ private fun StatsContent(stats: Statistics, titles: Map<UUID, String>, modifier:
 }
 
 @Composable
-private fun Section(titleRes: Int, content: @Composable () -> Unit) {
+private fun Section(
+    titleRes: Int,
+    content: @Composable () -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(titleRes), style = MaterialTheme.typography.titleMedium)
         content()
@@ -160,7 +171,10 @@ private fun TodayCard(day: DayStats) {
 }
 
 @Composable
-private fun StreakCard(current: Int, longest: Int) {
+private fun StreakCard(
+    current: Int,
+    longest: Int,
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.stats_streak_title), style = MaterialTheme.typography.titleMedium)
@@ -265,7 +279,10 @@ private fun CalendarCell(day: DayStats) {
 }
 
 @Composable
-private fun LegendItem(status: DayStatus, labelRes: Int) {
+private fun LegendItem(
+    status: DayStatus,
+    labelRes: Int,
+) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.size(10.dp).background(statusColor(status), RoundedCornerShape(2.dp)))
         Text(stringResource(labelRes), style = MaterialTheme.typography.labelSmall)
@@ -273,7 +290,10 @@ private fun LegendItem(status: DayStatus, labelRes: Int) {
 }
 
 @Composable
-private fun ConsistencyList(rows: List<RoutineConsistency>, titles: Map<UUID, String>) {
+private fun ConsistencyList(
+    rows: List<RoutineConsistency>,
+    titles: Map<UUID, String>,
+) {
     if (rows.isEmpty()) {
         Text(stringResource(R.string.stats_consistency_empty), style = MaterialTheme.typography.bodyMedium)
         return
@@ -297,21 +317,23 @@ private fun ConsistencyList(rows: List<RoutineConsistency>, titles: Map<UUID, St
 }
 
 @Composable
-private fun statusText(status: DayStatus): String = when (status) {
-    DayStatus.KEPT -> stringResource(R.string.stats_status_kept)
-    DayStatus.EXCUSED -> stringResource(R.string.stats_status_excused)
-    DayStatus.BROKEN -> stringResource(R.string.stats_status_missed)
-    DayStatus.IN_PROGRESS -> stringResource(R.string.stats_status_in_progress)
-    DayStatus.FUTURE -> ""
-}
+private fun statusText(status: DayStatus): String =
+    when (status) {
+        DayStatus.KEPT -> stringResource(R.string.stats_status_kept)
+        DayStatus.EXCUSED -> stringResource(R.string.stats_status_excused)
+        DayStatus.BROKEN -> stringResource(R.string.stats_status_missed)
+        DayStatus.IN_PROGRESS -> stringResource(R.string.stats_status_in_progress)
+        DayStatus.FUTURE -> ""
+    }
 
 @Composable
-private fun statusColor(status: DayStatus) = when (status) {
-    DayStatus.KEPT -> MaterialTheme.colorScheme.primary
-    DayStatus.EXCUSED -> MaterialTheme.colorScheme.tertiary
-    DayStatus.BROKEN -> MaterialTheme.colorScheme.error
-    DayStatus.IN_PROGRESS -> MaterialTheme.colorScheme.outline
-    DayStatus.FUTURE -> MaterialTheme.colorScheme.surface
-}
+private fun statusColor(status: DayStatus) =
+    when (status) {
+        DayStatus.KEPT -> MaterialTheme.colorScheme.primary
+        DayStatus.EXCUSED -> MaterialTheme.colorScheme.tertiary
+        DayStatus.BROKEN -> MaterialTheme.colorScheme.error
+        DayStatus.IN_PROGRESS -> MaterialTheme.colorScheme.outline
+        DayStatus.FUTURE -> MaterialTheme.colorScheme.surface
+    }
 
 private fun formatFocus(millis: Long): String = formatDuration((millis / MILLIS_PER_SECOND).toInt())

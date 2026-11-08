@@ -23,7 +23,12 @@ interface ExecutionRepository {
      * Records how a session ended. A FINISHED session also completes its linked item, if that item is still pending.
      * Ending a session that has already ended does nothing.
      */
-    suspend fun endSession(id: UUID, outcome: SessionOutcome, endedAt: Instant, focusedMillis: Long)
+    suspend fun endSession(
+        id: UUID,
+        outcome: SessionOutcome,
+        endedAt: Instant,
+        focusedMillis: Long,
+    )
 
     suspend fun deleteSession(id: UUID)
 

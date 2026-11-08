@@ -50,9 +50,14 @@ class RoutineEditorScreenTest {
             RoutineEditorUiState(
                 showErrors = true,
                 titleError = RoutineValidationError.BLANK_TITLE,
-                steps = listOf(
-                    draft("Stretch", durationMinutes = "0", durationError = RoutineValidationError.DURATION_INVALID),
-                ),
+                steps =
+                    listOf(
+                        draft(
+                            "Stretch",
+                            durationMinutes = "0",
+                            durationError = RoutineValidationError.DURATION_INVALID,
+                        ),
+                    ),
             ),
         )
 
@@ -187,7 +192,8 @@ class RoutineEditorScreenTest {
     fun stepsHeading_isMarkedAsAHeading_forScreenReaderNavigation() {
         setScreen(RoutineEditorUiState())
 
-        composeTestRule.onNodeWithText("Steps")
+        composeTestRule
+            .onNodeWithText("Steps")
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
     }
 
@@ -254,13 +260,25 @@ class RoutineEditorScreenTest {
             calls += "addStep"
         }
 
-        override fun onStepTitleChange(stepId: UUID, value: String) {}
+        override fun onStepTitleChange(
+            stepId: UUID,
+            value: String,
+        ) {}
 
-        override fun onStepDescriptionChange(stepId: UUID, value: String) {}
+        override fun onStepDescriptionChange(
+            stepId: UUID,
+            value: String,
+        ) {}
 
-        override fun onStepDurationChange(stepId: UUID, value: String) {}
+        override fun onStepDurationChange(
+            stepId: UUID,
+            value: String,
+        ) {}
 
-        override fun onMoveStep(stepId: UUID, offset: Int) {
+        override fun onMoveStep(
+            stepId: UUID,
+            offset: Int,
+        ) {
             calls += "move:$stepId:$offset"
         }
 

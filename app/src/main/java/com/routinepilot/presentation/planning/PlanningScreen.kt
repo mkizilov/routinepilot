@@ -43,8 +43,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.routinepilot.R
 import com.routinepilot.domain.planning.Blocker
-import com.routinepilot.domain.planning.PlanIssue
 import com.routinepilot.domain.planning.Placement
+import com.routinepilot.domain.planning.PlanIssue
 import com.routinepilot.domain.planning.TimeRange
 import com.routinepilot.domain.repository.PlanningSettings
 import com.routinepilot.domain.repository.PlanningTaskSetting
@@ -65,10 +65,17 @@ internal const val TAG_PLANNING_LOADING = "planning_loading"
 private val DATE_STYLE: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
 
 /** A task being edited. [existing] is null for a task that is not planned yet. */
-private data class TaskEdit(val taskId: UUID, val title: String, val existing: PlanningTaskSetting?)
+private data class TaskEdit(
+    val taskId: UUID,
+    val title: String,
+    val existing: PlanningTaskSetting?,
+)
 
 @Composable
-fun PlanningRoute(onBack: () -> Unit, viewModel: PlanningViewModel = hiltViewModel()) {
+fun PlanningRoute(
+    onBack: () -> Unit,
+    viewModel: PlanningViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     PlanningScreen(
         state = state,
@@ -98,10 +105,11 @@ fun PlanningScreen(
 ) {
     var editingHours by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<TaskEdit?>(null) }
-    val titles = remember(state.planned, state.candidates) {
-        state.planned.associate { it.setting.taskId to it.title } +
-            state.candidates.associate { it.taskId to it.title }
-    }
+    val titles =
+        remember(state.planned, state.candidates) {
+            state.planned.associate { it.setting.taskId to it.title } +
+                state.candidates.associate { it.taskId to it.title }
+        }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -168,7 +176,10 @@ fun PlanningScreen(
     }
 }
 
-private fun LazyListScope.plannedSection(state: PlanningUiState, onEdit: (TaskEdit) -> Unit) {
+private fun LazyListScope.plannedSection(
+    state: PlanningUiState,
+    onEdit: (TaskEdit) -> Unit,
+) {
     item { SectionTitle(R.string.planning_tasks_header) }
     if (state.planned.isEmpty()) item { Text(stringResource(R.string.planning_no_tasks)) }
     items(state.planned, key = { it.setting.taskId }) { row ->
@@ -203,7 +214,10 @@ private fun LazyListScope.placementsSection(
     }
 }
 
-private fun LazyListScope.issuesSection(state: PlanningUiState, titles: Map<UUID, String>) {
+private fun LazyListScope.issuesSection(
+    state: PlanningUiState,
+    titles: Map<UUID, String>,
+) {
     val result = state.result ?: return
     if (result.unplaced.isNotEmpty()) {
         item { SectionTitle(R.string.planning_unplaced_header) }
@@ -234,11 +248,15 @@ private fun LoadingPlan() {
 }
 
 @Composable
-private fun HoursSection(settings: PlanningSettings?, onEdit: () -> Unit) {
+private fun HoursSection(
+    settings: PlanningSettings?,
+    onEdit: () -> Unit,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        val hours = settings?.let {
-            stringResource(R.string.planning_hours, formatClock(it.workday.start), formatClock(it.workday.end))
-        }
+        val hours =
+            settings?.let {
+                stringResource(R.string.planning_hours, formatClock(it.workday.start), formatClock(it.workday.end))
+            }
         Text(hours.orEmpty())
         OutlinedButton(onClick = onEdit) { Text(stringResource(R.string.planning_edit_hours)) }
     }
@@ -253,11 +271,12 @@ private fun PlacementRow(
 ) {
     Column {
         Text(title)
-        val block = stringResource(
-            R.string.planning_block,
-            formatClock(placement.range.start),
-            formatClock(placement.range.end),
-        )
+        val block =
+            stringResource(
+                R.string.planning_block,
+                formatClock(placement.range.start),
+                formatClock(placement.range.end),
+            )
         Text(block)
         if (placement.pinned) Text(stringResource(R.string.planning_pinned))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -275,7 +294,11 @@ private fun PlacementRow(
 }
 
 @Composable
-private fun IssueList(title: String, issues: List<PlanIssue>, titles: Map<UUID, String>) {
+private fun IssueList(
+    title: String,
+    issues: List<PlanIssue>,
+    titles: Map<UUID, String>,
+) {
     Column {
         Text(title)
         issues.forEach { issue -> issueLines(issue, titles).forEach { Text(it) } }
@@ -283,48 +306,55 @@ private fun IssueList(title: String, issues: List<PlanIssue>, titles: Map<UUID, 
 }
 
 @Composable
-private fun issueLines(issue: PlanIssue, titles: Map<UUID, String>): List<String> = when (issue) {
-    PlanIssue.MisalignedStart -> listOf(stringResource(R.string.planning_issue_misaligned))
-    PlanIssue.OutsideWorkday -> listOf(stringResource(R.string.planning_issue_outside))
-    is PlanIssue.OverlapsBlocker ->
-        listOf(stringResource(R.string.planning_issue_overlap, blockerLabels(issue.blockers)))
-    is PlanIssue.PastDeadline ->
-        listOf(stringResource(R.string.planning_issue_past_deadline, formatClock(issue.deadlineMinute)))
-    is PlanIssue.PrerequisiteAfterStart ->
-        listOf(stringResource(R.string.planning_issue_prerequisite, titleList(issue.prerequisites, titles)))
-    is PlanIssue.WindowClosed -> listOf(
-        stringResource(
-            R.string.planning_issue_window,
-            formatClock(issue.earliestStart),
-            formatClock(issue.latestFinish),
-        ),
-    )
-    is PlanIssue.InsufficientTime -> insufficientLines(issue)
-    is PlanIssue.DependencyUnplaced ->
-        listOf(stringResource(R.string.planning_issue_waits, titleList(issue.prerequisites, titles)))
-    is PlanIssue.CyclicDependency ->
-        listOf(stringResource(R.string.planning_issue_cycle, titleList(issue.members, titles)))
-}
+private fun issueLines(
+    issue: PlanIssue,
+    titles: Map<UUID, String>,
+): List<String> =
+    when (issue) {
+        PlanIssue.MisalignedStart -> listOf(stringResource(R.string.planning_issue_misaligned))
+        PlanIssue.OutsideWorkday -> listOf(stringResource(R.string.planning_issue_outside))
+        is PlanIssue.OverlapsBlocker ->
+            listOf(stringResource(R.string.planning_issue_overlap, blockerLabels(issue.blockers)))
+        is PlanIssue.PastDeadline ->
+            listOf(stringResource(R.string.planning_issue_past_deadline, formatClock(issue.deadlineMinute)))
+        is PlanIssue.PrerequisiteAfterStart ->
+            listOf(stringResource(R.string.planning_issue_prerequisite, titleList(issue.prerequisites, titles)))
+        is PlanIssue.WindowClosed ->
+            listOf(
+                stringResource(
+                    R.string.planning_issue_window,
+                    formatClock(issue.earliestStart),
+                    formatClock(issue.latestFinish),
+                ),
+            )
+        is PlanIssue.InsufficientTime -> insufficientLines(issue)
+        is PlanIssue.DependencyUnplaced ->
+            listOf(stringResource(R.string.planning_issue_waits, titleList(issue.prerequisites, titles)))
+        is PlanIssue.CyclicDependency ->
+            listOf(stringResource(R.string.planning_issue_cycle, titleList(issue.members, titles)))
+    }
 
 @Composable
 private fun insufficientLines(issue: PlanIssue.InsufficientTime): List<String> {
-    val summary = if (issue.freeMinutes >= issue.neededMinutes) {
-        stringResource(R.string.planning_issue_fragmented, issue.neededMinutes, issue.largestFreeMinutes)
-    } else {
-        stringResource(R.string.planning_issue_insufficient, issue.neededMinutes, issue.freeMinutes)
-    }
+    val summary =
+        if (issue.freeMinutes >= issue.neededMinutes) {
+            stringResource(R.string.planning_issue_fragmented, issue.neededMinutes, issue.largestFreeMinutes)
+        } else {
+            stringResource(R.string.planning_issue_insufficient, issue.neededMinutes, issue.freeMinutes)
+        }
     if (issue.blockers.isEmpty()) return listOf(summary)
     return listOf(summary, stringResource(R.string.planning_issue_blocked_by, blockerLabels(issue.blockers)))
 }
 
 @Composable
-private fun messageText(message: PlanningMessage): String = stringResource(
-    when (message) {
-        PlanningMessage.Applied -> R.string.planning_applied
-        PlanningMessage.CannotApply -> R.string.planning_cannot_apply
-        PlanningMessage.InvalidInput -> R.string.planning_invalid
-    },
-)
+private fun messageText(message: PlanningMessage): String =
+    stringResource(
+        when (message) {
+            PlanningMessage.Applied -> R.string.planning_applied
+            PlanningMessage.CannotApply -> R.string.planning_cannot_apply
+            PlanningMessage.InvalidInput -> R.string.planning_invalid
+        },
+    )
 
 @Composable
 private fun WorkingHoursDialog(
@@ -466,8 +496,10 @@ private fun taskSummary(setting: PlanningTaskSetting): String {
 
 private fun blockerLabels(blockers: List<Blocker>): String = blockers.joinToString { it.label }
 
-private fun titleList(ids: List<UUID>, titles: Map<UUID, String>): String =
-    ids.joinToString { titles[it].orEmpty() }
+private fun titleList(
+    ids: List<UUID>,
+    titles: Map<UUID, String>,
+): String = ids.joinToString { titles[it].orEmpty() }
 
 /** Minutes after midnight as "HH:mm". */
 internal fun formatClock(minute: Int): String =

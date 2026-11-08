@@ -136,16 +136,21 @@ fun AccountScreen(
 }
 
 @Composable
-private fun SignInForm(busy: Boolean, onSignIn: (String, String) -> Unit, onRegister: (String, String) -> Unit) {
+private fun SignInForm(
+    busy: Boolean,
+    onSignIn: (String, String) -> Unit,
+    onRegister: (String, String) -> Unit,
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val ready = !busy && email.isNotBlank() && password.isNotEmpty()
     val focus = LocalFocusManager.current
     val next = remember(focus) { KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Next) }) }
-    val done = KeyboardActions(onDone = {
-        focus.clearFocus()
-        if (ready) onSignIn(email.trim(), password)
-    })
+    val done =
+        KeyboardActions(onDone = {
+            focus.clearFocus()
+            if (ready) onSignIn(email.trim(), password)
+        })
     Text(stringResource(R.string.account_signed_out_note))
     OutlinedTextField(
         value = email,
@@ -201,7 +206,10 @@ private fun SignedInSection(
 }
 
 @Composable
-private fun HeldConflict(conflict: Conflict, onResolve: (Conflict, Decision) -> Unit) {
+private fun HeldConflict(
+    conflict: Conflict,
+    onResolve: (Conflict, Decision) -> Unit,
+) {
     when (conflict) {
         is Conflict.DeleteOfEdited -> {
             Text(stringResource(R.string.account_conflict_delete_edited))
@@ -270,7 +278,10 @@ private fun ConfirmedChoice(
 
 /** Deleting the account needs the password again and a confirmation. The password is kept in plain state only. */
 @Composable
-private fun DeleteAccountSection(busy: Boolean, onDelete: (String) -> Unit) {
+private fun DeleteAccountSection(
+    busy: Boolean,
+    onDelete: (String) -> Unit,
+) {
     var password by remember { mutableStateOf("") }
     var confirming by remember { mutableStateOf(false) }
     Text(stringResource(R.string.account_delete_heading))
@@ -313,38 +324,42 @@ private fun DeleteAccountSection(busy: Boolean, onDelete: (String) -> Unit) {
 }
 
 @Composable
-private fun phaseText(phase: SyncPhase): String = stringResource(
-    when (phase) {
-        SyncPhase.NOT_SIGNED_IN -> R.string.account_phase_not_signed_in
-        SyncPhase.SYNCING -> R.string.account_phase_syncing
-        SyncPhase.UP_TO_DATE -> R.string.account_phase_up_to_date
-        SyncPhase.WAITING_FOR_NETWORK -> R.string.account_phase_waiting
-        SyncPhase.NEEDS_SIGN_IN -> R.string.account_phase_needs_sign_in
-        SyncPhase.NEEDS_ATTENTION -> R.string.account_phase_attention
-    },
-)
+private fun phaseText(phase: SyncPhase): String =
+    stringResource(
+        when (phase) {
+            SyncPhase.NOT_SIGNED_IN -> R.string.account_phase_not_signed_in
+            SyncPhase.SYNCING -> R.string.account_phase_syncing
+            SyncPhase.UP_TO_DATE -> R.string.account_phase_up_to_date
+            SyncPhase.WAITING_FOR_NETWORK -> R.string.account_phase_waiting
+            SyncPhase.NEEDS_SIGN_IN -> R.string.account_phase_needs_sign_in
+            SyncPhase.NEEDS_ATTENTION -> R.string.account_phase_attention
+        },
+    )
 
 @Composable
-private fun messageText(message: AccountMessage): String = when (message) {
-    AccountMessage.SignedIn -> stringResource(R.string.account_message_signed_in)
-    AccountMessage.AccountDeleted -> stringResource(R.string.account_message_deleted)
-    is AccountMessage.Blocked -> stringResource(R.string.account_message_blocked, message.unsyncedChanges)
-    is AccountMessage.SignedOut -> stringResource(
-        if (message.deviceRevoked) {
-            R.string.account_message_signed_out
-        } else {
-            R.string.account_message_signed_out_device_kept
-        },
-    )
-    is AccountMessage.Failed -> stringResource(
-        when (message.problem) {
-            AuthProblem.INVALID_CREDENTIALS -> R.string.account_message_invalid_credentials
-            AuthProblem.EMAIL_TAKEN -> R.string.account_message_email_taken
-            AuthProblem.INVALID_INPUT -> R.string.account_message_invalid_input
-            AuthProblem.UNAVAILABLE -> R.string.account_message_unavailable
-            AuthProblem.WRONG_PASSWORD -> R.string.account_message_wrong_password
-            AuthProblem.SIGN_IN_AGAIN -> R.string.account_message_sign_in_again
-            AuthProblem.SERVER -> R.string.account_message_server
-        },
-    )
-}
+private fun messageText(message: AccountMessage): String =
+    when (message) {
+        AccountMessage.SignedIn -> stringResource(R.string.account_message_signed_in)
+        AccountMessage.AccountDeleted -> stringResource(R.string.account_message_deleted)
+        is AccountMessage.Blocked -> stringResource(R.string.account_message_blocked, message.unsyncedChanges)
+        is AccountMessage.SignedOut ->
+            stringResource(
+                if (message.deviceRevoked) {
+                    R.string.account_message_signed_out
+                } else {
+                    R.string.account_message_signed_out_device_kept
+                },
+            )
+        is AccountMessage.Failed ->
+            stringResource(
+                when (message.problem) {
+                    AuthProblem.INVALID_CREDENTIALS -> R.string.account_message_invalid_credentials
+                    AuthProblem.EMAIL_TAKEN -> R.string.account_message_email_taken
+                    AuthProblem.INVALID_INPUT -> R.string.account_message_invalid_input
+                    AuthProblem.UNAVAILABLE -> R.string.account_message_unavailable
+                    AuthProblem.WRONG_PASSWORD -> R.string.account_message_wrong_password
+                    AuthProblem.SIGN_IN_AGAIN -> R.string.account_message_sign_in_again
+                    AuthProblem.SERVER -> R.string.account_message_server
+                },
+            )
+    }

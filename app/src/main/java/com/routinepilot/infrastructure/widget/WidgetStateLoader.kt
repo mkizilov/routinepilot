@@ -22,30 +22,37 @@ import javax.inject.Singleton
  * DataStore checkpoint for the run. The widgets keep no copy of their own, so they cannot disagree with the app.
  */
 @Singleton
-class WidgetStateLoader @Inject constructor(
-    private val scheduleRepository: ScheduleRepository,
-    private val routineRepository: RoutineRepository,
-    private val activeExecutionStore: ActiveExecutionStore,
-    private val clock: Clock,
-) {
-    suspend fun today(): TodayWidgetState {
-        val zone = clock.zone
-        val day = LocalDate.now(clock)
-        val agenda = scheduleRepository.observeAgenda(
-            from = day.atStartOfDay(zone).toInstant(),
-            to = day.plusDays(1).atStartOfDay(zone).toInstant(),
-        ).first()
-        return TodayWidgetStateBuilder.build(agenda, Instant.now(clock), zone)
-    }
+class WidgetStateLoader
+    @Inject
+    constructor(
+        private val scheduleRepository: ScheduleRepository,
+        private val routineRepository: RoutineRepository,
+        private val activeExecutionStore: ActiveExecutionStore,
+        private val clock: Clock,
+    ) {
+        suspend fun today(): TodayWidgetState {
+            val zone = clock.zone
+            val day = LocalDate.now(clock)
+            val agenda =
+                scheduleRepository
+                    .observeAgenda(
+                        from = day.atStartOfDay(zone).toInstant(),
+                        to = day.plusDays(1).atStartOfDay(zone).toInstant(),
+                    ).first()
+            return TodayWidgetStateBuilder.build(agenda, Instant.now(clock), zone)
+        }
 
-    suspend fun run(): RunWidgetState {
-        val active = activeExecutionStore.observe().first() ?: return RunWidgetState.NoActiveRun
-        val title = routineRepository.observeRoutine(active.routineId).first()?.title
-        val plan = routineRepository.observeSteps(active.routineId).first()
-            .map { TimedStep(it.id, it.title, it.durationSeconds) }
-        return RunWidgetStateBuilder.build(active, title, plan, Instant.now(clock).toEpochMilli())
-    }
+        suspend fun run(): RunWidgetState {
+            val active = activeExecutionStore.observe().first() ?: return RunWidgetState.NoActiveRun
+            val title = routineRepository.observeRoutine(active.routineId).first()?.title
+            val plan =
+                routineRepository
+                    .observeSteps(active.routineId)
+                    .first()
+                    .map { TimedStep(it.id, it.title, it.durationSeconds) }
+            return RunWidgetStateBuilder.build(active, title, plan, Instant.now(clock).toEpochMilli())
+        }
 
-    suspend fun quickStart(): QuickStartState =
-        QuickStartStateBuilder.build(routineRepository.observeRoutines().first())
-}
+        suspend fun quickStart(): QuickStartState =
+            QuickStartStateBuilder.build(routineRepository.observeRoutines().first())
+    }

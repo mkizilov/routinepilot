@@ -12,7 +12,10 @@ class FakeCalendarGateway(
     var access: Boolean = true,
     var calendars: List<CalendarInfo> = listOf(CalendarInfo(1L, "Home", "me@example.com")),
 ) : CalendarGateway {
-    data class StoredEvent(val calendarId: Long, val draft: CalendarEventDraft)
+    data class StoredEvent(
+        val calendarId: Long,
+        val draft: CalendarEventDraft,
+    )
 
     val events = mutableMapOf<Long, StoredEvent>()
     val inserted = mutableListOf<Long>()
@@ -24,7 +27,10 @@ class FakeCalendarGateway(
     /** Revokes access after this many more provider calls, as if the user revoked it during a sync. */
     var revokeAfterCalls: Int? = null
 
-    fun addExistingEvent(calendarId: Long, draft: CalendarEventDraft): Long {
+    fun addExistingEvent(
+        calendarId: Long,
+        draft: CalendarEventDraft,
+    ): Long {
         val id = nextId++
         events[id] = StoredEvent(calendarId, draft)
         return id
@@ -42,7 +48,10 @@ class FakeCalendarGateway(
         return calendars
     }
 
-    override fun findEventId(calendarId: Long, uid: String): Long? {
+    override fun findEventId(
+        calendarId: Long,
+        uid: String,
+    ): Long? {
         requireAccess()
         return events.entries.firstOrNull { it.value.calendarId == calendarId && it.value.draft.uid == uid }?.key
     }
@@ -52,7 +61,10 @@ class FakeCalendarGateway(
         return events.containsKey(eventId)
     }
 
-    override fun insertEvent(calendarId: Long, draft: CalendarEventDraft): Long? {
+    override fun insertEvent(
+        calendarId: Long,
+        draft: CalendarEventDraft,
+    ): Long? {
         requireAccess()
         val id = nextId++
         events[id] = StoredEvent(calendarId, draft)
@@ -60,7 +72,10 @@ class FakeCalendarGateway(
         return id
     }
 
-    override fun updateEvent(eventId: Long, draft: CalendarEventDraft): Boolean {
+    override fun updateEvent(
+        eventId: Long,
+        draft: CalendarEventDraft,
+    ): Boolean {
         requireAccess()
         val existing = events[eventId] ?: return false
         events[eventId] = existing.copy(draft = draft)
@@ -68,7 +83,10 @@ class FakeCalendarGateway(
         return true
     }
 
-    override fun updateRecurrence(eventId: Long, rrule: String): Boolean {
+    override fun updateRecurrence(
+        eventId: Long,
+        rrule: String,
+    ): Boolean {
         requireAccess()
         val existing = events[eventId] ?: return false
         events[eventId] = existing.copy(draft = existing.draft.copy(rrule = rrule))

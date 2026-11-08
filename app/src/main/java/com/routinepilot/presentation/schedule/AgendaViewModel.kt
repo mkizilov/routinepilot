@@ -40,7 +40,10 @@ interface AgendaActions {
     fun skip(occurrenceId: UUID)
 
     /** Moves a pending occurrence [POSTPONE_MINUTES] later, keeping the exact instant so the move is unambiguous. */
-    fun postpone(occurrenceId: UUID, currentTime: Instant)
+    fun postpone(
+        occurrenceId: UUID,
+        currentTime: Instant,
+    )
 }
 
 /**
@@ -48,49 +51,58 @@ interface AgendaActions {
  * runs on open, so the day is planned even if the periodic job has not run yet.
  */
 @HiltViewModel
-class AgendaViewModel @Inject constructor(
-    private val scheduleRepository: ScheduleRepository,
-    private val clock: Clock,
-) : ViewModel(), AgendaActions {
-    val uiState: StateFlow<AgendaUiState> = minuteTicks()
-        .flatMapLatest { now -> agendaAt(now) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, AgendaUiState())
+class AgendaViewModel
+    @Inject
+    constructor(
+        private val scheduleRepository: ScheduleRepository,
+        private val clock: Clock,
+    ) : ViewModel(),
+        AgendaActions {
+        val uiState: StateFlow<AgendaUiState> =
+            minuteTicks()
+                .flatMapLatest { now -> agendaAt(now) }
+                .stateIn(viewModelScope, SharingStarted.Eagerly, AgendaUiState())
 
-    init {
-        viewModelScope.launch { scheduleRepository.ensureOccurrences(Instant.now(clock), clock.zone) }
-    }
+        init {
+            viewModelScope.launch { scheduleRepository.ensureOccurrences(Instant.now(clock), clock.zone) }
+        }
 
-    override fun complete(occurrenceId: UUID) = runNow { scheduleRepository.completeOccurrence(occurrenceId, it) }
+        override fun complete(occurrenceId: UUID) = runNow { scheduleRepository.completeOccurrence(occurrenceId, it) }
 
-    override fun skip(occurrenceId: UUID) = runNow { scheduleRepository.skipOccurrence(occurrenceId, it) }
+        override fun skip(occurrenceId: UUID) = runNow { scheduleRepository.skipOccurrence(occurrenceId, it) }
 
-    override fun postpone(occurrenceId: UUID, currentTime: Instant) {
-        val zone = clock.zone
-        runNow {
-            val target = currentTime.plus(Duration.ofMinutes(POSTPONE_MINUTES))
-            scheduleRepository.rescheduleOccurrence(occurrenceId, target, zone, it)
+        override fun postpone(
+            occurrenceId: UUID,
+            currentTime: Instant,
+        ) {
+            val zone = clock.zone
+            runNow {
+                val target = currentTime.plus(Duration.ofMinutes(POSTPONE_MINUTES))
+                scheduleRepository.rescheduleOccurrence(occurrenceId, target, zone, it)
+            }
+        }
+
+        private fun minuteTicks(): Flow<Instant> =
+            flow {
+                while (true) {
+                    emit(Instant.now(clock))
+                    delay(MINUTE_MILLIS)
+                }
+            }
+
+        private fun agendaAt(now: Instant): Flow<AgendaUiState> {
+            val zone = clock.zone
+            val today = ScheduleCalendar.dateOf(now, zone)
+            return scheduleRepository
+                .observeAgenda(
+                    from = ScheduleCalendar.startOfDay(today, zone),
+                    to = ScheduleCalendar.startOfDay(today.plusDays(1), zone),
+                ).map { items ->
+                    AgendaUiState(loaded = true, date = today, zone = zone, agenda = AgendaBuilder.build(items, now))
+                }
+        }
+
+        private fun runNow(action: suspend (Instant) -> Unit) {
+            viewModelScope.launch { action(Instant.now(clock)) }
         }
     }
-
-    private fun minuteTicks(): Flow<Instant> = flow {
-        while (true) {
-            emit(Instant.now(clock))
-            delay(MINUTE_MILLIS)
-        }
-    }
-
-    private fun agendaAt(now: Instant): Flow<AgendaUiState> {
-        val zone = clock.zone
-        val today = ScheduleCalendar.dateOf(now, zone)
-        return scheduleRepository.observeAgenda(
-            from = ScheduleCalendar.startOfDay(today, zone),
-            to = ScheduleCalendar.startOfDay(today.plusDays(1), zone),
-        ).map { items ->
-            AgendaUiState(loaded = true, date = today, zone = zone, agenda = AgendaBuilder.build(items, now))
-        }
-    }
-
-    private fun runNow(action: suspend (Instant) -> Unit) {
-        viewModelScope.launch { action(Instant.now(clock)) }
-    }
-}

@@ -100,11 +100,12 @@ fun RoutineEditorScreen(
     val context = LocalContext.current
     LaunchedEffect(state.removedStep) {
         val removed = state.removedStep ?: return@LaunchedEffect
-        val result = snackbarHostState.showSnackbar(
-            message = context.getString(R.string.editor_step_removed, removed.step.title),
-            actionLabel = context.getString(R.string.undo),
-            withDismissAction = true,
-        )
+        val result =
+            snackbarHostState.showSnackbar(
+                message = context.getString(R.string.editor_step_removed, removed.step.title),
+                actionLabel = context.getString(R.string.undo),
+                withDismissAction = true,
+            )
         if (result == SnackbarResult.ActionPerformed) actions.onUndoRemoveStep() else actions.onRemovedStepShown()
     }
 
@@ -147,7 +148,11 @@ fun RoutineEditorScreen(
 }
 
 @Composable
-private fun EditorContent(state: RoutineEditorUiState, actions: RoutineEditorActions, padding: PaddingValues) {
+private fun EditorContent(
+    state: RoutineEditorUiState,
+    actions: RoutineEditorActions,
+    padding: PaddingValues,
+) {
     CenteredContent(padding) {
         if (state.isLoading) LoadingRoutine() else EditorForm(state, actions)
     }
@@ -162,7 +167,10 @@ private fun LoadingRoutine() {
 }
 
 @Composable
-private fun EditorForm(state: RoutineEditorUiState, actions: RoutineEditorActions) {
+private fun EditorForm(
+    state: RoutineEditorUiState,
+    actions: RoutineEditorActions,
+) {
     val focus = LocalFocusManager.current
     val next = remember(focus) { KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Next) }) }
     LazyColumn(
@@ -334,7 +342,10 @@ private fun DeleteRoutineButton(onConfirm: () -> Unit) {
 }
 
 @Composable
-private fun ErrorText(showErrors: Boolean, error: RoutineValidationError?) {
+private fun ErrorText(
+    showErrors: Boolean,
+    error: RoutineValidationError?,
+) {
     if (showErrors && error != null) {
         Text(
             when (error) {

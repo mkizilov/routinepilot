@@ -18,7 +18,10 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
-data class ScheduleListItem(val schedule: Schedule, val title: String)
+data class ScheduleListItem(
+    val schedule: Schedule,
+    val title: String,
+)
 
 data class ScheduleListUiState(
     val loaded: Boolean = false,
@@ -30,30 +33,36 @@ interface ScheduleListActions {
 }
 
 @HiltViewModel
-class ScheduleListViewModel @Inject constructor(
-    private val scheduleRepository: ScheduleRepository,
-    routineRepository: RoutineRepository,
-    taskRepository: TaskRepository,
-    private val clock: Clock,
-) : ViewModel(), ScheduleListActions {
-    val uiState: StateFlow<ScheduleListUiState> = combine(
-        scheduleRepository.observeSchedules(),
-        routineRepository.observeRoutines(),
-        taskRepository.observeTasks(),
-    ) { schedules, routines, tasks ->
-        val routineTitles = routines.associate { it.id to it.title }
-        val taskTitles = tasks.associate { it.id to it.title }
-        val items = schedules.mapNotNull { schedule ->
-            val title = when (val target = schedule.target) {
-                is ScheduleTarget.RoutineTarget -> routineTitles[target.routineId]
-                is ScheduleTarget.TaskTarget -> taskTitles[target.taskId]
-            }
-            title?.let { ScheduleListItem(schedule, it) }
-        }
-        ScheduleListUiState(loaded = true, items = items)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, ScheduleListUiState())
+class ScheduleListViewModel
+    @Inject
+    constructor(
+        private val scheduleRepository: ScheduleRepository,
+        routineRepository: RoutineRepository,
+        taskRepository: TaskRepository,
+        private val clock: Clock,
+    ) : ViewModel(),
+        ScheduleListActions {
+        val uiState: StateFlow<ScheduleListUiState> =
+            combine(
+                scheduleRepository.observeSchedules(),
+                routineRepository.observeRoutines(),
+                taskRepository.observeTasks(),
+            ) { schedules, routines, tasks ->
+                val routineTitles = routines.associate { it.id to it.title }
+                val taskTitles = tasks.associate { it.id to it.title }
+                val items =
+                    schedules.mapNotNull { schedule ->
+                        val title =
+                            when (val target = schedule.target) {
+                                is ScheduleTarget.RoutineTarget -> routineTitles[target.routineId]
+                                is ScheduleTarget.TaskTarget -> taskTitles[target.taskId]
+                            }
+                        title?.let { ScheduleListItem(schedule, it) }
+                    }
+                ScheduleListUiState(loaded = true, items = items)
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, ScheduleListUiState())
 
-    override fun delete(scheduleId: UUID) {
-        viewModelScope.launch { scheduleRepository.deleteSchedule(scheduleId, Instant.now(clock)) }
+        override fun delete(scheduleId: UUID) {
+            viewModelScope.launch { scheduleRepository.deleteSchedule(scheduleId, Instant.now(clock)) }
+        }
     }
-}

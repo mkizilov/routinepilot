@@ -14,15 +14,17 @@ class InMemoryOutboxStore : OutboxStore {
 
     override suspend fun base(key: ObjectKey): BaseState? = bases[key]
 
-    override suspend fun saveBase(key: ObjectKey, state: BaseState) {
+    override suspend fun saveBase(
+        key: ObjectKey,
+        state: BaseState,
+    ) {
         bases[key] = state
     }
 
     override suspend fun pending(key: ObjectKey): List<Mutation> =
         queue.filter { it.key == key }.sortedBy { it.localSequence }
 
-    override suspend fun findPending(mutationId: UUID): Mutation? =
-        queue.firstOrNull { it.mutationId == mutationId }
+    override suspend fun findPending(mutationId: UUID): Mutation? = queue.firstOrNull { it.mutationId == mutationId }
 
     override suspend fun append(mutation: Mutation): Mutation {
         findPending(mutation.mutationId)?.let { return it }

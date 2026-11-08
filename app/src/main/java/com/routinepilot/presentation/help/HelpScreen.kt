@@ -63,7 +63,10 @@ fun HelpScreen(onBack: () -> Unit) {
 }
 
 /** The help topics, in the order they appear. */
-private enum class HelpTopic(val titleRes: Int, val bodyRes: Int) {
+private enum class HelpTopic(
+    val titleRes: Int,
+    val bodyRes: Int,
+) {
     ROUTINES(R.string.help_routines_title, R.string.help_routines_body),
     RUNNING(R.string.help_running_title, R.string.help_running_body),
     SCHEDULES(R.string.help_schedules_title, R.string.help_schedules_body),

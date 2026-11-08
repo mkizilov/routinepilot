@@ -39,42 +39,44 @@ class RoomOutboxStorePersistenceTest {
     }
 
     @Test
-    fun queuedChangesAndTheServerBase_surviveReopeningTheDatabase() = runBlocking {
-        val first = open()
-        RoomOutboxStore(first.syncOutboxDao()).also { store ->
-            store.saveBase(key, BaseState(version = 3, deleted = false, fields = mapOf("title" to "Morning")))
-            store.append(
-                Mutation(
-                    mutationId = mutationId,
-                    key = key,
-                    localSequence = 0,
-                    seenVersion = 3,
-                    kind = MutationKind.UPSERT,
-                    expectation = Expectation.PRESENT,
-                    snapshot = mapOf("title" to "Evening"),
-                    changes = mapOf("title" to FieldChange("Morning", "Evening")),
-                    createdAtMillis = 1L,
-                ),
-            )
-        }
-        first.close()
+    fun queuedChangesAndTheServerBase_surviveReopeningTheDatabase() =
+        runBlocking {
+            val first = open()
+            RoomOutboxStore(first.syncOutboxDao()).also { store ->
+                store.saveBase(key, BaseState(version = 3, deleted = false, fields = mapOf("title" to "Morning")))
+                store.append(
+                    Mutation(
+                        mutationId = mutationId,
+                        key = key,
+                        localSequence = 0,
+                        seenVersion = 3,
+                        kind = MutationKind.UPSERT,
+                        expectation = Expectation.PRESENT,
+                        snapshot = mapOf("title" to "Evening"),
+                        changes = mapOf("title" to FieldChange("Morning", "Evening")),
+                        createdAtMillis = 1L,
+                    ),
+                )
+            }
+            first.close()
 
-        val second = open()
-        try {
-            val store = RoomOutboxStore(second.syncOutboxDao())
-            val pending = store.pending(key)
+            val second = open()
+            try {
+                val store = RoomOutboxStore(second.syncOutboxDao())
+                val pending = store.pending(key)
 
-            assertEquals(listOf(mutationId), pending.map { it.mutationId })
-            assertEquals(mapOf("title" to FieldChange("Morning", "Evening")), pending.single().changes)
-            assertEquals(mapOf("title" to "Evening"), pending.single().snapshot)
-            assertEquals(BaseState(3, false, mapOf("title" to "Morning")), store.base(key))
-        } finally {
-            second.close()
+                assertEquals(listOf(mutationId), pending.map { it.mutationId })
+                assertEquals(mapOf("title" to FieldChange("Morning", "Evening")), pending.single().changes)
+                assertEquals(mapOf("title" to "Evening"), pending.single().snapshot)
+                assertEquals(BaseState(3, false, mapOf("title" to "Morning")), store.base(key))
+            } finally {
+                second.close()
+            }
         }
-    }
 
     private fun open(): RoutinePilotDatabase =
-        Room.databaseBuilder(context, RoutinePilotDatabase::class.java, DB_NAME)
+        Room
+            .databaseBuilder(context, RoutinePilotDatabase::class.java, DB_NAME)
             .addCallback(ForeignKeysCallback)
             .build()
 

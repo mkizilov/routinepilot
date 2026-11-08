@@ -18,23 +18,27 @@ private const val DEBOUNCE_MILLIS = 1_000L
  * periodic job is started for a signed-in account, so changes made on another device arrive without a local edit.
  */
 @Singleton
-class SyncObserver @Inject constructor(
-    private val database: RoutinePilotDatabase,
-    private val account: SyncAccountStore,
-    private val scheduler: SyncScheduler,
-    @ApplicationScope private val scope: CoroutineScope,
-) {
-    private var started = false
+class SyncObserver
+    @Inject
+    constructor(
+        private val database: RoutinePilotDatabase,
+        private val account: SyncAccountStore,
+        private val scheduler: SyncScheduler,
+        @ApplicationScope private val scope: CoroutineScope,
+    ) {
+        private var started = false
 
-    fun start() {
-        if (started) return
-        started = true
-        scope.launch {
-            if (account.accountSignedIn()) scheduler.startPeriodic()
-            database.syncOutboxDao().observePendingCount()
-                .distinctUntilChanged()
-                .debounce(DEBOUNCE_MILLIS)
-                .collect { if (account.accountSignedIn()) scheduler.requestNow() }
+        fun start() {
+            if (started) return
+            started = true
+            scope.launch {
+                if (account.accountSignedIn()) scheduler.startPeriodic()
+                database
+                    .syncOutboxDao()
+                    .observePendingCount()
+                    .distinctUntilChanged()
+                    .debounce(DEBOUNCE_MILLIS)
+                    .collect { if (account.accountSignedIn()) scheduler.requestNow() }
+            }
         }
     }
-}

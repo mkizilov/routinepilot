@@ -23,7 +23,9 @@ data class HomeUiState(
 )
 
 sealed interface HomeEvent {
-    data class RoutineDeleted(val id: UUID) : HomeEvent
+    data class RoutineDeleted(
+        val id: UUID,
+    ) : HomeEvent
 
     data object RoutineDuplicated : HomeEvent
 }
@@ -35,42 +37,46 @@ interface HomeActions {
 }
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val routineRepository: RoutineRepository,
-    activeExecutionStore: ActiveExecutionStore,
-) : ViewModel(), HomeActions {
-    val uiState: StateFlow<HomeUiState> = combine(
-        routineRepository.observeRoutines(),
-        activeExecutionStore.observe(),
-    ) { routines, active -> HomeUiState(routines = routines, activeRoutineId = active?.routineId) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-            initialValue = HomeUiState(),
-        )
+class HomeViewModel
+    @Inject
+    constructor(
+        private val routineRepository: RoutineRepository,
+        activeExecutionStore: ActiveExecutionStore,
+    ) : ViewModel(),
+        HomeActions {
+        val uiState: StateFlow<HomeUiState> =
+            combine(
+                routineRepository.observeRoutines(),
+                activeExecutionStore.observe(),
+            ) { routines, active -> HomeUiState(routines = routines, activeRoutineId = active?.routineId) }
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                    initialValue = HomeUiState(),
+                )
 
-    private val eventChannel = Channel<HomeEvent>(Channel.BUFFERED)
-    val events: Flow<HomeEvent> = eventChannel.receiveAsFlow()
+        private val eventChannel = Channel<HomeEvent>(Channel.BUFFERED)
+        val events: Flow<HomeEvent> = eventChannel.receiveAsFlow()
 
-    override fun duplicateRoutine(id: UUID) {
-        viewModelScope.launch {
-            routineRepository.duplicateRoutine(id)
-            eventChannel.send(HomeEvent.RoutineDuplicated)
+        override fun duplicateRoutine(id: UUID) {
+            viewModelScope.launch {
+                routineRepository.duplicateRoutine(id)
+                eventChannel.send(HomeEvent.RoutineDuplicated)
+            }
+        }
+
+        override fun deleteRoutine(id: UUID) {
+            viewModelScope.launch {
+                routineRepository.deleteRoutine(id)
+                eventChannel.send(HomeEvent.RoutineDeleted(id))
+            }
+        }
+
+        fun undoDelete(id: UUID) {
+            viewModelScope.launch { routineRepository.restoreRoutine(id) }
+        }
+
+        private companion object {
+            const val STOP_TIMEOUT_MILLIS = 5_000L
         }
     }
-
-    override fun deleteRoutine(id: UUID) {
-        viewModelScope.launch {
-            routineRepository.deleteRoutine(id)
-            eventChannel.send(HomeEvent.RoutineDeleted(id))
-        }
-    }
-
-    fun undoDelete(id: UUID) {
-        viewModelScope.launch { routineRepository.restoreRoutine(id) }
-    }
-
-    private companion object {
-        const val STOP_TIMEOUT_MILLIS = 5_000L
-    }
-}

@@ -11,14 +11,18 @@ import javax.inject.Singleton
 
 /** Whether the first-run introduction was finished or skipped on this device. Device-local, like the other settings. */
 @Singleton
-class OnboardingStore @Inject constructor(private val dataStore: DataStore<Preferences>) {
-    val completed: Flow<Boolean> = dataStore.data.map { it[COMPLETED] ?: false }
+class OnboardingStore
+    @Inject
+    constructor(
+        private val dataStore: DataStore<Preferences>,
+    ) {
+        val completed: Flow<Boolean> = dataStore.data.map { it[COMPLETED] ?: false }
 
-    suspend fun markCompleted() {
-        dataStore.edit { it[COMPLETED] = true }
-    }
+        suspend fun markCompleted() {
+            dataStore.edit { it[COMPLETED] = true }
+        }
 
-    private companion object {
-        val COMPLETED = booleanPreferencesKey("onboarding_completed")
+        private companion object {
+            val COMPLETED = booleanPreferencesKey("onboarding_completed")
+        }
     }
-}

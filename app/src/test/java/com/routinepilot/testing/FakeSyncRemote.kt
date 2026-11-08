@@ -14,10 +14,13 @@ import java.io.IOException
  * need. A dropped response
  * is applied on the server first, which is the case the retry rules must handle.
  */
-class FakeSyncRemote(private val server: FakeSyncServer) : SyncRemote {
+class FakeSyncRemote(
+    private val server: FakeSyncServer,
+) : SyncRemote {
     var offline = false
     var authExpired = false
     var dropNextResponse = false
+
     /** Records whose changes the server refuses as invalid. */
     var rejectKeys: Set<ObjectKey> = emptySet()
     var calls = 0
@@ -37,7 +40,10 @@ class FakeSyncRemote(private val server: FakeSyncServer) : SyncRemote {
         return result
     }
 
-    override suspend fun pull(afterSeq: Long, limit: Int): RemotePage {
+    override suspend fun pull(
+        afterSeq: Long,
+        limit: Int,
+    ): RemotePage {
         calls++
         checkReachable()
         val all = server.changesAfter(afterSeq)

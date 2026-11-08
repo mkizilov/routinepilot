@@ -18,54 +18,59 @@ class RunRecoveryTest {
     private val sessionId = UUID.randomUUID()
 
     @Test
-    fun pauseInterruptedRun_pausesARunningRunAtItsCheckpoint_andReturnsIt() = runBlocking {
-        val store = FakeActiveExecutionStore(run(ExecutionStatus.RUNNING))
-        val recovery = RunRecovery(store, routines)
+    fun pauseInterruptedRun_pausesARunningRunAtItsCheckpoint_andReturnsIt() =
+        runBlocking {
+            val store = FakeActiveExecutionStore(run(ExecutionStatus.RUNNING))
+            val recovery = RunRecovery(store, routines)
 
-        val interrupted = recovery.pauseInterruptedRun()
+            val interrupted = recovery.pauseInterruptedRun()
 
-        assertEquals(InterruptedRun(sessionId, routine.id, "Morning"), interrupted)
-        val saved = store.current.value!!
-        assertEquals(ExecutionStatus.PAUSED, saved.status)
-        assertEquals(42_000L, saved.elapsedMillis)
-    }
-
-    @Test
-    fun pauseInterruptedRun_leavesPausedAndEmptyStoresAlone() = runBlocking {
-        val paused = run(ExecutionStatus.PAUSED)
-        val store = FakeActiveExecutionStore(paused)
-        val recovery = RunRecovery(store, routines)
-
-        assertNull(recovery.pauseInterruptedRun())
-        assertEquals(paused, store.current.value)
-
-        val empty = FakeActiveExecutionStore()
-        assertNull(RunRecovery(empty, routines).pauseInterruptedRun())
-    }
+            assertEquals(InterruptedRun(sessionId, routine.id, "Morning"), interrupted)
+            val saved = store.current.value!!
+            assertEquals(ExecutionStatus.PAUSED, saved.status)
+            assertEquals(42_000L, saved.elapsedMillis)
+        }
 
     @Test
-    fun pausedRunForReminder_matchesOnlyTheSamePausedSession() = runBlocking {
-        val store = FakeActiveExecutionStore(run(ExecutionStatus.PAUSED))
-        val recovery = RunRecovery(store, routines)
+    fun pauseInterruptedRun_leavesPausedAndEmptyStoresAlone() =
+        runBlocking {
+            val paused = run(ExecutionStatus.PAUSED)
+            val store = FakeActiveExecutionStore(paused)
+            val recovery = RunRecovery(store, routines)
 
-        assertEquals(InterruptedRun(sessionId, routine.id, "Morning"), recovery.pausedRunForReminder(sessionId))
-        assertNull(recovery.pausedRunForReminder(UUID.randomUUID()))
-    }
+            assertNull(recovery.pauseInterruptedRun())
+            assertEquals(paused, store.current.value)
+
+            val empty = FakeActiveExecutionStore()
+            assertNull(RunRecovery(empty, routines).pauseInterruptedRun())
+        }
 
     @Test
-    fun pausedRunForReminder_isSkippedOnceTheRunIsRunningAgain() = runBlocking {
-        val store = FakeActiveExecutionStore(run(ExecutionStatus.RUNNING))
+    fun pausedRunForReminder_matchesOnlyTheSamePausedSession() =
+        runBlocking {
+            val store = FakeActiveExecutionStore(run(ExecutionStatus.PAUSED))
+            val recovery = RunRecovery(store, routines)
 
-        assertNull(RunRecovery(store, routines).pausedRunForReminder(sessionId))
-    }
+            assertEquals(InterruptedRun(sessionId, routine.id, "Morning"), recovery.pausedRunForReminder(sessionId))
+            assertNull(recovery.pausedRunForReminder(UUID.randomUUID()))
+        }
 
-    private fun run(status: ExecutionStatus) = ActiveExecution(
-        sessionId = sessionId,
-        routineId = routine.id,
-        startedAt = Instant.EPOCH,
-        stepIds = listOf(UUID.randomUUID()),
-        stepIndex = 0,
-        elapsedMillis = 42_000L,
-        status = status,
-    )
+    @Test
+    fun pausedRunForReminder_isSkippedOnceTheRunIsRunningAgain() =
+        runBlocking {
+            val store = FakeActiveExecutionStore(run(ExecutionStatus.RUNNING))
+
+            assertNull(RunRecovery(store, routines).pausedRunForReminder(sessionId))
+        }
+
+    private fun run(status: ExecutionStatus) =
+        ActiveExecution(
+            sessionId = sessionId,
+            routineId = routine.id,
+            startedAt = Instant.EPOCH,
+            stepIds = listOf(UUID.randomUUID()),
+            stepIndex = 0,
+            elapsedMillis = 42_000L,
+            status = status,
+        )
 }

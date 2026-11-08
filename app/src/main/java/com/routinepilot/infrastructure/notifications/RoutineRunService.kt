@@ -31,13 +31,18 @@ class RoutineRunService : Service() {
 
     @Inject lateinit var presenter: RunNotificationPresenter
 
-    @Inject @field:ApplicationScope lateinit var scope: CoroutineScope
+    @Inject @field:ApplicationScope
+    lateinit var scope: CoroutineScope
 
     private var observer: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         ServiceCompat.startForeground(
             this,
             RUN_NOTIFICATION_ID,

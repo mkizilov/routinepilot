@@ -84,7 +84,11 @@ class AgendaScreenTest {
         composeTestRule.onNodeWithText("+15 min").assertDoesNotExist()
     }
 
-    private fun item(title: String, at: String, status: OccurrenceStatus) = AgendaItem(
+    private fun item(
+        title: String,
+        at: String,
+        status: OccurrenceStatus,
+    ) = AgendaItem(
         occurrenceId = UUID.randomUUID(),
         title = title,
         kind = AgendaKind.ROUTINE,
@@ -93,7 +97,10 @@ class AgendaScreenTest {
         status = status,
     )
 
-    private fun setScreen(state: AgendaUiState, actions: AgendaActions = RecordingAgendaActions()) {
+    private fun setScreen(
+        state: AgendaUiState,
+        actions: AgendaActions = RecordingAgendaActions(),
+    ) {
         composeTestRule.setContent {
             RoutinePilotTheme {
                 AgendaScreen(state = state, actions = actions, onNewSchedule = {}, onOpenSchedules = {})
@@ -112,7 +119,10 @@ class AgendaScreenTest {
             calls += "skip:$occurrenceId"
         }
 
-        override fun postpone(occurrenceId: UUID, currentTime: Instant) {
+        override fun postpone(
+            occurrenceId: UUID,
+            currentTime: Instant,
+        ) {
             calls += "postpone:$occurrenceId:$currentTime"
         }
     }

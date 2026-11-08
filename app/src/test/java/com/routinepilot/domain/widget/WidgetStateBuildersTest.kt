@@ -30,14 +30,15 @@ class WidgetStateBuildersTest {
     fun today_listsDueNowFirstThenUpcomingInTime_andLeavesOutDoneSkippedAndEarlierItems() {
         val due = agenda("Stretch", "2026-11-04T11:30:00Z", OccurrenceStatus.PLANNED)
         val later = agenda("Read", "2026-11-04T15:00:00Z", OccurrenceStatus.PLANNED)
-        val moved = AgendaItem(
-            occurrenceId = UUID.randomUUID(),
-            title = "Water",
-            kind = AgendaKind.TASK,
-            scheduledAt = Instant.parse("2026-11-04T16:30:00Z"),
-            originalScheduledAt = Instant.parse("2026-11-04T14:00:00Z"),
-            status = OccurrenceStatus.RESCHEDULED,
-        )
+        val moved =
+            AgendaItem(
+                occurrenceId = UUID.randomUUID(),
+                title = "Water",
+                kind = AgendaKind.TASK,
+                scheduledAt = Instant.parse("2026-11-04T16:30:00Z"),
+                originalScheduledAt = Instant.parse("2026-11-04T14:00:00Z"),
+                status = OccurrenceStatus.RESCHEDULED,
+            )
         val last = agenda("Journal", "2026-11-04T18:00:00Z", OccurrenceStatus.PLANNED)
         val done = agenda("Brush", "2026-11-04T09:00:00Z", OccurrenceStatus.COMPLETED)
         val missed = agenda("Vitamins", "2026-11-04T08:00:00Z", OccurrenceStatus.PLANNED)
@@ -56,11 +57,12 @@ class WidgetStateBuildersTest {
 
     @Test
     fun today_withNothingLeft_isEmpty() {
-        val state = TodayWidgetStateBuilder.build(
-            listOf(agenda("Brush", "2026-11-04T09:00:00Z", OccurrenceStatus.COMPLETED)),
-            nowInstant,
-            berlin,
-        )
+        val state =
+            TodayWidgetStateBuilder.build(
+                listOf(agenda("Brush", "2026-11-04T09:00:00Z", OccurrenceStatus.COMPLETED)),
+                nowInstant,
+                berlin,
+            )
 
         assertTrue(state.items.isEmpty())
         assertEquals(0, state.totalCount)
@@ -78,11 +80,12 @@ class WidgetStateBuildersTest {
 
     @Test
     fun today_formatsTimesInTheDevicesZone() {
-        val state = TodayWidgetStateBuilder.build(
-            listOf(agenda("Stretch", "2026-11-04T19:00:00Z", OccurrenceStatus.PLANNED)),
-            nowInstant,
-            berlin,
-        )
+        val state =
+            TodayWidgetStateBuilder.build(
+                listOf(agenda("Stretch", "2026-11-04T19:00:00Z", OccurrenceStatus.PLANNED)),
+                nowInstant,
+                berlin,
+            )
 
         assertEquals("20:00", state.items.single().timeLabel)
     }
@@ -103,12 +106,13 @@ class WidgetStateBuildersTest {
 
     @Test
     fun run_running_countsDownFromTheCheckpointUsingTheTimeSinceIt() {
-        val state = RunWidgetStateBuilder.build(
-            run(ExecutionStatus.RUNNING, elapsedMillis = 10_000L, checkpointAgeMillis = 2_000L),
-            "Morning",
-            plan(),
-            nowMillis,
-        ) as RunWidgetState.Active
+        val state =
+            RunWidgetStateBuilder.build(
+                run(ExecutionStatus.RUNNING, elapsedMillis = 10_000L, checkpointAgeMillis = 2_000L),
+                "Morning",
+                plan(),
+                nowMillis,
+            ) as RunWidgetState.Active
 
         assertEquals(WidgetRunStatus.RUNNING, state.status)
         assertEquals(1, state.minutesLeftInStep)
@@ -121,12 +125,13 @@ class WidgetStateBuildersTest {
 
     @Test
     fun run_paused_showsTheCheckpointTimeWithoutAdvancingIt() {
-        val state = RunWidgetStateBuilder.build(
-            run(ExecutionStatus.PAUSED, elapsedMillis = 10_000L, checkpointAgeMillis = 600_000L),
-            "Morning",
-            plan(),
-            nowMillis,
-        ) as RunWidgetState.Active
+        val state =
+            RunWidgetStateBuilder.build(
+                run(ExecutionStatus.PAUSED, elapsedMillis = 10_000L, checkpointAgeMillis = 600_000L),
+                "Morning",
+                plan(),
+                nowMillis,
+            ) as RunWidgetState.Active
 
         assertEquals(WidgetRunStatus.PAUSED, state.status)
         assertEquals(1, state.minutesLeftInStep)
@@ -135,36 +140,39 @@ class WidgetStateBuildersTest {
 
     @Test
     fun run_runningWithAStaleCheckpoint_needsAttention() {
-        val state = RunWidgetStateBuilder.build(
-            run(ExecutionStatus.RUNNING, checkpointAgeMillis = 6_000L),
-            "Morning",
-            plan(),
-            nowMillis,
-        )
+        val state =
+            RunWidgetStateBuilder.build(
+                run(ExecutionStatus.RUNNING, checkpointAgeMillis = 6_000L),
+                "Morning",
+                plan(),
+                nowMillis,
+            )
 
         assertEquals(RunWidgetState.NeedsAttention("Morning"), state)
     }
 
     @Test
     fun run_checkpointExactlyAtTheStaleLimit_isStillTrusted() {
-        val state = RunWidgetStateBuilder.build(
-            run(ExecutionStatus.RUNNING, checkpointAgeMillis = RunWidgetStateBuilder.STALE_CHECKPOINT_MILLIS),
-            "Morning",
-            plan(),
-            nowMillis,
-        )
+        val state =
+            RunWidgetStateBuilder.build(
+                run(ExecutionStatus.RUNNING, checkpointAgeMillis = RunWidgetStateBuilder.STALE_CHECKPOINT_MILLIS),
+                "Morning",
+                plan(),
+                nowMillis,
+            )
 
         assertTrue(state is RunWidgetState.Active)
     }
 
     @Test
     fun run_runningFromBeforeCheckpointsHadTimestamps_needsAttention() {
-        val state = RunWidgetStateBuilder.build(
-            run(ExecutionStatus.RUNNING, savedAtEpochMillis = 0L),
-            "Morning",
-            plan(),
-            nowMillis,
-        )
+        val state =
+            RunWidgetStateBuilder.build(
+                run(ExecutionStatus.RUNNING, savedAtEpochMillis = 0L),
+                "Morning",
+                plan(),
+                nowMillis,
+            )
 
         assertEquals(RunWidgetState.NeedsAttention("Morning"), state)
     }
@@ -205,12 +213,13 @@ class WidgetStateBuildersTest {
         val water = plan()[1]
         val untimed = run(ExecutionStatus.PAUSED, stepIds = listOf(rest.id, water.id))
 
-        val state = RunWidgetStateBuilder.build(
-            untimed,
-            "Morning",
-            listOf(rest, water),
-            nowMillis,
-        ) as RunWidgetState.Active
+        val state =
+            RunWidgetStateBuilder.build(
+                untimed,
+                "Morning",
+                listOf(rest, water),
+                nowMillis,
+            ) as RunWidgetState.Active
 
         assertNull(state.minutesLeftInStep)
         assertEquals(1, state.minutesLeftTotal)
@@ -218,12 +227,13 @@ class WidgetStateBuildersTest {
 
     @Test
     fun run_pastItsStepDuration_clampsToZeroAndRoundsUpTheTotal() {
-        val state = RunWidgetStateBuilder.build(
-            run(ExecutionStatus.RUNNING, elapsedMillis = 70_000L, checkpointAgeMillis = 0L),
-            "Morning",
-            plan(),
-            nowMillis,
-        ) as RunWidgetState.Active
+        val state =
+            RunWidgetStateBuilder.build(
+                run(ExecutionStatus.RUNNING, elapsedMillis = 70_000L, checkpointAgeMillis = 0L),
+                "Morning",
+                plan(),
+                nowMillis,
+            ) as RunWidgetState.Active
 
         assertEquals(0, state.minutesLeftInStep)
         assertEquals(1, state.minutesLeftTotal)
@@ -231,12 +241,13 @@ class WidgetStateBuildersTest {
 
     @Test
     fun run_onItsLastStep_hasNoNextStep() {
-        val state = RunWidgetStateBuilder.build(
-            run(ExecutionStatus.PAUSED, stepIndex = 1),
-            "Morning",
-            plan(),
-            nowMillis,
-        ) as RunWidgetState.Active
+        val state =
+            RunWidgetStateBuilder.build(
+                run(ExecutionStatus.PAUSED, stepIndex = 1),
+                "Morning",
+                plan(),
+                nowMillis,
+            ) as RunWidgetState.Active
 
         assertNull(state.nextStepTitle)
         assertEquals(2, state.stepNumber)
@@ -246,11 +257,12 @@ class WidgetStateBuildersTest {
 
     @Test
     fun quickStart_listsRoutinesInSavedOrder() {
-        val routines = listOf(
-            Routine(UUID.randomUUID(), "C", 2, Instant.EPOCH),
-            Routine(UUID.randomUUID(), "A", 0, Instant.EPOCH),
-            Routine(UUID.randomUUID(), "B", 1, Instant.EPOCH),
-        )
+        val routines =
+            listOf(
+                Routine(UUID.randomUUID(), "C", 2, Instant.EPOCH),
+                Routine(UUID.randomUUID(), "A", 0, Instant.EPOCH),
+                Routine(UUID.randomUUID(), "B", 1, Instant.EPOCH),
+            )
 
         val state = QuickStartStateBuilder.build(routines)
 
@@ -264,7 +276,11 @@ class WidgetStateBuildersTest {
 
     // Helpers
 
-    private fun agenda(title: String, at: String, status: OccurrenceStatus) = Instant.parse(at).let { instant ->
+    private fun agenda(
+        title: String,
+        at: String,
+        status: OccurrenceStatus,
+    ) = Instant.parse(at).let { instant ->
         AgendaItem(
             occurrenceId = UUID.randomUUID(),
             title = title,
@@ -278,10 +294,11 @@ class WidgetStateBuildersTest {
     private val routineId: UUID = UUID.fromString("00000000-0000-4000-8000-0000000000a1")
     private val sessionId: UUID = UUID.fromString("00000000-0000-4000-8000-0000000000a2")
 
-    private fun plan(): List<TimedStep> = listOf(
-        TimedStep(UUID.fromString("00000000-0000-4000-8000-0000000000b1"), "Stretch", 60),
-        TimedStep(UUID.fromString("00000000-0000-4000-8000-0000000000b2"), "Water", 30),
-    )
+    private fun plan(): List<TimedStep> =
+        listOf(
+            TimedStep(UUID.fromString("00000000-0000-4000-8000-0000000000b1"), "Stretch", 60),
+            TimedStep(UUID.fromString("00000000-0000-4000-8000-0000000000b2"), "Water", 30),
+        )
 
     private fun run(
         status: ExecutionStatus,

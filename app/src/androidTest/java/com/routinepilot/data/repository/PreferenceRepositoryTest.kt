@@ -27,25 +27,27 @@ class PreferenceRepositoryTest {
     }
 
     @Test
-    fun setPreference_isObservableAndOverwritesValue() = runBlocking {
-        assertNull(repository.observePreference("theme").first())
+    fun setPreference_isObservableAndOverwritesValue() =
+        runBlocking {
+            assertNull(repository.observePreference("theme").first())
 
-        repository.setPreference("theme", "dark")
-        repository.setPreference("theme", "light")
+            repository.setPreference("theme", "dark")
+            repository.setPreference("theme", "light")
 
-        assertEquals("light", repository.observePreference("theme").first())
-        assertEquals(1L, db.scalar("SELECT COUNT(*) FROM user_preferences WHERE name = ?", "theme"))
-    }
+            assertEquals("light", repository.observePreference("theme").first())
+            assertEquals(1L, db.scalar("SELECT COUNT(*) FROM user_preferences WHERE name = ?", "theme"))
+        }
 
     @Test
-    fun removePreference_hidesValueAndAllowsResetWithoutDuplicateName() = runBlocking {
-        repository.setPreference("reminders", "on")
+    fun removePreference_hidesValueAndAllowsResetWithoutDuplicateName() =
+        runBlocking {
+            repository.setPreference("reminders", "on")
 
-        repository.removePreference("reminders")
-        assertNull(repository.observePreference("reminders").first())
+            repository.removePreference("reminders")
+            assertNull(repository.observePreference("reminders").first())
 
-        repository.setPreference("reminders", "off")
-        assertEquals("off", repository.observePreference("reminders").first())
-        assertEquals(1L, db.scalar("SELECT COUNT(*) FROM user_preferences WHERE name = ?", "reminders"))
-    }
+            repository.setPreference("reminders", "off")
+            assertEquals("off", repository.observePreference("reminders").first())
+            assertEquals(1L, db.scalar("SELECT COUNT(*) FROM user_preferences WHERE name = ?", "reminders"))
+        }
 }

@@ -30,10 +30,11 @@ class DataStoreActiveExecutionStoreTest {
     @Before
     fun setUp() {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val dataStore = PreferenceDataStoreFactory.create(
-            scope = scope,
-            produceFile = { File(folder.root, "active-execution.preferences_pb") },
-        )
+        val dataStore =
+            PreferenceDataStoreFactory.create(
+                scope = scope,
+                produceFile = { File(folder.root, "active-execution.preferences_pb") },
+            )
         store = DataStoreActiveExecutionStore(dataStore)
     }
 
@@ -43,52 +44,58 @@ class DataStoreActiveExecutionStoreTest {
     }
 
     @Test
-    fun save_thenObserve_returnsTheSameRun() = runBlocking {
-        val run = sampleRun()
+    fun save_thenObserve_returnsTheSameRun() =
+        runBlocking {
+            val run = sampleRun()
 
-        store.save(run)
+            store.save(run)
 
-        assertEquals(run, store.observe().first())
-    }
-
-    @Test
-    fun save_replacesThePreviousRun() = runBlocking {
-        store.save(sampleRun())
-        val updated = sampleRun().copy(stepIndex = 2, elapsedMillis = 42_000L, status = ExecutionStatus.PAUSED)
-
-        store.save(updated)
-
-        assertEquals(updated, store.observe().first())
-    }
+            assertEquals(run, store.observe().first())
+        }
 
     @Test
-    fun clear_removesTheRun() = runBlocking {
-        store.save(sampleRun())
+    fun save_replacesThePreviousRun() =
+        runBlocking {
+            store.save(sampleRun())
+            val updated = sampleRun().copy(stepIndex = 2, elapsedMillis = 42_000L, status = ExecutionStatus.PAUSED)
 
-        store.clear()
+            store.save(updated)
 
-        assertNull(store.observe().first())
-    }
-
-    @Test
-    fun emptyStore_hasNoRun() = runBlocking {
-        assertNull(store.observe().first())
-    }
+            assertEquals(updated, store.observe().first())
+        }
 
     @Test
-    fun save_keepsTheCheckpointTimeThatWidgetsUse() = runBlocking {
-        store.save(sampleRun().copy(savedAtEpochMillis = 1_234_567L))
+    fun clear_removesTheRun() =
+        runBlocking {
+            store.save(sampleRun())
 
-        assertEquals(1_234_567L, store.observe().first()?.savedAtEpochMillis)
-    }
+            store.clear()
 
-    private fun sampleRun() = ActiveExecution(
-        sessionId = UUID.fromString("11111111-2222-4333-8444-555555555555"),
-        routineId = UUID.fromString("66666666-7777-4888-8999-aaaaaaaaaaaa"),
-        startedAt = Instant.parse("2026-03-01T09:00:00Z"),
-        stepIds = listOf(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()),
-        stepIndex = 1,
-        elapsedMillis = 12_345L,
-        status = ExecutionStatus.RUNNING,
-    )
+            assertNull(store.observe().first())
+        }
+
+    @Test
+    fun emptyStore_hasNoRun() =
+        runBlocking {
+            assertNull(store.observe().first())
+        }
+
+    @Test
+    fun save_keepsTheCheckpointTimeThatWidgetsUse() =
+        runBlocking {
+            store.save(sampleRun().copy(savedAtEpochMillis = 1_234_567L))
+
+            assertEquals(1_234_567L, store.observe().first()?.savedAtEpochMillis)
+        }
+
+    private fun sampleRun() =
+        ActiveExecution(
+            sessionId = UUID.fromString("11111111-2222-4333-8444-555555555555"),
+            routineId = UUID.fromString("66666666-7777-4888-8999-aaaaaaaaaaaa"),
+            startedAt = Instant.parse("2026-03-01T09:00:00Z"),
+            stepIds = listOf(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()),
+            stepIndex = 1,
+            elapsedMillis = 12_345L,
+            status = ExecutionStatus.RUNNING,
+        )
 }

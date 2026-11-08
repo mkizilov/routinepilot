@@ -23,7 +23,10 @@ sealed interface RunEvent {
         val nextStepTitle: String,
     ) : RunEvent
 
-    data class RoutineFinished(val routineId: UUID, val routineTitle: String) : RunEvent
+    data class RoutineFinished(
+        val routineId: UUID,
+        val routineTitle: String,
+    ) : RunEvent
 }
 
 /** Schedules a deferrable reminder for a run that has been paused. */
