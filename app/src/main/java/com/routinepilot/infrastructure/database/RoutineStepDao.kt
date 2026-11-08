@@ -18,6 +18,13 @@ interface RoutineStepDao {
     @Query("SELECT id FROM routine_steps WHERE routineId = :routineId AND deletedAt IS NULL")
     suspend fun activeIds(routineId: UUID): List<UUID>
 
+    @Query("SELECT * FROM routine_steps WHERE id = :id AND deletedAt IS NULL")
+    suspend fun findActive(id: UUID): RoutineStepEntity?
+
+    /** Steps removed by the same routine deletion, which a restore brings back. */
+    @Query("SELECT * FROM routine_steps WHERE routineId = :routineId AND deletedAt = :deletedAt")
+    suspend fun deletedSnapshot(routineId: UUID, deletedAt: Instant): List<RoutineStepEntity>
+
     @Upsert
     suspend fun upsert(steps: List<RoutineStepEntity>)
 

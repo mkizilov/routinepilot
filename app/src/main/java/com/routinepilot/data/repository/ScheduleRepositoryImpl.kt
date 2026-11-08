@@ -3,6 +3,8 @@ package com.routinepilot.data.repository
 import androidx.room.withTransaction
 import com.routinepilot.data.mapping.toDomain
 import com.routinepilot.data.mapping.toEntity
+import com.routinepilot.data.sync.RoomOutboxStore
+import com.routinepilot.data.sync.SyncFieldMapping
 import com.routinepilot.domain.model.OccurrenceStatus
 import com.routinepilot.domain.model.Schedule
 import com.routinepilot.domain.model.ScheduleTarget
@@ -12,6 +14,9 @@ import com.routinepilot.domain.schedule.AgendaItem
 import com.routinepilot.domain.schedule.AgendaKind
 import com.routinepilot.domain.schedule.OccurrenceTransitions
 import com.routinepilot.domain.schedule.ScheduleGenerator
+import com.routinepilot.domain.sync.ObjectKey
+import com.routinepilot.domain.sync.OfflineReplica
+import com.routinepilot.domain.sync.SyncType
 import com.routinepilot.infrastructure.database.RoutinePilotDatabase
 import com.routinepilot.infrastructure.database.ScheduledOccurrenceEntity
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +34,7 @@ class ScheduleRepositoryImpl @Inject constructor(
     private val occurrenceDao = database.scheduledOccurrenceDao()
     private val routineDao = database.routineDao()
     private val taskDao = database.taskDao()
+    private val replica = OfflineReplica(RoomOutboxStore(database.syncOutboxDao()))
 
     override fun observeSchedules(): Flow<List<Schedule>> =
         scheduleDao.observeActive().map { list -> list.map { it.toDomain() } }
@@ -51,16 +57,30 @@ class ScheduleRepositoryImpl @Inject constructor(
 
     override suspend fun saveSchedule(schedule: Schedule, now: Instant) {
         database.withTransaction {
+            val before = scheduleDao.findById(schedule.id)?.takeIf { it.deletedAt == null }?.toDomain()
             val saved = schedule.copy(modifiedAt = now)
             scheduleDao.upsert(saved.toEntity())
+            replica.record(
+                ObjectKey(SyncType.SCHEDULE, schedule.id),
+                before?.let { SyncFieldMapping.schedule(it) },
+                SyncFieldMapping.schedule(saved),
+                now.toEpochMilli(),
+            )
             regenerate(saved, now)
         }
     }
 
     override suspend fun deleteSchedule(id: UUID, now: Instant) {
         database.withTransaction {
+            val before = scheduleDao.findById(id)?.takeIf { it.deletedAt == null }?.toDomain()
             scheduleDao.markDeleted(id, now)
             occurrenceDao.deletePendingForSchedule(id)
+            replica.record(
+                ObjectKey(SyncType.SCHEDULE, id),
+                before?.let { SyncFieldMapping.schedule(it) },
+                null,
+                now.toEpochMilli(),
+            )
         }
     }
 
@@ -70,8 +90,15 @@ class ScheduleRepositoryImpl @Inject constructor(
             scheduleDao.activeForGeneration().forEach { entity ->
                 var schedule = entity.toDomain()
                 if (schedule.zone != zone) {
+                    val previous = SyncFieldMapping.schedule(schedule)
                     schedule = schedule.copy(zone = zone)
                     scheduleDao.updateZone(schedule.id, zone)
+                    replica.record(
+                        ObjectKey(SyncType.SCHEDULE, schedule.id),
+                        previous,
+                        SyncFieldMapping.schedule(schedule),
+                        now.toEpochMilli(),
+                    )
                 }
                 created += regenerate(schedule, now)
             }

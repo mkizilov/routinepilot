@@ -12,6 +12,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE deletedAt IS NULL ORDER BY position, id")
     fun observeActive(): Flow<List<TaskEntity>>
 
+    @Query("SELECT * FROM tasks WHERE id = :id AND deletedAt IS NULL")
+    suspend fun findActive(id: UUID): TaskEntity?
+
     @Upsert
     suspend fun upsert(task: TaskEntity)
 

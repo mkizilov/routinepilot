@@ -15,8 +15,12 @@ import androidx.room.TypeConverters
         StepCompletionEventEntity::class,
         UserPreferenceEntity::class,
         CalendarLinkEntity::class,
+        MutationOutboxEntity::class,
+        MutationFieldEntity::class,
+        SyncBaseEntity::class,
+        SyncBaseFieldEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -40,4 +44,6 @@ abstract class RoutinePilotDatabase : RoomDatabase() {
     abstract fun statsDao(): StatsDao
 
     abstract fun calendarLinkDao(): CalendarLinkDao
+
+    abstract fun syncOutboxDao(): SyncOutboxDao
 }
