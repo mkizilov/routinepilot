@@ -187,12 +187,14 @@ class RoutineRunViewModel @Inject constructor(
         val active = activeExecutionStore.observe().first()
         when {
             active == null || active.routineId != routineId -> timer.load(plan)
-            active.stepIds.isNotEmpty() && active.stepIds.all { it in byId } -> {
+            active.stepIds.isNotEmpty() &&
+                active.stepIndex in active.stepIds.indices &&
+                active.stepIds.all { it in byId } -> {
                 activeRun = active
                 timer.restore(active.stepIds.map { byId.getValue(it) }, active.stepIndex, active.elapsedMillis)
             }
             else -> {
-                // The routine changed while the run was interrupted, so the saved step plan can't be trusted.
+                // The saved plan no longer matches the routine, so the run can't be resumed safely.
                 endRun(active, monotonicClock.elapsedMillis())
                 timer.load(plan)
             }

@@ -224,6 +224,26 @@ class RoutineRunViewModelTest {
     }
 
     @Test
+    fun restoredRun_withAnOutOfRangeStepIndex_isEndedRatherThanLeftBlockingNewRuns() = runTest(dispatcher) {
+        val active = ActiveExecution(
+            sessionId = UUID.randomUUID(),
+            routineId = routine.id,
+            startedAt = wallNow.minusSeconds(60),
+            stepIds = listOf(stretch.id, water.id),
+            stepIndex = 5,
+            elapsedMillis = 0L,
+            status = ExecutionStatus.PAUSED,
+        )
+        val store = FakeActiveExecutionStore(active)
+
+        val viewModel = newViewModel(store = store)
+
+        assertEquals(ExecutionStatus.NOT_STARTED, viewModel.uiState.value.timer.status)
+        assertNull(store.current.value)
+        assertEquals(wallNow, executions.sessions.value.single().endedAt)
+    }
+
+    @Test
     fun start_isBlocked_whileAnotherRoutineIsInProgress() = runTest(dispatcher) {
         val other = ActiveExecution(
             sessionId = UUID.randomUUID(),
