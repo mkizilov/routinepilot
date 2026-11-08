@@ -1,5 +1,6 @@
 package com.routinepilot.data.mapping
 
+import com.routinepilot.domain.calendar.CalendarLink
 import com.routinepilot.domain.model.ExecutionSession
 import com.routinepilot.domain.model.Routine
 import com.routinepilot.domain.model.RoutineStep
@@ -11,6 +12,7 @@ import com.routinepilot.domain.model.Task
 import com.routinepilot.domain.schedule.Recurrence
 import com.routinepilot.domain.schedule.RecurrenceKind
 import com.routinepilot.domain.schedule.RecurrencePattern
+import com.routinepilot.infrastructure.database.CalendarLinkEntity
 import com.routinepilot.infrastructure.database.ExecutionSessionEntity
 import com.routinepilot.infrastructure.database.RoutineEntity
 import com.routinepilot.infrastructure.database.RoutineStepEntity
@@ -180,5 +182,33 @@ internal fun StepCompletionEvent.toEntity(modifiedAt: Instant) =
         modifiedAt = modifiedAt,
         localDate = localDate,
     )
+
+internal fun CalendarLinkEntity.toDomain() = CalendarLink(
+    scheduleId = scheduleId,
+    calendarId = calendarId,
+    eventId = eventId,
+    uid = uid,
+    allDay = allDay,
+    rrule = rrule,
+    startMillis = startMillis,
+    ruleKey = ruleKey,
+    contentHash = contentHash,
+    status = status,
+    updatedAt = updatedAt,
+)
+
+internal fun CalendarLink.toEntity() = CalendarLinkEntity(
+    scheduleId = scheduleId,
+    calendarId = calendarId,
+    eventId = eventId,
+    uid = uid,
+    allDay = allDay,
+    rrule = rrule,
+    startMillis = startMillis,
+    ruleKey = ruleKey,
+    contentHash = contentHash,
+    status = status,
+    updatedAt = updatedAt,
+)
 
 private const val MINUTES_PER_HOUR = 60

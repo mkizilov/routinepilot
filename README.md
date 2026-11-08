@@ -26,7 +26,7 @@ Dependencies point inward: presentation depends on domain; data and infrastructu
 
 ## Local data model
 
-Room database `routinepilot.db` (schema version 2). Every table uses UUID text primary keys, `createdAt`, `modifiedAt` (local modification time), and `deletedAt` (tombstone). Deletes are soft: reads filter `deletedAt IS NULL`. Hard purge is reserved for future sync cleanup.
+Room database `routinepilot.db` (schema version 6). Every table uses UUID text primary keys, `createdAt`, `modifiedAt` (local modification time), and `deletedAt` (tombstone). Deletes are soft: reads filter `deletedAt IS NULL`. Hard purge is reserved for future sync cleanup.
 
 | Table | Purpose | Relationships |
 | --- | --- | --- |
@@ -37,8 +37,9 @@ Room database `routinepilot.db` (schema version 2). Every table uses UUID text p
 | `execution_sessions` | Runs of a routine | Cascade from routine; optional occurrence (set null) |
 | `step_completion_events` | Step completions within a session | Cascade from session; restricted by step |
 | `user_preferences` | Named preference values, unique by name | None |
+| `calendar_links` | Device-local link from each exported schedule to its calendar event | None; rows are deleted outright, not tombstoned |
 
-Device-only UI settings stay in DataStore. Preferences that must sync later belong in `user_preferences`.
+Device-only UI settings stay in DataStore, and so do calendar export settings, because calendar ids belong to one device. Preferences that must sync later belong in `user_preferences`.
 
 Schema changes need a `Migration` in `infrastructure/database/Migrations.kt`. Room exports each version to `app/schemas/`; commit those files.
 
@@ -123,6 +124,41 @@ Limits:
 - **Launchers vary.** Some ignore resizing or fix widget sizes. Some do not show a preview in the picker. This app does not provide preview images.
 - **Colours are fixed.** Widgets do not follow Material You in this version.
 - **Not verified here.** No widget was rendered on a launcher. The Glance layouts, the receivers, and the PendingIntents have not been compiled or run in this environment. The state logic is covered by JVM tests only.
+
+## Calendar export
+
+Optional and off until the user turns it on in **Schedules, then Calendar**. Each active schedule becomes one recurring event in a calendar the user picks. The rules are pure Kotlin in `domain/calendar/` and tested on the JVM. `data/calendar/CalendarRepositoryImpl.kt` keeps the settings in DataStore and the links in Room. `infrastructure/calendar/ProviderCalendarGateway.kt` is the only code that touches the Android Calendar Provider.
+
+**Permissions.** Both are requested when the user turns export on, and the screen states why:
+- `READ_CALENDAR` lists the calendars the user can write to, and finds this app's own events by their UID.
+- `WRITE_CALENDAR` creates, updates, and deletes those events.
+
+The app never reads other events. Refusing leaves export off, and nothing else in the app depends on it.
+
+**What is exported.**
+- A routine or task becomes one event titled with its name. A routine's description lists its steps, with each duration rounded up to whole minutes.
+- A timed event starts at the schedule's time and uses the schedule's zone, so it keeps its wall-clock time across daylight-saving changes. Its length is the sum of the step durations, with 30 minutes for a routine that has none, and 15 minutes for a task. The length is kept between 5 minutes and 12 hours.
+- The all-day option writes UTC-midnight events that last one day.
+- A series starts on the day its rule was last saved, and keeps that start while the rule is unchanged. A re-save of an unchanged schedule on a later day does not move past events out of the calendar. Changing the time, the days, the start date, or the zone moves the start to the day of the last save. A zone change made when the device travels does not save the schedule, so the start stays on the last save day.
+
+**Sync.**
+- Sync runs when export is switched, when the destination or all-day setting changes, when a schedule, routine, or task changes (`CalendarSyncObserver`, with a 500 ms debounce), and when the calendar screen resumes. Syncs run one at a time.
+- Each event has a stable UID, `routinepilot-schedule-<id>@routinepilot.local`, written to `UID_2445`. The link row records the event id. If a link is lost, the next sync adopts the event with the same UID instead of creating a second one.
+- Stopping a schedule ends its series at the stop time, so past events stay. Stopping before the first occurrence removes the event.
+- An event the user deletes in the calendar app is marked **Deleted in the calendar app** and is not recreated. **Export again** in the list creates a new one.
+- Changing the destination deletes the events in the old calendar, after a confirmation.
+- **Remove exported events and turn off** deletes every linked event and turns export off, after a confirmation. Turning export off alone keeps the events in the calendar.
+- The **Open** button opens the event in the calendar app. If none can open it, the app says so.
+
+**Permission revoked.** When access is missing, or is revoked during a sync, the sync changes no links and the screen reports that access is off. Events already written keep their UID, so the next sync adopts them rather than duplicating them. Removal does nothing without access, so the links stay for a later retry.
+
+**Limits.**
+- Edits made to an exported event in the calendar app are not read back. They are overwritten the next time RoutinePilot changes that event.
+- The sync runs only while the app process is alive. Changes made while the app is closed are exported when it next starts.
+- Access revoked outside the app is noticed at the next sync or when the screen resumes.
+- The UID relies on the provider storing `UID_2445`. A provider that drops it can create a duplicate only after a lost link.
+- The first build exports the Room schema for version 6 to `app/schemas/6.json`. That file is not in this checkout yet. Commit it after the first build.
+- **Not verified here.** The environment had no JDK, Android SDK, Gradle, or network, so nothing in this section has been compiled or run. The mapping and sync tests are written but have not run. The provider calls, the screen, the migration, and the permission prompts have not run on a device or emulator. Check them on a device before relying on them.
 
 ## Requirements
 

@@ -61,6 +61,7 @@ fun ScheduleListRoute(
     onBack: () -> Unit,
     onEdit: (UUID) -> Unit,
     onNew: () -> Unit,
+    onOpenCalendar: () -> Unit,
     viewModel: ScheduleListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -73,6 +74,9 @@ fun ScheduleListRoute(
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.editor_back))
                     }
+                },
+                actions = {
+                    TextButton(onClick = onOpenCalendar) { Text(stringResource(R.string.schedules_calendar)) }
                 },
             )
         },

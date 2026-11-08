@@ -17,7 +17,7 @@ import java.util.UUID
 
 /**
  * Opening a version 1 file with the current database class runs every migration in order. Room then validates the
- * final schema against the entities, so these tests also check that the whole chain 1 to 4 produces the schema the
+ * final schema against the entities, so these tests also check that the whole chain 1 to 6 produces the schema the
  * code expects. A schema JSON-based MigrationTestHelper test for each step is still outstanding; see the README.
  */
 class MigrationTest {
@@ -118,7 +118,7 @@ class MigrationTest {
 
     private fun openMigratedDatabase(): RoutinePilotDatabase =
         Room.databaseBuilder(context, RoutinePilotDatabase::class.java, TEST_DB)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .addCallback(ForeignKeysCallback)
             .build()
 

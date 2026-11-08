@@ -1,5 +1,6 @@
 package com.routinepilot.infrastructure.di
 
+import com.routinepilot.data.calendar.CalendarRepositoryImpl
 import com.routinepilot.data.execution.DataStoreActiveExecutionStore
 import com.routinepilot.data.repository.ExecutionRepositoryImpl
 import com.routinepilot.data.repository.PreferenceRepositoryImpl
@@ -8,6 +9,7 @@ import com.routinepilot.data.repository.ScheduleRepositoryImpl
 import com.routinepilot.data.repository.StatsRepositoryImpl
 import com.routinepilot.data.repository.TaskRepositoryImpl
 import com.routinepilot.domain.execution.ActiveExecutionStore
+import com.routinepilot.domain.repository.CalendarRepository
 import com.routinepilot.domain.repository.ExecutionRepository
 import com.routinepilot.domain.repository.PreferenceRepository
 import com.routinepilot.domain.repository.RoutineRepository
@@ -42,4 +44,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindStatsRepository(impl: StatsRepositoryImpl): StatsRepository
+
+    @Binds
+    abstract fun bindCalendarRepository(impl: CalendarRepositoryImpl): CalendarRepository
 }

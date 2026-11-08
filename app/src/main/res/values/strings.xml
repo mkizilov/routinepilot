@@ -191,4 +191,36 @@
     <string name="notification_reminder_text">Your routine is waiting for you.</string>
     <string name="notification_restart_title">Routine paused after restart</string>
     <string name="notification_restart_text">%1$s is paused. Tap to resume.</string>
+    <string name="schedules_calendar">Calendar</string>
+
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_intro">Optional. Export your routines and tasks to a calendar app as recurring events. Export is off until you turn it on.</string>
+    <string name="calendar_permission_why">RoutinePilot asks for calendar access only when you turn export on. It uses that access to list your calendars, to create, update, and delete the events it made, and to find them again by their RoutinePilot ID. It does not look at your other events.</string>
+    <string name="calendar_enable">Export schedules to calendar</string>
+    <string name="calendar_grant_access">Allow calendar access</string>
+    <string name="calendar_status_off">Export is off. Events already in your calendar stay until you remove them.</string>
+    <string name="calendar_status_pending">Waiting for the first sync.</string>
+    <string name="calendar_status_synced">Up to date. Last synced %1$s.</string>
+    <string name="calendar_status_permission_missing">Calendar access is off, so events are not updated. Allow access to resume.</string>
+    <string name="calendar_status_no_destination">Choose a calendar below to start exporting.</string>
+    <string name="calendar_status_destination_missing">The chosen calendar is no longer available. Choose another below.</string>
+    <string name="calendar_destination_title">Destination calendar</string>
+    <string name="calendar_destination_none">No calendar you can write to was found. Add one in your calendar app, then come back.</string>
+    <string name="calendar_all_day">All-day events</string>
+    <string name="calendar_all_day_note">Shows each item on its day without a time. Timed events keep the schedule time in its time zone.</string>
+    <string name="calendar_events_title">Exported events</string>
+    <string name="calendar_event_stopped_title">Stopped schedule</string>
+    <string name="calendar_event_status_linked">In calendar</string>
+    <string name="calendar_event_status_ended">Stopped. Past events are kept.</string>
+    <string name="calendar_event_status_removed">Deleted in the calendar app</string>
+    <string name="calendar_event_open">Open</string>
+    <string name="calendar_event_export_again">Export again</string>
+    <string name="calendar_open_failed">No calendar app can open this event.</string>
+    <string name="calendar_remove_action">Remove exported events and turn off</string>
+    <string name="calendar_remove_title">Remove exported events?</string>
+    <string name="calendar_remove_message">RoutinePilot deletes the events it created and turns export off. Your routines, schedules, and history stay in RoutinePilot.</string>
+    <string name="calendar_remove_confirm">Remove</string>
+    <string name="calendar_move_title">Change calendar?</string>
+    <string name="calendar_move_message">The %1$d events RoutinePilot created in the current calendar are deleted, then created again in the new one.</string>
+    <string name="calendar_move_confirm">Change calendar</string>
 </resources>
