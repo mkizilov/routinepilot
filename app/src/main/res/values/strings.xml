@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">RoutinePilot</string>
+    <string name="home_empty_state">No routines yet</string>
+</resources>

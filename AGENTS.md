@@ -15,3 +15,26 @@
 - End each turn with a short summary of changes, checks actually run, remaining limitations, and commit hash. The orchestrator will provide the next prompt only after this turn ends.
 
 Extend this file with the project's language-specific architecture and verification commands while retaining these boundaries.
+
+## Android architecture
+
+- Native Android app in Kotlin with Jetpack Compose, Material 3, Room, DataStore, Hilt, and Kotlin Coroutines/Flow. Single `app` module; packages `presentation`, `domain`, `data`, `infrastructure` under `com.routinepilot`.
+- Dependency direction: `presentation` → `domain` ← `data` → `infrastructure`. `domain` has no Android imports. Hilt bindings live in `infrastructure/di`.
+- Versions are pinned in `gradle/libs.versions.toml`. Do not add dependencies for a few lines of code.
+
+## Engineering rules for this project
+
+- Make small, focused changes. Each change touches only what it must and includes tests for new behavior.
+- Keep ViewModels lifecycle-safe: expose `StateFlow` built with `stateIn`/`WhileSubscribed`, collect in Compose with `collectAsStateWithLifecycle`, and never hold Activity or View references.
+- Offline-first: Room is the source of truth. UI reads from Flow; no feature may require network to render local data.
+- Do not commit generated output, caches, `local.properties`, keystores, or scratch files. Delete temporary build output you create.
+
+## Verification commands
+
+Run from the repository root with a JDK 17 and an Android SDK available (see README). Until the Gradle wrapper is committed, use a local Gradle 8.9 (`gradle wrapper --gradle-version 8.9` generates it).
+
+- `./gradlew spotlessCheck detekt` — formatting and static analysis
+- `./gradlew testDebugUnitTest` — JVM unit tests
+- `./gradlew assembleDebug` — debug build
+- `./gradlew connectedDebugAndroidTest` — Compose UI tests on a device or emulator
+- Limit Gradle to two workers (`org.gradle.workers.max=2` in `gradle.properties`).
