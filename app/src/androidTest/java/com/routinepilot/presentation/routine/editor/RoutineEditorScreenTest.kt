@@ -252,9 +252,9 @@ class RoutineEditorScreenTest {
     private class RecordingEditorActions : RoutineEditorActions {
         val calls = mutableListOf<String>()
 
-        override fun onTitleChange(value: String) {}
+        override fun onTitleChange(value: String) = Unit
 
-        override fun onDescriptionChange(value: String) {}
+        override fun onDescriptionChange(value: String) = Unit
 
         override fun onAddStep() {
             calls += "addStep"
@@ -263,17 +263,17 @@ class RoutineEditorScreenTest {
         override fun onStepTitleChange(
             stepId: UUID,
             value: String,
-        ) {}
+        ) = Unit
 
         override fun onStepDescriptionChange(
             stepId: UUID,
             value: String,
-        ) {}
+        ) = Unit
 
         override fun onStepDurationChange(
             stepId: UUID,
             value: String,
-        ) {}
+        ) = Unit
 
         override fun onMoveStep(
             stepId: UUID,
@@ -290,7 +290,7 @@ class RoutineEditorScreenTest {
             calls += "undo"
         }
 
-        override fun onRemovedStepShown() {}
+        override fun onRemovedStepShown() = Unit
 
         override fun onSave() {
             calls += "save"

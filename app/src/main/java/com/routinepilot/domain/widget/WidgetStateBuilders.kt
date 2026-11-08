@@ -67,20 +67,35 @@ object RunWidgetStateBuilder {
         if (active == null) return RunWidgetState.NoActiveRun
         val title = routineTitle ?: return RunWidgetState.RoutineMissing
         val resolved = active.stepIds.mapNotNull { id -> plan.firstOrNull { it.id == id } }
-        val planMatches =
-            active.stepIds.isNotEmpty() &&
-                resolved.size == active.stepIds.size &&
-                active.stepIndex in resolved.indices
+        val status = statusOf(active.status)
         val checkpointAge = nowEpochMillis - active.savedAtEpochMillis
-        val status =
-            when (active.status) {
-                ExecutionStatus.RUNNING -> WidgetRunStatus.RUNNING
-                ExecutionStatus.PAUSED -> WidgetRunStatus.PAUSED
-                ExecutionStatus.NOT_STARTED, ExecutionStatus.COMPLETED, ExecutionStatus.CANCELLED -> null
-            }
         val isStaleRunning = status == WidgetRunStatus.RUNNING && checkpointAge > STALE_CHECKPOINT_MILLIS
-        if (!planMatches || status == null || isStaleRunning) return RunWidgetState.NeedsAttention(title)
+        if (!planMatches(active, resolved) || status == null || isStaleRunning) {
+            return RunWidgetState.NeedsAttention(title)
+        }
+        return activeState(active, title, status, resolved, checkpointAge)
+    }
 
+    private fun statusOf(status: ExecutionStatus): WidgetRunStatus? =
+        when (status) {
+            ExecutionStatus.RUNNING -> WidgetRunStatus.RUNNING
+            ExecutionStatus.PAUSED -> WidgetRunStatus.PAUSED
+            ExecutionStatus.NOT_STARTED, ExecutionStatus.COMPLETED, ExecutionStatus.CANCELLED -> null
+        }
+
+    private fun planMatches(
+        active: ActiveExecution,
+        resolved: List<TimedStep>,
+    ): Boolean =
+        active.stepIds.isNotEmpty() && resolved.size == active.stepIds.size && active.stepIndex in resolved.indices
+
+    private fun activeState(
+        active: ActiveExecution,
+        title: String,
+        status: WidgetRunStatus,
+        resolved: List<TimedStep>,
+        checkpointAge: Long,
+    ): RunWidgetState.Active {
         val sinceCheckpoint = if (status == WidgetRunStatus.RUNNING) checkpointAge.coerceAtLeast(0L) else 0L
         val elapsedNow = active.elapsedMillis + sinceCheckpoint
         val current = resolved[active.stepIndex]

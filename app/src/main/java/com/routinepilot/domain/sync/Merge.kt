@@ -87,63 +87,95 @@ object OfflineMerge {
         base: BaseState?,
         pending: List<Mutation>,
     ): MergeResult {
-        val remote = base ?: BaseState.NEVER_SEEN
-        var deleted = remote.deleted
-        var fields: MutableMap<String, String?> = if (deleted) mutableMapOf() else remote.fields.toMutableMap()
-        var version = remote.version
-        val planned = mutableListOf<PlannedChange>()
-        val conflicts = mutableListOf<Conflict>()
-        val redundant = mutableListOf<UUID>()
-        var blocked = false
-
+        val state = MergeState(key, base)
         for (mutation in pending.sortedBy { it.localSequence }) {
-            if (mutation.kind == MutationKind.DELETE) {
-                if (deleted) {
-                    redundant += mutation.mutationId
-                    continue
+            val stop =
+                when {
+                    mutation.kind == MutationKind.DELETE -> state.applyDelete(mutation)
+                    mutation.expectation == Expectation.PRESENT -> state.applyEdit(mutation)
+                    else -> state.applyWholeRecord(mutation)
                 }
-                if (remote.version > mutation.seenVersion) {
-                    conflicts += Conflict.DeleteOfEdited(key, mutation.mutationId, remote.version)
-                    blocked = true
-                    break
+            if (stop) break
+        }
+        return state.result()
+    }
+}
+
+/**
+ * The merge's running state. Queued changes are applied in local order. A change that needs the user stops the merge
+ * there, so the changes after it wait.
+ */
+private class MergeState(
+    private val key: ObjectKey,
+    private val base: BaseState?,
+) {
+    private val remote = base ?: BaseState.NEVER_SEEN
+    private val remoteVersion = remote.version
+    private var deleted = remote.deleted
+    private var fields: MutableMap<String, String?> = if (deleted) mutableMapOf() else remote.fields.toMutableMap()
+    private var version = remote.version
+    private val planned = mutableListOf<PlannedChange>()
+    private val conflicts = mutableListOf<Conflict>()
+    private val redundant = mutableListOf<UUID>()
+    private var blocked = false
+
+    /** Returns true when the merge must stop here. */
+    fun applyDelete(mutation: Mutation): Boolean {
+        if (deleted) {
+            redundant += mutation.mutationId
+            return false
+        }
+        if (remoteVersion > mutation.seenVersion) {
+            conflicts += Conflict.DeleteOfEdited(key, mutation.mutationId, remoteVersion)
+            blocked = true
+            return true
+        }
+        planned += PlannedChange(mutation.mutationId, key, MutationKind.DELETE, version, null)
+        fields = mutableMapOf()
+        deleted = true
+        version++
+        return false
+    }
+
+    /** Returns true when the merge must stop here. */
+    fun applyEdit(mutation: Mutation): Boolean {
+        if (deleted) {
+            conflicts += Conflict.EditOfDeleted(key, mutation.mutationId)
+            blocked = true
+            return true
+        }
+        for ((name, change) in mutation.changes) {
+            val current = fields[name]
+            if (current == change.after) continue
+            if (current != change.before) {
+                conflicts += Conflict.Superseded(key, mutation.mutationId, name, current, change.after)
+            }
+            fields[name] = change.after
+        }
+        planned += PlannedChange(mutation.mutationId, key, MutationKind.UPSERT, version, fields.toMap())
+        version++
+        return false
+    }
+
+    /** A whole-record write from a record that was not live on this device. It never stops the merge. */
+    fun applyWholeRecord(mutation: Mutation): Boolean {
+        if (base != null && !deleted) {
+            for (name in fields.keys + mutation.snapshot.keys) {
+                val current = fields[name]
+                val kept = mutation.snapshot[name]
+                if (current != kept) {
+                    conflicts += Conflict.Superseded(key, mutation.mutationId, name, current, kept)
                 }
-                planned += PlannedChange(mutation.mutationId, key, MutationKind.DELETE, version, null)
-                fields = mutableMapOf()
-                deleted = true
-                version++
-            } else if (mutation.expectation == Expectation.PRESENT) {
-                if (deleted) {
-                    conflicts += Conflict.EditOfDeleted(key, mutation.mutationId)
-                    blocked = true
-                    break
-                }
-                for ((name, change) in mutation.changes) {
-                    val current = fields[name]
-                    if (current == change.after) continue
-                    if (current != change.before) {
-                        conflicts += Conflict.Superseded(key, mutation.mutationId, name, current, change.after)
-                    }
-                    fields[name] = change.after
-                }
-                planned += PlannedChange(mutation.mutationId, key, MutationKind.UPSERT, version, fields.toMap())
-                version++
-            } else {
-                if (base != null && !deleted) {
-                    for (name in fields.keys + mutation.snapshot.keys) {
-                        val current = fields[name]
-                        val kept = mutation.snapshot[name]
-                        if (current != kept) {
-                            conflicts += Conflict.Superseded(key, mutation.mutationId, name, current, kept)
-                        }
-                    }
-                }
-                fields = mutation.snapshot.toMutableMap()
-                deleted = false
-                planned += PlannedChange(mutation.mutationId, key, MutationKind.UPSERT, version, fields.toMap())
-                version++
             }
         }
+        fields = mutation.snapshot.toMutableMap()
+        deleted = false
+        planned += PlannedChange(mutation.mutationId, key, MutationKind.UPSERT, version, fields.toMap())
+        version++
+        return false
+    }
 
+    fun result(): MergeResult {
         val exists = !deleted && (base != null || fields.isNotEmpty())
         return MergeResult(
             key = key,

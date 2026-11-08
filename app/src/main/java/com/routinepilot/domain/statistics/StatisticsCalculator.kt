@@ -40,6 +40,8 @@ object StatisticsCalculator {
     private const val TREND_MONTHS = 12
     private const val CALENDAR_WEEKS = 5
     private const val LAST_DAYS = 7
+    private const val DAYS_TO_WEEK_END = 6L
+    private const val PERCENT = 100.0
 
     fun compute(
         input: StatisticsInput,
@@ -56,7 +58,7 @@ object StatisticsCalculator {
             weeks =
                 (TREND_WEEKS - 1 downTo 0).map { weeksAgo ->
                     val start = monday.minusWeeks(weeksAgo.toLong())
-                    period(start, start.plusDays(6), input, today)
+                    period(start, start.plusDays(DAYS_TO_WEEK_END), input, today)
                 },
             months =
                 (TREND_MONTHS - 1 downTo 0).map { monthsAgo ->
@@ -123,7 +125,7 @@ object StatisticsCalculator {
     internal fun percentOf(
         completed: Int,
         due: Int,
-    ): Int? = if (due == 0) null else (completed * 100.0 / due).roundToInt()
+    ): Int? = if (due == 0) null else (completed * PERCENT / due).roundToInt()
 
     private fun dayOf(
         date: LocalDate,

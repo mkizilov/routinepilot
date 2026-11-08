@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:CalendarSettingsScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun CalendarSettingsScreen( state: CalendarSettingsUiState, actions: CalendarSettingsActions, onBack: () -&gt; Unit, )</ID>
+    <ID>LongMethod:CalendarSettingsScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun CalendarSettingsScreen( state: CalendarSettingsUiState, actions: CalendarSettingsActions, onBack: () -&gt; Unit, )</ID>
+    <ID>LongMethod:PlanningScreen.kt$@Composable private fun TaskPlanDialog( edit: TaskEdit, others: List&lt;PlannedTaskRow&gt;, onSave: (PlanningTaskSetting) -&gt; Unit, onRemove: (UUID) -&gt; Unit, onDismiss: () -&gt; Unit, )</ID>
+    <ID>LongMethod:PlanningScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun PlanningScreen( state: PlanningUiState, onBack: () -&gt; Unit, onSaveSettings: (PlanningSettings) -&gt; Unit, onSavePlanned: (PlanningTaskSetting) -&gt; Unit, onRemovePlanned: (UUID) -&gt; Unit, onNudge: (UUID, Int) -&gt; Unit, onTogglePin: (UUID) -&gt; Unit, onApply: () -&gt; Unit, onRefresh: () -&gt; Unit, )</ID>
+    <ID>LongMethod:RoutineEditorScreen.kt$@Composable private fun EditorForm( state: RoutineEditorUiState, actions: RoutineEditorActions, )</ID>
+    <ID>LongMethod:RoutineEditorScreen.kt$@Composable private fun StepEditor( index: Int, count: Int, step: StepDraft, showErrors: Boolean, actions: RoutineEditorActions, modifier: Modifier, )</ID>
+    <ID>LongMethod:RoutinePilotNavHost.kt$@Composable fun RoutinePilotNavHost( runRequest: RunRequest? = null, onRunRequestHandled: () -&gt; Unit = {}, navController: NavHostController = rememberNavController(), )</ID>
+    <ID>LongMethod:ScheduleScreens.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun ScheduleListRoute( onBack: () -&gt; Unit, onEdit: (UUID) -&gt; Unit, onNew: () -&gt; Unit, onOpenCalendar: () -&gt; Unit, onOpenAccount: () -&gt; Unit, onOpenPlanning: () -&gt; Unit, viewModel: ScheduleListViewModel = hiltViewModel(), )</ID>
+    <ID>LongMethod:ScheduleScreens.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable private fun ScheduleForm( state: ScheduleEditorUiState, actions: ScheduleEditorActions, modifier: Modifier, )</ID>
+    <ID>LongParameterList:AccountScreen.kt$( email: String, state: AccountUiState, onSyncNow: () -&gt; Unit, onSignOut: () -&gt; Unit, onResolve: (Conflict, Decision) -&gt; Unit, onDeleteAccount: (String) -&gt; Unit, )</ID>
+    <ID>LongParameterList:AccountScreen.kt$( state: AccountUiState, onBack: () -&gt; Unit, onSignIn: (String, String) -&gt; Unit, onRegister: (String, String) -&gt; Unit, onSignOut: () -&gt; Unit, onSyncNow: () -&gt; Unit, onResolve: (Conflict, Decision) -&gt; Unit, onDeleteAccount: (String) -&gt; Unit, )</ID>
+    <ID>LongParameterList:AgendaScreen.kt$( state: AgendaUiState, actions: AgendaActions, onNewSchedule: () -&gt; Unit, onOpenSchedules: () -&gt; Unit, onOpenProgress: () -&gt; Unit = {}, onOpenHelp: () -&gt; Unit = {}, )</ID>
+    <ID>LongParameterList:PlanningScreen.kt$( state: PlanningUiState, onBack: () -&gt; Unit, onSaveSettings: (PlanningSettings) -&gt; Unit, onSavePlanned: (PlanningTaskSetting) -&gt; Unit, onRemovePlanned: (UUID) -&gt; Unit, onNudge: (UUID, Int) -&gt; Unit, onTogglePin: (UUID) -&gt; Unit, onApply: () -&gt; Unit, onRefresh: () -&gt; Unit, )</ID>
+    <ID>LongParameterList:RoutineEditorScreen.kt$( index: Int, count: Int, step: StepDraft, showErrors: Boolean, actions: RoutineEditorActions, modifier: Modifier, )</ID>
+    <ID>LongParameterList:RoutineRunCoordinator.kt$RoutineRunCoordinator$( private val routineRepository: RoutineRepository, private val executionRepository: ExecutionRepository, private val activeExecutionStore: ActiveExecutionStore, private val monotonicClock: MonotonicClock, private val wallClock: Clock, private val reminders: PausedRunReminders, private val foreground: RunForegroundLauncher, @ApplicationScope private val scope: CoroutineScope, )</ID>
+    <ID>LongParameterList:ScheduleScreens.kt$( onBack: () -&gt; Unit, onEdit: (UUID) -&gt; Unit, onNew: () -&gt; Unit, onOpenCalendar: () -&gt; Unit, onOpenAccount: () -&gt; Unit, onOpenPlanning: () -&gt; Unit, viewModel: ScheduleListViewModel = hiltViewModel(), )</ID>
+    <ID>LongParameterList:SyncModule.kt$SyncProvidesModule$( outbox: OutboxStore, remote: SyncRemote, session: SyncSessionStore, credentials: SyncCredentials, writer: LocalRecordWriter, clock: Clock, )</ID>
+    <ID>TooManyFunctions:BackendClient.kt$BackendClient</ID>
+    <ID>TooManyFunctions:CalendarEventMapper.kt$CalendarEventMapper</ID>
+    <ID>TooManyFunctions:CalendarRepositoryImpl.kt$CalendarRepositoryImpl : CalendarRepository</ID>
+    <ID>TooManyFunctions:CalendarSettingsScreen.kt$com.routinepilot.presentation.calendar.CalendarSettingsScreen.kt</ID>
+    <ID>TooManyFunctions:Mappers.kt$com.routinepilot.data.mapping.Mappers.kt</ID>
+    <ID>TooManyFunctions:PlanningDao.kt$PlanningDao</ID>
+    <ID>TooManyFunctions:PlanningRepositoryImpl.kt$PlanningRepositoryImpl : PlanningRepository</ID>
+    <ID>TooManyFunctions:PlanningScreen.kt$com.routinepilot.presentation.planning.PlanningScreen.kt</ID>
+    <ID>TooManyFunctions:PlanningViewModel.kt$PlanningViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:ProviderCalendarGateway.kt$ProviderCalendarGateway : CalendarGateway</ID>
+    <ID>TooManyFunctions:RoomOutboxStore.kt$RoomOutboxStore : OutboxStore</ID>
+    <ID>TooManyFunctions:RoutineEditorViewModel.kt$RoutineEditorActions</ID>
+    <ID>TooManyFunctions:RoutineEditorViewModel.kt$RoutineEditorViewModel : ViewModelRoutineEditorActions</ID>
+    <ID>TooManyFunctions:RoutinePilotDatabase.kt$RoutinePilotDatabase : RoomDatabase</ID>
+    <ID>TooManyFunctions:RoutineRunCoordinator.kt$RoutineRunCoordinator</ID>
+    <ID>TooManyFunctions:RoutineTimer.kt$RoutineTimer</ID>
+    <ID>TooManyFunctions:RunNotificationPresenter.kt$RunNotificationPresenter</ID>
+    <ID>TooManyFunctions:ScheduleEditorViewModel.kt$ScheduleEditorActions</ID>
+    <ID>TooManyFunctions:ScheduleEditorViewModel.kt$ScheduleEditorViewModel : ViewModelScheduleEditorActions</ID>
+    <ID>TooManyFunctions:ScheduleRepository.kt$ScheduleRepository</ID>
+    <ID>TooManyFunctions:ScheduleRepositoryImpl.kt$ScheduleRepositoryImpl : ScheduleRepository</ID>
+    <ID>TooManyFunctions:SmartScheduler.kt$Planner</ID>
+    <ID>TooManyFunctions:StatsScreen.kt$com.routinepilot.presentation.stats.StatsScreen.kt</ID>
+    <ID>TooManyFunctions:SyncAccountStore.kt$SyncAccountStore : SyncCredentialsSyncSessionStore</ID>
+    <ID>TooManyFunctions:SyncOutboxDao.kt$SyncOutboxDao</ID>
+  </CurrentIssues>
+</SmellBaseline>

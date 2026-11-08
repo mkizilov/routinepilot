@@ -32,7 +32,7 @@ class CalendarSynchronizer(
     ): CalendarSyncPlan =
         try {
             plan(settings, sources, links, now)
-        } catch (e: SecurityException) {
+        } catch (expectedPermissionLoss: SecurityException) {
             CalendarSyncPlan.stopped(CalendarState.PERMISSION_MISSING)
         }
 
@@ -46,7 +46,7 @@ class CalendarSynchronizer(
                 deletes = links.map { it.scheduleId },
                 report = CalendarSyncReport(CalendarState.SYNCED, removed = removed),
             )
-        } catch (e: SecurityException) {
+        } catch (expectedPermissionLoss: SecurityException) {
             CalendarSyncPlan.stopped(CalendarState.PERMISSION_MISSING)
         }
     }
@@ -64,79 +64,12 @@ class CalendarSynchronizer(
             return CalendarSyncPlan.stopped(CalendarState.DESTINATION_MISSING)
         }
 
-        val upserts = mutableListOf<CalendarLink>()
-        val deletes = mutableListOf<UUID>()
-        var created = 0
-        var updated = 0
-        var ended = 0
-
         val (previous, current) = links.partition { it.calendarId != destination }
-        for (link in previous) {
-            link.eventId?.let { gateway.deleteEvent(it) }
-            deletes += link.scheduleId
-        }
-        val currentById = current.associateBy { it.scheduleId }
-        val activeIds = sources.mapTo(mutableSetOf()) { it.schedule.id }
-
-        for (source in sources) {
-            val link = currentById[source.schedule.id]
-            val draft = CalendarEventMapper.draftFor(source, settings.allDay, link) ?: continue
-            val hash = CalendarEventMapper.contentHash(draft)
-            if (link?.status == CalendarLinkStatus.REMOVED_IN_CALENDAR) continue
-
-            val liveLink = link?.takeIf { it.status == CalendarLinkStatus.LINKED && it.eventId != null }
-            val liveEventId = liveLink?.eventId
-            if (liveLink != null && liveEventId != null) {
-                if (!gateway.eventExists(liveEventId)) {
-                    upserts += liveLink.copy(status = CalendarLinkStatus.REMOVED_IN_CALENDAR, updatedAt = now)
-                    continue
-                }
-                if (liveLink.contentHash == hash) continue
-                gateway.updateEvent(liveEventId, draft)
-                upserts += linkFor(source.schedule, destination, liveEventId, draft, hash, now)
-                updated++
-                continue
-            }
-
-            val existingId = gateway.findEventId(destination, draft.uid)
-            val eventId =
-                if (existingId != null) {
-                    gateway.updateEvent(existingId, draft)
-                    existingId
-                } else {
-                    gateway.insertEvent(destination, draft) ?: continue
-                }
-            upserts += linkFor(source.schedule, destination, eventId, draft, hash, now)
-            if (existingId == null) created++ else updated++
-        }
-
-        for (link in current) {
-            if (link.scheduleId in activeIds) continue
-            when (link.status) {
-                CalendarLinkStatus.REMOVED_IN_CALENDAR -> deletes += link.scheduleId
-                CalendarLinkStatus.ENDED -> Unit
-                CalendarLinkStatus.LINKED -> {
-                    upserts += endSeries(link, now)
-                    ended++
-                }
-            }
-        }
-
-        val touched = upserts.mapTo(mutableSetOf()) { it.scheduleId } + deletes
-        val finalLinks = current.filter { it.scheduleId !in touched } + upserts
-        return CalendarSyncPlan(
-            upserts = upserts,
-            deletes = deletes,
-            report =
-                CalendarSyncReport(
-                    state = CalendarState.SYNCED,
-                    linked = finalLinks.count { it.status == CalendarLinkStatus.LINKED },
-                    created = created,
-                    updated = updated,
-                    ended = ended,
-                    removedInCalendar = finalLinks.count { it.status == CalendarLinkStatus.REMOVED_IN_CALENDAR },
-                ),
-        )
+        val planning = Planning(destination, settings.allDay, now)
+        planning.removePrevious(previous)
+        planning.writeSources(sources, current)
+        planning.endInactive(current, sources)
+        return planning.toPlan(current)
     }
 
     private fun endSeries(
@@ -159,24 +92,144 @@ class CalendarSynchronizer(
         }
     }
 
-    private fun linkFor(
-        schedule: Schedule,
-        calendarId: Long,
-        eventId: Long,
-        draft: CalendarEventDraft,
-        hash: String,
-        now: Instant,
-    ) = CalendarLink(
-        scheduleId = schedule.id,
-        calendarId = calendarId,
-        eventId = eventId,
-        uid = draft.uid,
-        allDay = draft.allDay,
-        rrule = draft.rrule,
-        startMillis = draft.startMillis,
-        ruleKey = CalendarEventMapper.ruleKeyFor(schedule),
-        contentHash = hash,
-        status = CalendarLinkStatus.LINKED,
-        updatedAt = now,
-    )
+    /** The writes of one sync pass, collected in the order they must reach the calendar. */
+    private inner class Planning(
+        private val destination: Long,
+        private val allDay: Boolean,
+        private val now: Instant,
+    ) {
+        private val upserts = mutableListOf<CalendarLink>()
+        private val deletes = mutableListOf<UUID>()
+        private var created = 0
+        private var updated = 0
+        private var ended = 0
+
+        fun removePrevious(previous: List<CalendarLink>) {
+            for (link in previous) {
+                link.eventId?.let { gateway.deleteEvent(it) }
+                deletes += link.scheduleId
+            }
+        }
+
+        fun writeSources(
+            sources: List<CalendarSource>,
+            current: List<CalendarLink>,
+        ) {
+            val currentById = current.associateBy { it.scheduleId }
+            for (source in sources) {
+                val link = currentById[source.schedule.id]
+                CalendarEventMapper.draftFor(source, allDay, link)?.let { draft ->
+                    writeSource(source, link, draft)
+                }
+            }
+        }
+
+        private fun writeSource(
+            source: CalendarSource,
+            link: CalendarLink?,
+            draft: CalendarEventDraft,
+        ) {
+            val hash = CalendarEventMapper.contentHash(draft)
+            if (link?.status == CalendarLinkStatus.REMOVED_IN_CALENDAR) return
+            val liveLink = link?.takeIf { it.status == CalendarLinkStatus.LINKED && it.eventId != null }
+            val liveEventId = liveLink?.eventId
+            if (liveLink != null && liveEventId != null) {
+                updateLinked(source, liveLink, liveEventId, draft, hash)
+            } else {
+                insertOrAdopt(source, draft, hash)
+            }
+        }
+
+        /** An event this app already created. It is updated only when its content changed, and never recreated. */
+        private fun updateLinked(
+            source: CalendarSource,
+            link: CalendarLink,
+            eventId: Long,
+            draft: CalendarEventDraft,
+            hash: String,
+        ) {
+            if (!gateway.eventExists(eventId)) {
+                upserts += link.copy(status = CalendarLinkStatus.REMOVED_IN_CALENDAR, updatedAt = now)
+                return
+            }
+            if (link.contentHash == hash) return
+            gateway.updateEvent(eventId, draft)
+            upserts += linkFor(source.schedule, eventId, draft, hash)
+            updated++
+        }
+
+        /** No live mapping: adopt the event with the same UID if there is one, otherwise insert a new event. */
+        private fun insertOrAdopt(
+            source: CalendarSource,
+            draft: CalendarEventDraft,
+            hash: String,
+        ) {
+            val existingId = gateway.findEventId(destination, draft.uid)
+            val eventId =
+                if (existingId != null) {
+                    gateway.updateEvent(existingId, draft)
+                    existingId
+                } else {
+                    gateway.insertEvent(destination, draft) ?: return
+                }
+            upserts += linkFor(source.schedule, eventId, draft, hash)
+            if (existingId == null) created++ else updated++
+        }
+
+        /** Links that no source covers any more: removed when the user deleted them, otherwise their series ends. */
+        fun endInactive(
+            current: List<CalendarLink>,
+            sources: List<CalendarSource>,
+        ) {
+            val activeIds = sources.mapTo(mutableSetOf()) { it.schedule.id }
+            for (link in current) {
+                if (link.scheduleId in activeIds) continue
+                when (link.status) {
+                    CalendarLinkStatus.REMOVED_IN_CALENDAR -> deletes += link.scheduleId
+                    CalendarLinkStatus.ENDED -> Unit
+                    CalendarLinkStatus.LINKED -> {
+                        upserts += endSeries(link, now)
+                        ended++
+                    }
+                }
+            }
+        }
+
+        fun toPlan(current: List<CalendarLink>): CalendarSyncPlan {
+            val touched = upserts.mapTo(mutableSetOf()) { it.scheduleId } + deletes
+            val finalLinks = current.filter { it.scheduleId !in touched } + upserts
+            return CalendarSyncPlan(
+                upserts = upserts,
+                deletes = deletes,
+                report =
+                    CalendarSyncReport(
+                        state = CalendarState.SYNCED,
+                        linked = finalLinks.count { it.status == CalendarLinkStatus.LINKED },
+                        created = created,
+                        updated = updated,
+                        ended = ended,
+                        removedInCalendar = finalLinks.count { it.status == CalendarLinkStatus.REMOVED_IN_CALENDAR },
+                    ),
+            )
+        }
+
+        private fun linkFor(
+            schedule: Schedule,
+            eventId: Long,
+            draft: CalendarEventDraft,
+            hash: String,
+        ) = CalendarLink(
+            scheduleId = schedule.id,
+            calendarId = destination,
+            eventId = eventId,
+            uid = draft.uid,
+            allDay = draft.allDay,
+            rrule = draft.rrule,
+            startMillis = draft.startMillis,
+            ruleKey = CalendarEventMapper.ruleKeyFor(schedule),
+            contentHash = hash,
+            status = CalendarLinkStatus.LINKED,
+            updatedAt = now,
+        )
+    }
 }

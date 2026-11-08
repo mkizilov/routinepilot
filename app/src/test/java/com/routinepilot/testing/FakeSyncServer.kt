@@ -37,18 +37,27 @@ class FakeSyncServer : SyncTransport {
 
     override suspend fun submit(change: PlannedChange): SubmitResult {
         val earlier = acceptedByChangeId[change.mutationId]
-        if (earlier != null) {
-            val same =
-                earlier.key == change.key &&
-                    earlier.kind == change.kind &&
-                    earlier.baseVersion == change.baseVersion &&
-                    earlier.payload == change.payload
-            return if (same) {
-                SubmitResult.Accepted(earlier.version, duplicate = true)
-            } else {
-                SubmitResult.Rejected("change_id_reused")
-            }
+        return if (earlier != null) replay(earlier, change) else acceptNew(change)
+    }
+
+    /** A repeat of an accepted change returns the original answer, or is refused when its id was reused. */
+    private fun replay(
+        earlier: Accepted,
+        change: PlannedChange,
+    ): SubmitResult {
+        val same =
+            earlier.key == change.key &&
+                earlier.kind == change.kind &&
+                earlier.baseVersion == change.baseVersion &&
+                earlier.payload == change.payload
+        return if (same) {
+            SubmitResult.Accepted(earlier.version, duplicate = true)
+        } else {
+            SubmitResult.Rejected("change_id_reused")
         }
+    }
+
+    private fun acceptNew(change: PlannedChange): SubmitResult {
         val head = heads[change.key]
         val current = head?.version ?: 0L
         if (change.baseVersion != current) {

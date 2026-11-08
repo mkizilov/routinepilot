@@ -148,24 +148,35 @@ private class Planner(
             fail(taskId, PlanIssue.DependencyUnplaced(failedPrerequisites))
             return
         }
+        place(taskId, need)
+    }
+
+    /** Places the task in the first fitting gap, or records why it cannot be placed. Prerequisites are resolved. */
+    private fun place(
+        taskId: UUID,
+        need: Int,
+    ) {
         val earliest =
             maxOf(
                 workday.start,
                 prerequisites.getValue(taskId).maxOfOrNull { placed.getValue(it).end } ?: workday.start,
             )
         val latest = latestFinish(taskId)
-        if (latest < earliest) {
-            fail(taskId, PlanIssue.WindowClosed(earliest, latest))
-            return
+        val start =
+            if (latest < earliest) {
+                null
+            } else {
+                keptStart(taskId, need, earliest, latest) ?: earliestFit(earliest, latest, need)
+            }
+        when {
+            latest < earliest -> fail(taskId, PlanIssue.WindowClosed(earliest, latest))
+            start == null -> fail(taskId, insufficientTime(need, earliest, latest))
+            else -> {
+                val range = TimeRange(start, start + need)
+                placed[taskId] = range
+                free = subtractAll(free, listOf(range))
+            }
         }
-        val start = keptStart(taskId, need, earliest, latest) ?: earliestFit(earliest, latest, need)
-        if (start == null) {
-            fail(taskId, insufficientTime(need, earliest, latest))
-            return
-        }
-        val range = TimeRange(start, start + need)
-        placed[taskId] = range
-        free = subtractAll(free, listOf(range))
     }
 
     private fun keptStart(
@@ -173,12 +184,11 @@ private class Planner(
         need: Int,
         earliest: Int,
         latest: Int,
-    ): Int? {
-        val previous = request.previous[taskId] ?: return null
-        val inWindow = previous % grid == 0 && previous >= earliest && previous + need <= latest
-        if (!inWindow) return null
-        return previous.takeIf { start -> free.any { it.start <= start && start + need <= it.end } }
-    }
+    ): Int? =
+        request.previous[taskId]?.takeIf { start ->
+            val inWindow = start % grid == 0 && start >= earliest && start + need <= latest
+            inWindow && free.any { it.start <= start && start + need <= it.end }
+        }
 
     private fun earliestFit(
         earliest: Int,

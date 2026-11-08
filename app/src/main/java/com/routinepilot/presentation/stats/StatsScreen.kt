@@ -52,6 +52,9 @@ internal const val TAG_STATS_TODAY_PERCENT = "stats_today_percent"
 internal const val TAG_STATS_CURRENT_STREAK = "stats_current_streak"
 
 private const val MILLIS_PER_SECOND = 1_000L
+private const val BAR_WIDTH_FRACTION = 0.6f
+private const val FULL_PERCENT = 100f
+private const val DAYS_PER_WEEK = 7
 private val WEEK_LABEL: DateTimeFormatter = DateTimeFormatter.ofPattern("d", Locale.getDefault())
 private val MONTH_LABEL: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM", Locale.getDefault())
 
@@ -217,12 +220,12 @@ private fun TrendBars(bars: List<Pair<Int?, String>>) {
     Column {
         Canvas(Modifier.fillMaxWidth().height(120.dp)) {
             val slot = size.width / bars.size
-            val barWidth = slot * 0.6f
+            val barWidth = slot * BAR_WIDTH_FRACTION
             bars.forEachIndexed { index, (percent, _) ->
                 val left = index * slot + (slot - barWidth) / 2f
                 drawRect(trackColor, Offset(left, 0f), Size(barWidth, size.height))
                 if (percent != null) {
-                    val height = size.height * percent / 100f
+                    val height = size.height * percent / FULL_PERCENT
                     drawRect(barColor, Offset(left, size.height - height), Size(barWidth, height))
                 }
             }
@@ -245,7 +248,7 @@ private fun TrendBars(bars: List<Pair<Int?, String>>) {
 @Composable
 private fun CalendarGrid(days: List<DayStats>) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        days.chunked(7).forEach { week ->
+        days.chunked(DAYS_PER_WEEK).forEach { week ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 week.forEach { day -> CalendarCell(day) }
             }

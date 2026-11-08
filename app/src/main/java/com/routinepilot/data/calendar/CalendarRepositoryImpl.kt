@@ -92,7 +92,7 @@ class CalendarRepositoryImpl
                 if (!gateway.hasAccess()) return@withContext emptyList()
                 try {
                     gateway.writableCalendars()
-                } catch (e: SecurityException) {
+                } catch (expectedPermissionLoss: SecurityException) {
                     emptyList()
                 }
             }

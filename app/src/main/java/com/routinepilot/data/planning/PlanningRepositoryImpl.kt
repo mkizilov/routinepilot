@@ -172,14 +172,17 @@ class PlanningRepositoryImpl
                 val start = local.hour * MINUTES_PER_HOUR + local.minute
                 val routineId = occurrence.routineId
                 val taskId = occurrence.taskId
-                if (routineId != null) {
-                    val title = routineTitles[routineId] ?: continue
-                    commitments += FixedCommitment(title, rangeFrom(start, routineMinutes(routineId)))
-                } else if (taskId != null) {
-                    val task = tasks[taskId] ?: continue
-                    taskIds += taskId
-                    val minutes = plannedRows[taskId]?.durationMinutes ?: DEFAULT_MINUTES
-                    commitments += FixedCommitment(task.title, rangeFrom(start, minutes))
+                when {
+                    routineId != null ->
+                        routineTitles[routineId]?.let { title ->
+                            commitments += FixedCommitment(title, rangeFrom(start, routineMinutes(routineId)))
+                        }
+                    taskId != null ->
+                        tasks[taskId]?.let { task ->
+                            taskIds += taskId
+                            val minutes = plannedRows[taskId]?.durationMinutes ?: DEFAULT_MINUTES
+                            commitments += FixedCommitment(task.title, rangeFrom(start, minutes))
+                        }
                 }
             }
             return FixedDay(commitments, taskIds)

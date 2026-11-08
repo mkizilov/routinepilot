@@ -13,9 +13,8 @@ class OfflineReplica(
 ) {
     /**
      * Records a local change to one record. [before] and [after] are the tracked fields before and after the edit.
-     * A null
-     * [after] is a delete. A null [before] means the record was not live on this device, so the change writes the whole
-     * record.
+     * A null [after] is a delete. A null [before] means the record was not live on this device, so the change writes
+     * the whole record.
      */
     suspend fun record(
         key: ObjectKey,
@@ -28,9 +27,7 @@ class OfflineReplica(
         if (before != null && after != null && changes.isEmpty()) return
 
         val base = store.base(key)
-        val lastQueued = store.pending(key).lastOrNull()
-        val liveAfterQueue = lastQueued?.let { it.kind == MutationKind.UPSERT } ?: true
-        val editsKnownLive = before != null && base != null && !base.deleted && liveAfterQueue
+        val editsKnownLive = before != null && base != null && !base.deleted && queueLeavesRecordLive(key)
         store.append(
             Mutation(
                 mutationId = newId(),
@@ -45,6 +42,10 @@ class OfflineReplica(
             ),
         )
     }
+
+    /** True unless the last queued change deletes the record, in which case a new edit cannot assume it is live. */
+    private suspend fun queueLeavesRecordLive(key: ObjectKey): Boolean =
+        store.pending(key).lastOrNull()?.let { it.kind == MutationKind.UPSERT } ?: true
 
     private fun diff(
         before: FieldMap,

@@ -43,13 +43,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.routinepilot.R
 import com.routinepilot.domain.model.Routine
 import com.routinepilot.presentation.common.CenteredContent
-import java.util.UUID
-
-data class HomeNavigation(
-    val onEdit: (UUID) -> Unit,
-    val onRun: (UUID) -> Unit,
-    val onNew: () -> Unit,
-)
 
 @Composable
 fun HomeRoute(

@@ -25,7 +25,8 @@ class AuthExpiredException : RuntimeException("Sign in again to resume sync")
 class RemoteRejectedException(
     val mutationId: UUID,
     val reason: String,
-) : RuntimeException("Server refused change $mutationId: $reason")
+    cause: Throwable? = null,
+) : RuntimeException("Server refused change $mutationId: $reason", cause)
 
 /** The server is busy or unreachable for now. Worth trying again later. */
 class RemoteBusyException(

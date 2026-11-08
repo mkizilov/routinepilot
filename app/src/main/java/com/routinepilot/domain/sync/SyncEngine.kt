@@ -86,33 +86,51 @@ class SyncEngine(
         val touched = mutableSetOf<ObjectKey>()
         val held = mutableListOf<Conflict>()
         var rejected = 0
-        try {
-            pullAll(touched)
-            for (key in outbox.keysWithPending()) {
-                touched += key
-                try {
-                    val merged = offline.flush(key)
-                    if (merged.blocked) held += merged.conflicts.filterNot { it is Conflict.Superseded }
-                } catch (refused: RemoteRejectedException) {
-                    rejected++
-                }
+        val result =
+            try {
+                pullAll(touched)
+                rejected = flushPending(touched, held)
+                pullAll(touched)
+                CycleResult.Done
+            } catch (expectedExpiry: AuthExpiredException) {
+                CycleResult.NeedsSignIn
+            } catch (expectedNetworkFailure: IOException) {
+                CycleResult.Retry
             }
-            pullAll(touched)
-        } catch (expired: AuthExpiredException) {
-            applyTouched(touched)
-            publish(SyncPhase.NEEDS_SIGN_IN, held, rejected)
-            return CycleResult.NeedsSignIn
-        } catch (busy: IOException) {
-            applyTouched(touched)
-            publish(SyncPhase.WAITING_FOR_NETWORK, held, rejected)
-            return CycleResult.Retry
-        }
         applyTouched(touched)
-        session.markSynced(nowMillis())
-        val phase = if (held.isEmpty() && rejected == 0) SyncPhase.UP_TO_DATE else SyncPhase.NEEDS_ATTENTION
-        publish(phase, held, rejected)
-        return CycleResult.Done
+        if (result == CycleResult.Done) session.markSynced(nowMillis())
+        publish(phaseFor(result, held, rejected), held, rejected)
+        return result
     }
+
+    /** Sends each queued record in turn. Returns how many changes the server refused. */
+    private suspend fun flushPending(
+        touched: MutableSet<ObjectKey>,
+        held: MutableList<Conflict>,
+    ): Int {
+        var rejected = 0
+        for (key in outbox.keysWithPending()) {
+            touched += key
+            try {
+                val merged = offline.flush(key)
+                if (merged.blocked) held += merged.conflicts.filterNot { it is Conflict.Superseded }
+            } catch (expectedRejection: RemoteRejectedException) {
+                rejected++
+            }
+        }
+        return rejected
+    }
+
+    private fun phaseFor(
+        result: CycleResult,
+        held: List<Conflict>,
+        rejected: Int,
+    ): SyncPhase =
+        when (result) {
+            CycleResult.NeedsSignIn -> SyncPhase.NEEDS_SIGN_IN
+            CycleResult.Retry -> SyncPhase.WAITING_FOR_NETWORK
+            else -> if (held.isEmpty() && rejected == 0) SyncPhase.UP_TO_DATE else SyncPhase.NEEDS_ATTENTION
+        }
 
     /** Applies the user's choice for a held change, then shows the result. The change is sent by the next cycle. */
     suspend fun resolve(

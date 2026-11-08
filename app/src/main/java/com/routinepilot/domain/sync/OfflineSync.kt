@@ -69,9 +69,9 @@ class OfflineSync(
             return settle(change.key, change.changeId, change.version, kind, change.fields)
         }
         val base = store.base(change.key) ?: BaseState.NEVER_SEEN
-        if (change.version != base.version + 1) return false
-        store.saveBase(change.key, BaseState(change.version, change.deleted, change.fields))
-        return true
+        val inOrder = change.version == base.version + 1
+        if (inOrder) store.saveBase(change.key, BaseState(change.version, change.deleted, change.fields))
+        return inOrder
     }
 
     /** Applies a user decision to a held change. A superseded field resolves on its own and takes no decision. */

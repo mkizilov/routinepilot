@@ -85,7 +85,8 @@ fun AgendaScreen(
         },
     ) { innerPadding ->
         val agenda = state.agenda
-        if (state.loaded && agenda.current.isEmpty() && agenda.upcoming.isEmpty() && agenda.earlier.isEmpty()) {
+        val nothingScheduled = agenda.current.isEmpty() && agenda.upcoming.isEmpty() && agenda.earlier.isEmpty()
+        if (state.loaded && nothingScheduled) {
             Column(
                 Modifier.fillMaxSize().padding(innerPadding).padding(24.dp),
                 verticalArrangement = Arrangement.Center,

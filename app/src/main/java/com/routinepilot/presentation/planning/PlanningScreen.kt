@@ -400,10 +400,11 @@ private fun WorkingHoursDialog(
                 val from = parseClock(start)
                 val to = parseClock(end)
                 val parsedBreaks = parseBreaks(breaks)
-                if (from == null || to == null || from >= to || parsedBreaks == null) {
+                val window = if (from != null && to != null && from < to) TimeRange(from, to) else null
+                if (window == null || parsedBreaks == null) {
                     invalid = true
                 } else {
-                    onSave(PlanningSettings(TimeRange(from, to), parsedBreaks))
+                    onSave(PlanningSettings(window, parsedBreaks))
                 }
             }) { Text(stringResource(R.string.planning_save)) }
         },
@@ -466,12 +467,11 @@ private fun TaskPlanDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val duration = minutes.trim().toIntOrNull()
-                val level = priority.trim().toIntOrNull()
+                val duration = minutes.trim().toIntOrNull()?.takeIf { it > 0 }
+                val level = priority.trim().toIntOrNull()?.takeIf { it in 1..MAX_PRIORITY }
                 val due = if (deadline.isBlank()) null else parseClock(deadline)
                 val deadlineInvalid = deadline.isNotBlank() && due == null
-                val priorityValid = level != null && level in 1..MAX_PRIORITY
-                if (duration == null || duration <= 0 || !priorityValid || deadlineInvalid) {
+                if (duration == null || level == null || deadlineInvalid) {
                     invalid = true
                 } else {
                     onSave(PlanningTaskSetting(edit.taskId, duration, level, due, after))
@@ -516,12 +516,18 @@ internal fun parseClock(text: String): Int? {
 /** Reads breaks as "HH:mm-HH:mm" separated by commas. Blank means no breaks. Null when any part is invalid. */
 internal fun parseBreaks(text: String): List<TimeRange>? {
     if (text.isBlank()) return emptyList()
-    return text.split(",").map { part ->
-        val bounds = part.split("-")
-        if (bounds.size != 2) return null
-        val start = parseClock(bounds[0]) ?: return null
-        val end = parseClock(bounds[1]) ?: return null
-        if (start >= end) return null
-        TimeRange(start, end)
+    val ranges = text.split(",").map { parseBreak(it) }
+    return if (ranges.any { it == null }) null else ranges.filterNotNull()
+}
+
+/** One "HH:mm-HH:mm" range, or null when either end is not a time or the range does not run forward. */
+private fun parseBreak(part: String): TimeRange? {
+    val bounds = part.split("-")
+    val start = bounds.getOrNull(0)?.let(::parseClock)
+    val end = bounds.getOrNull(1)?.let(::parseClock)
+    return when {
+        bounds.size != 2 || start == null || end == null -> null
+        start >= end -> null
+        else -> TimeRange(start, end)
     }
 }

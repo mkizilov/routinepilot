@@ -7,8 +7,24 @@ naming:
     ignoreAnnotated:
       - Composable
 
+complexity:
+  LongMethod:
+    excludes:
+      # Migration bodies are SQL statements, one per table. Splitting them into functions would hide the schema.
+      - '**/infrastructure/database/*Migrations.kt'
+  LongParameterList:
+    excludes:
+      # Test helpers build fixtures from many named values. Their parameters are the test's readable setup.
+      - '**/test/**'
+      - '**/androidTest/**'
+
 style:
   MagicNumber:
     excludes:
       - '**/test/**'
       - '**/androidTest/**'
+      # Migrations hold the schema SQL and the version numbers that history fixed. Naming them adds nothing.
+      - '**/infrastructure/database/*Migrations.kt'
+  ReturnCount:
+    # Early returns for invalid input or missing data are the clearest form of a guard. Other returns still count.
+    excludeGuardClauses: true

@@ -361,7 +361,7 @@ private fun openEvent(
             .setData(ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId))
     try {
         context.startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
+    } catch (expectedMissingViewer: ActivityNotFoundException) {
         Toast.makeText(context, R.string.calendar_open_failed, Toast.LENGTH_SHORT).show()
     }
 }

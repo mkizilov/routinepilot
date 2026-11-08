@@ -11,6 +11,8 @@ plugins {
 detekt {
     buildUponDefaultConfig = true
     config.setFrom(files("config/detekt/detekt.yml"))
+    // Structural findings that predate the zero-issue policy. New findings still fail. See ROADMAP.md, step on baseline burn-down.
+    baseline = file("config/detekt/baseline.xml")
     source.setFrom(files("app/src"))
 }
 

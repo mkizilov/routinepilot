@@ -27,7 +27,7 @@ class BackendSyncRemote
                     withDeviceSession { token -> client.upload(token, UploadDto(listOf(change.toWire()))) }
                 } catch (refused: BackendException) {
                     if (refused.status == HTTP_BAD_REQUEST) {
-                        throw RemoteRejectedException(change.mutationId, refused.message.orEmpty())
+                        throw RemoteRejectedException(change.mutationId, refused.message.orEmpty(), refused)
                     }
                     throw refused
                 }
@@ -61,18 +61,18 @@ class BackendSyncRemote
         }
 
         private suspend fun registerDevice(): String {
-            val accountToken = account.accountToken()
-            if (accountToken == null || account.accountTokenExpired()) throw AuthExpiredException()
+            val accountToken =
+                account.accountToken()?.takeUnless { account.accountTokenExpired() }
+                    ?: throw AuthExpiredException()
             val registered =
                 try {
                     client.registerDevice(accountToken, DEVICE_NAME, PLATFORM)
                 } catch (rejected: BackendException) {
-                    if (rejected.status == HTTP_UNAUTHORIZED ||
-                        rejected.status == HTTP_FORBIDDEN
-                    ) {
-                        throw AuthExpiredException()
+                    throw if (rejected.status == HTTP_UNAUTHORIZED || rejected.status == HTTP_FORBIDDEN) {
+                        AuthExpiredException()
+                    } else {
+                        rejected
                     }
-                    throw rejected
                 }
             account.saveDevice(
                 registered.device.id,

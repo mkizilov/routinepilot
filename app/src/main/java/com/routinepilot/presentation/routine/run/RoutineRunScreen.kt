@@ -109,7 +109,8 @@ fun RoutineRunRoute(
     var startHandled by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(autoStart, state.isLoading, state.timer.status) {
         // A widget's Start opens the run and begins it once, through the same permission path as the Start button.
-        if (autoStart && !startHandled && !state.isLoading && state.timer.status == ExecutionStatus.NOT_STARTED) {
+        val ready = !state.isLoading && state.timer.status == ExecutionStatus.NOT_STARTED
+        if (autoStart && !startHandled && ready) {
             startHandled = true
             actions.start()
         }

@@ -49,36 +49,50 @@ class AccountSessionManager
         private suspend fun establish(
             email: String,
             authenticate: suspend () -> TokenDto,
-        ): SignInOutcome {
+        ): SignInOutcome =
             try {
-                val login = authenticate()
-                val accountId = client.me(login.token).id
-                val owner = account.owner()
-                when (val plan = planSignIn(owner, accountId, outbox.pendingCount())) {
-                    is SignInPlan.Blocked -> {
-                        closeUnusedSession(login.token)
-                        return SignInOutcome.Blocked(plan.unsyncedChanges)
-                    }
-                    SignInPlan.ReplaceLocalData -> {
-                        withContext(Dispatchers.IO) { database.clearAllTables() }
-                        account.setOwner(accountId)
-                        seeder.seedUntrackedRecords()
-                    }
-                    SignInPlan.Adopt -> {
-                        account.setOwner(accountId)
-                        seeder.seedUntrackedRecords()
-                    }
-                }
-                account.saveAccount(email, login.token, Instant.parse(login.expiresAt).toEpochMilli())
-                val device = client.registerDevice(login.token, DEVICE_NAME, PLATFORM)
-                account.saveDevice(device.device.id, device.token, Instant.parse(device.expiresAt).toEpochMilli())
-                scheduler.requestNow()
-                scheduler.startPeriodic()
-                return SignInOutcome.SignedIn
+                completeSignIn(email, authenticate)
             } catch (refused: BackendException) {
-                return SignInOutcome.Failed(problemOf(refused))
-            } catch (unreachable: IOException) {
-                return SignInOutcome.Failed(AuthProblem.UNAVAILABLE)
+                SignInOutcome.Failed(problemOf(refused))
+            } catch (expectedNetworkFailure: IOException) {
+                SignInOutcome.Failed(AuthProblem.UNAVAILABLE)
+            }
+
+        private suspend fun completeSignIn(
+            email: String,
+            authenticate: suspend () -> TokenDto,
+        ): SignInOutcome {
+            val login = authenticate()
+            val accountId = client.me(login.token).id
+            val plan = planSignIn(account.owner(), accountId, outbox.pendingCount())
+            if (plan is SignInPlan.Blocked) {
+                closeUnusedSession(login.token)
+                return SignInOutcome.Blocked(plan.unsyncedChanges)
+            }
+            applySignInPlan(plan, accountId)
+            account.saveAccount(email, login.token, Instant.parse(login.expiresAt).toEpochMilli())
+            val device = client.registerDevice(login.token, DEVICE_NAME, PLATFORM)
+            account.saveDevice(device.device.id, device.token, Instant.parse(device.expiresAt).toEpochMilli())
+            scheduler.requestNow()
+            scheduler.startPeriodic()
+            return SignInOutcome.SignedIn
+        }
+
+        private suspend fun applySignInPlan(
+            plan: SignInPlan,
+            accountId: String,
+        ) {
+            when (plan) {
+                is SignInPlan.Blocked -> Unit
+                SignInPlan.ReplaceLocalData -> {
+                    withContext(Dispatchers.IO) { database.clearAllTables() }
+                    account.setOwner(accountId)
+                    seeder.seedUntrackedRecords()
+                }
+                SignInPlan.Adopt -> {
+                    account.setOwner(accountId)
+                    seeder.seedUntrackedRecords()
+                }
             }
         }
 
@@ -116,7 +130,7 @@ class AccountSessionManager
                 DeleteAccountOutcome.Deleted
             } catch (refused: BackendException) {
                 DeleteAccountOutcome.Failed(problemOf(refused))
-            } catch (unreachable: IOException) {
+            } catch (expectedNetworkFailure: IOException) {
                 DeleteAccountOutcome.Failed(AuthProblem.UNAVAILABLE)
             }
         }
@@ -130,9 +144,9 @@ class AccountSessionManager
             try {
                 call()
                 true
-            } catch (failed: BackendException) {
+            } catch (expectedFailure: BackendException) {
                 false
-            } catch (unreachable: IOException) {
+            } catch (expectedNetworkFailure: IOException) {
                 false
             }
 

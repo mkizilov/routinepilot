@@ -4,6 +4,8 @@ import java.util.UUID
 
 const val MINUTES_PER_DAY = 1_440
 
+private const val MINUTES_PER_HOUR = 60
+
 /** A span of minutes after midnight on the planned day, from [start] inclusive to [end] exclusive. */
 data class TimeRange(
     val start: Int,
@@ -68,7 +70,9 @@ data class PlanRequest(
     val granularityMinutes: Int = DEFAULT_GRANULARITY_MINUTES,
 ) {
     init {
-        require(granularityMinutes > 0 && 60 % granularityMinutes == 0) { "Granularity must divide an hour" }
+        require(granularityMinutes > 0 && MINUTES_PER_HOUR % granularityMinutes == 0) {
+            "Granularity must divide an hour"
+        }
         require(workday.start % granularityMinutes == 0) { "The workday must start on the time grid" }
         require(tasks.map { it.id }.toSet().size == tasks.size) { "Task ids must be unique" }
     }

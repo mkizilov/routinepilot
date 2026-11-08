@@ -33,12 +33,16 @@ object WidgetSizing {
             else -> WidgetSize.SMALL
         }
 
+    private const val ROWS_SMALL = 1
+    private const val ROWS_MEDIUM = 2
+    private const val ROWS_LARGE = 4
+
     /** How many list rows fit in each bucket. */
     fun rowLimit(size: WidgetSize): Int =
         when (size) {
-            WidgetSize.SMALL -> 1
-            WidgetSize.MEDIUM -> 2
-            WidgetSize.LARGE -> 4
+            WidgetSize.SMALL -> ROWS_SMALL
+            WidgetSize.MEDIUM -> ROWS_MEDIUM
+            WidgetSize.LARGE -> ROWS_LARGE
         }
 }
 
