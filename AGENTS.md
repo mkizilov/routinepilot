@@ -1,6 +1,6 @@
 # RoutinePilot: project boundaries and working agreement
 
-- Work only in `/Users/mk-rune/test_projects/06-routinepilot`. Other repositories are independent of it.
+- Work only in this repository, the directory that contains this file. Other repositories are independent of it.
 - Do not read, modify, clean up, or run commands in sibling repositories or the user's configuration.
 - Work autonomously: choose sensible defaults and document assumptions; do not ask questions or delegate.
 - Never install anything globally or use sudo, Homebrew, launchd, host credentials, or host Docker sockets.

@@ -9,21 +9,23 @@ This file records what the repository contains, what has actually been executed,
 - **Partially verified:** some check ran, such as an independent reference model, a source comparison, or a syntax check. The behavior itself was not run.
 - **Unverified:** written, but never executed.
 
-Nothing marked *Implemented* works until it has been run. The Android app has not been built since the calendar export work.
+Nothing marked *Implemented* is verified unless it says so in the evidence column. The Android app compiles and its JVM tests pass as of the latest checkpoint. The backend compiles, and its 63 tests pass against a local PostgreSQL 16.15. Instrumented tests, device behavior, and Docker-based checks have not been run.
 
 ## Where things stand
 
 | Area | Commit | Status | Evidence |
 | --- | --- | --- | --- |
 | Routines, timer, run recovery, schedules, agenda, statistics, widgets | before `14b9fb8` | Implemented; not re-verified in this series | Present in the tree; not reviewed here |
-| Calendar export | `14b9fb8` | Implemented; unverified | 36 JVM test functions written (17 mapper, 19 synchronizer). Provider behavior on a device is unknown, including UID support |
-| Sync backend (Ktor, PostgreSQL) | `5e7c0e4` | Implemented; unverified | 63 test functions written. No Gradle, Docker, or JDBC run. Image never built |
-| Offline outbox and merge rules | `263473b` | Implemented; unverified | JVM tests written. Merge rules checked by review only |
+| Calendar export | `14b9fb8` | Implemented; JVM tests verified; device unverified | 36 JVM test functions pass (17 mapper, 19 synchronizer). Provider behavior on a device is unknown, including UID support |
+| Sync backend (Ktor, PostgreSQL) | `5e7c0e4` | Implemented; verified against local PostgreSQL 16.15 | 63 of 63 tests pass. The service answers `/health` and serves register, upload, download, replay, and conflict over HTTP. Docker image and the Testcontainers path not run |
+| Offline outbox and merge rules | `263473b` | Implemented; JVM tests verified | Merge and simulation tests pass as part of the 303 JVM tests |
 | Android sync client, sign-in, account screen | `9537464` | Implemented; unverified | Client and backend compared in an earlier pass with an ad hoc script (routes, names, statuses, required fields, error codes). That script is not kept in the repository |
 | Smart daily planning | `5e2de37` | Implemented; partially verified | 15 scenarios checked against an independent Python model, which is not kept in the repository. 22 JVM test functions written, not run |
 | UI refinement, dynamic colour, accessibility semantics | `9540e24` | Implemented; partially verified | Semantics assertions written, not run. No TalkBack or emulator run |
 | Release configuration, account deletion, onboarding, help, CI, privacy and deployment documents | `cee492e` | Implemented; partially verified | Workflows parse. Daylight-saving expectations checked against the IANA database. Contract compared in the same earlier pass. No build |
-| Repository checks, `scripts/static-checks.py` | this commit | Implemented; verified | Twelve checks pass on the final tree. Nine injected defects were all reported |
+| Repository checks, `scripts/static-checks.py` | `7984f2c` | Implemented; verified | Twelve checks pass on the final tree. Nine injected defects were all reported |
+| Android build, format, static analysis | `d20a979`, `11d3ca2` | Verified | Compile, 303 JVM tests, Spotless, detekt with a 42-entry baseline, debug and release assemblies |
+| MIT license and third-party notices | `f194230` | Verified | `LICENSE` and `THIRD_PARTY_NOTICES.md` added. Items needing review are listed there |
 
 Corrections to earlier reports:
 
@@ -44,7 +46,7 @@ Corrections to earlier reports:
 
 **UI refinement.**
 - Responsive: a centred column of at most 640 dp on four screens only. *Partially implemented.*
-- Dark mode and dynamic colour: implemented, following the system setting. *Unverified.*
+- Dark mode and dynamic color: implemented, following the system setting. *Unverified on a device.*
 - Accessible content descriptions and headings: asserted in semantics tests that have not run. *Partially implemented.*
 - Large text: tested with a density override only. *Partially verified.*
 - Keyboard navigation: Next and Done actions are set. Hardware keyboard traversal is not tested. *Partially implemented.*
@@ -55,35 +57,35 @@ Corrections to earlier reports:
 - Query and startup optimization: a query audit by reading DAO text, and one widget ticker fix. No measurement was made, so no performance gain is claimed. *Partially implemented.*
 
 **Release and end-to-end testing.**
-- Release configuration: implemented. `assembleRelease` has not run. *Unverified.*
+- Release configuration: implemented. `assembleRelease` runs and produces an unsigned APK. *Verified unsigned; signing and minification not configured.*
 - Signing instructions: implemented. No keystore has been created and no build has been signed. *Unverified.*
-- Backend deployment documentation: implemented. The compose stack and the image have never run. *Unverified.*
+- Backend deployment documentation: implemented. The distribution runs against PostgreSQL. The compose stack and the Docker image have not been run. *Partially verified.*
 - Database migration tests: partially implemented. A test runs the chain to version 8 and a persistence test is written. There is no `MigrationTestHelper` test, and no exported schema exists yet. *Partially implemented.*
 - End-to-end synchronization scenarios: partially implemented. Simulated devices with a fake server are written. Nothing runs against the real backend. *Partially implemented.*
 - Offline and process-restart tests: written, not run. *Partially implemented.*
 - Notification and scheduling tests: a WorkManager scheduling test and a notification presenter test are written. Not run. *Partially implemented.*
-- CI workflows: implemented. Never run on a hosted runner. *Unverified.*
+- CI workflows: implemented. The Gradle commands they run were run locally; the hosted runner has not run them. *Partially verified.*
 - Privacy and data deletion documentation: implemented. No legal review. *Implemented.*
 - Onboarding and help screens: implemented. *Unverified.*
 - Verifying routine timing, recurrence, time zones, offline operation, account isolation, and sync conflicts: the daylight-saving expectations were checked against the IANA database. The rest is written as tests, not run. *Partially verified.*
-- Running all available checks: the repository checks ran in this pass. Gradle checks were not possible here. *Partially verified.*
+- Running all available checks: the Android and backend Gradle checks were run with a local toolchain, and the repository checks passed. Instrumented tests, device checks, and Docker were not possible here. *Partially verified.*
 
 ## Prioritized roadmap
 
 Priorities: **P0** blocks trust in everything else. **P1** correctness, security, or release blocker. **P2** important, not blocking. **P3** product improvement.
 
-## 1. Build the project for the first time
+## 1. Confirm the build on a clean clone and in CI
 
-- **Priority:** P0. **Status:** unverified.
-- **Scope:** Commit the Gradle wrapper in the root and in `backend/`, generated with `gradle wrapper --gradle-version 8.9`. Run `./gradlew assembleDebug assembleRelease`, `spotlessCheck`, and `detekt`. Commit the Room schema files for versions 1 to 8 that Room exports to `app/schemas/`. Fix compile and lint failures. Switch the CI workflows from `gradle` to `./gradlew`.
-- **Rationale:** No Kotlin written since the calendar work has been compiled. Every later step depends on a clean build, and the sync, planning, and release code are the largest unknowns.
-- **Dependencies:** JDK 17, Android SDK platform 35 with build tools, and Gradle 8.9 once, to generate the wrappers.
-- **Acceptance criteria:** A clean clone passes `./gradlew assembleDebug assembleRelease spotlessCheck detekt`. Schema files for versions 1 to 8 are committed. The `android.yml` check job passes and calls `./gradlew`. The README and `docs/testing.md` record the date and result.
-- **Effort:** 8 to 16 hours.
+- **Priority:** P0. **Status:** the local build is done: the wrappers are committed, the app compiles, and the Spotless, detekt, unit-test, and assembly gates pass. What remains is a clean-clone run and the CI run on a hosted runner.
+- **Scope:** Clone the repository into an empty directory and run `./gradlew assembleDebug assembleRelease spotlessCheck detekt testDebugUnitTest` with a JDK 17 and an Android SDK. Switch the workflows to `./gradlew` (they still call `gradle`). Confirm the Room schema for version 8 in `app/schemas/` is the one the build writes.
+- **Rationale:** The local run used a machine with an existing project-local toolchain. A clean clone checks that nothing depends on files that are ignored or uncommitted.
+- **Dependencies:** Access to a hosted runner or a fresh machine.
+- **Acceptance criteria:** The clean-clone run passes with the same results as the local run. The `android.yml` and `backend.yml` jobs pass on the hosted runner.
+- **Effort:** 3 to 6 hours.
 
 ## 2. Run the JVM unit tests and fix failures
 
-- **Priority:** P0. **Status:** unverified, 303 test functions.
+- **Priority:** P0. **Status:** 303 of 303 pass locally. CI has not run them.
 - **Scope:** Run `./gradlew testDebugUnitTest`. Fix the code when a test shows a real defect. Change a test expectation only when the expectation is wrong, and say why in the commit.
 - **Rationale:** The merge, planning, recurrence, and time-zone rules are encoded in these tests, and they have never run.
 - **Dependencies:** Step 1.
@@ -92,16 +94,16 @@ Priorities: **P0** blocks trust in everything else. **P1** correctness, security
 
 ## 3. Compile and test the backend, including the Docker-backed tests
 
-- **Priority:** P0. **Status:** unverified, 63 test functions.
-- **Scope:** In `backend/`, run `gradle test installDist` with Docker available. Verify the JDBC SQL, the Testcontainers setup, the migration runner, and the API tests. Build the image, start the compose stack on loopback, and check `/health`. Confirm the container runs as non-root with a read-only root filesystem.
-- **Rationale:** The backend has never been compiled. Its SQL and HTTP contract are the most consequential unverified code, because the Android client depends on them.
-- **Dependencies:** JDK 17, Gradle 8.9, and Docker on a machine you control. Not the sandbox. Independent of step 1.
-- **Acceptance criteria:** `gradle test installDist` passes in `backend.yml`. The image builds in CI. `curl` on `/health` from the compose stack returns `{"status":"ok"}`. The "Not verified" list in `backend/README.md` is reduced to what was run.
-- **Effort:** 8 to 14 hours.
+- **Priority:** P0. **Status:** 63 of 63 pass locally against PostgreSQL 16.15 (a project-local server). The Testcontainers path, the Docker image, and the compose stack have not run.
+- **Scope:** Run `gradle test` with a Docker daemon so the Testcontainers path runs with no `RP_TEST_DATABASE_URL`. Build the image with `docker build`, start the compose stack on loopback, and check `/health`. Confirm the container runs as non-root with a read-only root filesystem.
+- **Rationale:** The local run covers the SQL and the HTTP contract. It does not cover the Testcontainers setup or the image, which CI and deployment depend on.
+- **Dependencies:** Docker on a machine you control. Not the sandbox.
+- **Acceptance criteria:** `gradle test installDist` passes in `backend.yml` with Testcontainers. The image builds in CI. `curl` on `/health` from the compose stack returns `{"status":"ok"}`.
+- **Effort:** 6 to 10 hours.
 
 ## 4. Run the Compose UI and database tests on an emulator
 
-- **Priority:** P0. **Status:** unverified, 129 instrumented test functions.
+- **Priority:** P0. **Status:** unverified, 129 instrumented test functions. None has run.
 - **Scope:** Run `./gradlew connectedDebugAndroidTest` on an API 34 x86_64 emulator, as the CI job does. Fix failures. Confirm that the migration chain and the persistence test open a real database. Check the WorkManager test setup.
 - **Rationale:** Compose rendering, Room on a device, and WorkManager's test setup have not run.
 - **Dependencies:** Step 1.
@@ -110,7 +112,7 @@ Priorities: **P0** blocks trust in everything else. **P1** correctness, security
 
 ## 5. Add exported-schema migration tests
 
-- **Priority:** P1. **Status:** unverified.
+- **Priority:** P1. **Status:** unverified. The schema for version 8 was exported by this pass's build; versions 1 to 7 were not.
 - **Scope:** Add `MigrationTestHelper` tests for each step from version 1 to 8, using the schema files from step 1. Check each migrated table against its entity. Keep the full-chain test.
 - **Rationale:** The current test opens the whole chain, but it does not check each step's data movement. The 5 to 6 and 7 to 8 migrations were written without a compiler.
 - **Dependencies:** Step 1, for the schema files.
@@ -128,7 +130,7 @@ Priorities: **P0** blocks trust in everything else. **P1** correctness, security
 
 ## 7. Run sync end to end against the real backend
 
-- **Priority:** P1. **Status:** unverified; the simulations use a fake server.
+- **Priority:** P1. **Status:** unverified. The simulations use a fake server, and the backend has been run only from this shell, not from a phone.
 - **Scope:** Run the backend with compose on a development host. Run the debug app on two emulators, which reach it at `10.0.2.2:8080`. Script these cases: register and sign in; create routines offline on each device; reconnect in both orders; a lost response; an expired device session; a revoked device; sign-out; account deletion; and the absence of the previous account's data after a switch.
 - **Rationale:** Nothing has shown the HTTP client, the JSON decoding, and the server validation working together.
 - **Dependencies:** Steps 1, 3, and 4.
@@ -232,9 +234,63 @@ Priorities: **P0** blocks trust in everything else. **P1** correctness, security
 - **Acceptance criteria:** A multi-day plan test and a daylight-saving planning test pass. The calendar decision is recorded in `docs/privacy.md` and the README.
 - **Effort:** 16 to 30 hours.
 
+## 18. Restrict the backend's network bind and make local runs loopback-only
+
+- **Priority:** P1, security. **Status:** unwritten. A local test run in this pass bound the backend to `*:21580`, all interfaces, because the default bind address is `0.0.0.0`.
+- **Scope:** Make the bind address configurable (`rp.bindHost`, default `127.0.0.1` for local runs, and `0.0.0.0` only in the container). Document the setting in `backend/README.md`. Check the compose file binds the published port to loopback, which it already does.
+- **Rationale:** An unguarded local service that accepts connections from the network is a risk, even with a throwaway database.
+- **Dependencies:** None.
+- **Acceptance criteria:** A test shows the default bind is loopback. The container still serves on all interfaces inside the network namespace.
+- **Effort:** 2 to 4 hours.
+
+## 19. Stop test and dev processes reliably in the orchestration sandbox
+
+- **Priority:** P2, operations. **Status:** observed. In this pass, the sandbox denied signals to two owned processes after starting them, so they had to be left running and documented. The backend (PID 6057, port 21580) and PostgreSQL (PID 4929, port 21547) may still be running when this pass ends.
+- **Scope:** Write a stop script that uses each server's own shutdown path (`pg_ctl stop`, and an admin endpoint or a `SIGTERM` handler for the backend), and check the port is free afterward. Record the process ids in a file under `.agent-local/run/` so a later cleanup can find them.
+- **Rationale:** Leftover listeners hold ports and data directories, and the next run can fail or see stale data.
+- **Dependencies:** Step 18, for a shutdown endpoint if one is added.
+- **Acceptance criteria:** The script stops both processes and frees their ports. A test run starts and stops them without a leftover listener.
+- **Effort:** 2 to 4 hours.
+
+## 20. Burn down the 42 structural detekt findings
+
+- **Priority:** P2, maintainability. **Status:** recorded in `config/detekt/baseline.xml`. Detekt passes with the baseline. New findings still fail.
+- **Scope:** Split the DAO interfaces (`SyncOutboxDao`, `PlanningDao`) and the database class. Split the large repositories and the largest Compose screens (`RoutinePilotNavHost`, `CalendarSettingsScreen`, `ScheduleForm`, `ScheduleListRoute`, `EditorForm`, `PlanningScreen`). Shorten the long parameter lists with parameter objects. Remove each entry from the baseline as it is fixed.
+- **Rationale:** These findings are size and count metrics, not defects. The baseline keeps them visible, but they make the code harder to change.
+- **Dependencies:** Step 4, so the Compose screens can be checked on an emulator as they are split.
+- **Acceptance criteria:** `config/detekt/baseline.xml` is empty, and detekt passes without it. Each split keeps its tests passing.
+- **Effort:** 12 to 20 hours.
+
+## 21. Add Docker-independent integration tests for the backend
+
+- **Priority:** P1, correctness. **Status:** partly done. The backend tests can use an existing PostgreSQL through `RP_TEST_DATABASE_URL`. The local run used a project-local server, but no CI job uses that path.
+- **Scope:** Add a CI job that starts a PostgreSQL 16 service container and sets `RP_TEST_DATABASE_URL`, so the database and API tests run without Testcontainers. Keep the Testcontainers path as the default for developers with Docker.
+- **Rationale:** A second, independent way to run the database tests reduces the chance that a Docker-only setup failure hides a real defect.
+- **Dependencies:** Step 3.
+- **Acceptance criteria:** The new CI job passes the 63 backend tests.
+- **Effort:** 3 to 5 hours.
+
+## 22. Bundle the full third-party license texts into the release
+
+- **Priority:** P1, release blocker. **Status:** partly done. `THIRD_PARTY_NOTICES.md` records each runtime artifact's license from its POM. It does not include the license texts, and it names logback's EPL-1.0 or LGPL choice as needing a decision.
+- **Scope:** Generate a complete notice bundle from the release runtime with a license-report Gradle plugin (for example `licensee` or `com.github.jk1.dependency-license-report`), pinned in the version catalog. Decide the logback license. Include the bundle in the APK's assets and in the backend image.
+- **Rationale:** Distributing an app or image requires the license texts of what it ships.
+- **Dependencies:** Step 1 (for a clean build), and a decision on logback.
+- **Acceptance criteria:** The bundle lists every runtime artifact with its license text. The APK and the image contain it. A reviewer signs off on the logback choice.
+- **Effort:** 4 to 8 hours.
+
+## 23. Verify the backend image and its runtime behavior under Docker
+
+- **Priority:** P1, release blocker. **Status:** unverified. The distribution runs locally, but the image is not built or started.
+- **Scope:** Build the image with the existing Dockerfile. Start the compose stack. Run the API contract checks from this pass (register, device, upload, download, replay, conflict, and the account-deletion route) against the container. Confirm the non-root user and the read-only root filesystem.
+- **Rationale:** The Dockerfile has never been run, so a missing file or a wrong path would only show at deployment.
+- **Dependencies:** Step 3, and Docker.
+- **Acceptance criteria:** The image builds. The contract checks pass against the container. `docker inspect` shows the non-root user and the license label.
+- **Effort:** 4 to 6 hours.
+
 ## Total estimate and assumptions
 
-The steps sum to 155 to 266 hours. A 20 percent contingency gives **186 to 319 hours**, or about 23 to 40 working days at 8 hours each.
+The 23 steps sum to 175 to 299 hours. A 20 percent contingency gives **210 to 359 hours**, or about 26 to 45 working days at 8 hours each. Steps 1 to 17 were estimated before this pass, and their ranges are unchanged except where their status changed.
 
 Assumptions:
 
@@ -243,7 +299,7 @@ Assumptions:
 - The estimates include writing or changing tests and documentation.
 - Not included: waiting for store review, legal review, an email provider decision, device-lab scheduling, and code review queues.
 - The sync protocol and schema stay as they are. Steps 6 and 13 change behavior at the boundary and add time.
-- The largest uncertainty is the number of compile and test failures in code that has never run. A first build with several hundred errors would push steps 1 to 4 to the top of their ranges, or beyond them.
+- The first build found 38 compile errors in the Android app and 3 in the backend. All are fixed. The remaining uncertainty is in the instrumented tests and on devices, which have not run.
 - The contingency covers that uncertainty only partly.
 
 ## Known limits that apply today

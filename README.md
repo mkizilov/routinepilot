@@ -211,10 +211,32 @@ RoutinePilot is released under the MIT License. See [LICENSE](LICENSE). Third-pa
 
 Read this before relying on any feature.
 
-- **Not compiled or run since the calendar export (commit `14b9fb8`).** The commits from that point to the current head were written where there was no JDK, Android SDK, Gradle, emulator, Docker daemon, or device. Their Kotlin code, unit tests, instrumented tests, backend tests, Docker image, and CI workflows have not been executed. Earlier commits were not re-verified in this series.
-- **Checked without a compiler:** `python3 scripts/static-checks.py` runs twelve structural checks. It needs only Python 3.9 or later, and CI runs it first.
-- **Gradle wrapper:** not committed yet. Run `gradle wrapper --gradle-version 8.9` once, then use `./gradlew`.
-- **Remaining work:** [ROADMAP.md](ROADMAP.md) lists it in priority order, with status and estimates.
+Verified on a Mac (arm64) with the pinned toolchain: Temurin JDK 17.0.21, Gradle 8.9, Android SDK platform 35 with build tools 35.0.0, Kotlin 2.0.21, and AGP 8.7.3. Each download was checked against its published checksum.
+
+| Check | Result | Notes |
+| --- | --- | --- |
+| Android: `compileDebugKotlin` | Passes | First compile of this code |
+| Android: `testDebugUnitTest` | 303 of 303 pass | JVM tests |
+| Android: `spotlessCheck` | Passes | Formatting, ktlint 1.3.1 |
+| Android: `detekt` | Passes | 42 structural findings recorded in `config/detekt/baseline.xml`; new findings fail |
+| Android: `assembleDebug` | Passes | |
+| Android: `assembleRelease` | Passes, unsigned | No keystore is configured, so the APK is unsigned |
+| Backend: `compileKotlin`, `compileTestKotlin` | Pass | |
+| Backend: `test` | 63 of 63 pass | Against a local PostgreSQL 16.15, including the database, migration, store, and API tests |
+| Backend: `installDist` | Passes | |
+| Backend: running the service | Answers `/health` and serves the sync contract over HTTP | Register, device, upload, download, replayed change, and stale-base conflict checked |
+| Repository checks: `scripts/static-checks.py` | Pass | Standard library only |
+
+Not run here:
+
+- **Instrumented tests** (129 functions). They need an emulator or device, and none is available here.
+- **Docker** (Testcontainers path and the container image). Docker was not operated. The backend tests use the Testcontainers path only when no `RP_TEST_DATABASE_URL` is set.
+- **Devices.** Notifications, boot restore, calendar provider behavior, widgets, Keystore, and the sync client against a real server from a phone.
+- **Release signing and minification.** Not configured.
+
+The Gradle wrapper is committed. Use `./gradlew` from the root and from `backend/`.
+
+Remaining work is in [ROADMAP.md](ROADMAP.md), in priority order, with estimates.
 
 ## Documentation
 
