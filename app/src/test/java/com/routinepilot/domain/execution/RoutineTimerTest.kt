@@ -248,6 +248,33 @@ class RoutineTimerTest {
     }
 
     @Test
+    fun reset_clearsAFinishedRun_soAnotherPlanCanBeLoaded() {
+        timer.load(listOf(stretch))
+        timer.start()
+        timer.elapse(60_000)
+        assertEquals(ExecutionStatus.COMPLETED, timer.state.value.status)
+
+        timer.reset()
+        timer.load(listOf(water))
+
+        assertEquals(ExecutionStatus.NOT_STARTED, timer.state.value.status)
+        assertEquals(listOf(water), timer.state.value.steps)
+        assertEquals(30_000L, timer.state.value.totalRemainingMillis)
+    }
+
+    @Test
+    fun reset_doesNotDisturbAnActiveRun() {
+        timer.load(listOf(stretch))
+        timer.start()
+        timer.elapse(5_000)
+
+        timer.reset()
+
+        assertEquals(ExecutionStatus.RUNNING, timer.state.value.status)
+        assertEquals(5_000L, timer.state.value.currentElapsedMillis)
+    }
+
+    @Test
     fun restore_withAnInvalidIndex_isIgnored() {
         timer.restore(listOf(stretch), 3, 0L)
 

@@ -63,4 +63,25 @@
     <string name="run_cancel_message">The routine will end. Completed steps stay in your history.</string>
     <string name="run_cancel_confirm">Cancel routine</string>
     <string name="run_keep_going">Keep going</string>
+    <string name="run_notifications_off">Notifications are off. The timer still runs, but you won’t get step alerts.</string>
+    <string name="run_keep_open">Background timing is unavailable right now. Keep the app open to keep timing.</string>
+
+    <string name="notification_channel_ongoing_name">Routine timer</string>
+    <string name="notification_channel_ongoing_description">Shows the current step and countdown while a routine runs.</string>
+    <string name="notification_channel_events_name">Routine progress</string>
+    <string name="notification_channel_events_description">Step completions, finished routines, and paused reminders.</string>
+    <string name="notification_run_progress">Step %1$d of %2$d · total left %3$s</string>
+    <string name="notification_action_pause">Pause</string>
+    <string name="notification_action_skip">Skip</string>
+    <string name="notification_action_resume">Resume</string>
+    <string name="notification_action_finish">Finish</string>
+    <string name="notification_paused_text">Paused. Resume to keep going.</string>
+    <string name="notification_step_done_title">%1$s done</string>
+    <string name="notification_step_next_text">Next: %1$s</string>
+    <string name="notification_finished_title">%1$s complete</string>
+    <string name="notification_finished_text">Nice work. The routine is finished.</string>
+    <string name="notification_reminder_title">Still paused: %1$s</string>
+    <string name="notification_reminder_text">Your routine is waiting for you.</string>
+    <string name="notification_restart_title">Routine paused after restart</string>
+    <string name="notification_restart_text">%1$s is paused. Tap to resume.</string>
 </resources>

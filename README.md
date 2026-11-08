@@ -42,6 +42,20 @@ Device-only UI settings stay in DataStore. Preferences that must sync later belo
 
 Schema changes need a `Migration` in `infrastructure/database/Migrations.kt`. Room exports each version to `app/schemas/`; commit those files.
 
+## Background timing, notifications, and recovery
+
+The run is owned by `RoutineRunCoordinator`, a process-wide singleton, and not by the screen. Timing uses the monotonic clock (`SystemClock.elapsedRealtime`), so a late tick still lands on the right step.
+
+- **Backgrounded:** while a run is RUNNING, `RoutineRunService` runs as a foreground service with a chronometer notification showing the current step and countdown, with Pause and Skip actions. The service is started only from a foreground user action, and it stops as soon as the run pauses or ends. Its type is `specialUse`, because a user-started guided timer matches no standard foreground-service type. The `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` in the manifest explains it.
+- **Step alerts:** each completed step, and a finished routine, posts a notification. Alerts are skipped when the user has not allowed notifications. The run itself does not depend on the permission.
+- **Notification permission:** `POST_NOTIFICATIONS` is requested the first time a run starts on Android 13 and later. If it is refused, the run starts anyway and the run screen says that alerts are off.
+- **Returning to the app:** leaving or re-entering the run screen never changes the timer. Entering the foreground settles any step that ran out while the screen was away. Leaving the foreground writes a checkpoint.
+- **Process death:** the run is checkpointed about once a second while running, so at most about one second is lost. The next time the app opens, the run comes back paused at that checkpoint, and Home shows a Resume card. The user decides when time counts again.
+- **Device reboot:** `RunBootReceiver` pauses an interrupted run at its last checkpoint, schedules a reminder, and posts a notification. A reboot resets the monotonic clock, so timing can't be continued across it.
+- **Paused runs:** a WorkManager job posts a "still paused" reminder after 15 minutes. It is deferrable on purpose, and it survives process death and reboot. No exact alarm is used, so no exact-alarm permission is requested.
+- **Notification actions:** Pause, Skip, and Finish act on the run directly. Resume opens the run and resumes it, because Android allows a foreground start only from the foreground.
+- **Refused background start:** if the platform refuses the foreground start, the run continues in-process and the run screen says that background timing is unavailable.
+
 ## Requirements
 
 - JDK 17
@@ -82,6 +96,6 @@ CI (`.github/workflows/android.yml`) runs format, detekt, unit tests, and a debu
 
 Routine management: the home screen lists routines and offers duplicate and delete (with undo). The editor creates and renames routines, adds, removes (with undo), reorders, and describes steps, sets step durations in minutes, shows the total estimated duration, and validates input before saving. Deleting a routine from the editor asks for confirmation.
 
-Running a routine: the run screen is full screen and walks through the steps with a countdown for each timed step and a total time left. Start, pause, resume, skip, previous, finish, and cancel are supported. Timed steps advance automatically when their countdown reaches zero. Steps without a duration have no countdown and wait for Skip or Finish. The timer is a pure state machine in `domain/execution/RoutineTimer.kt`. It measures time with a monotonic clock and never counts ticks. Each step, session, and completion is written to Room, and the in-progress run is saved in DataStore. Leaving the run screen pauses the timer. After the process is killed, the run comes back paused at the last saved time, and Home offers a Resume card.
+Running a routine: the run screen is full screen and walks through the steps with a countdown for each timed step and a total time left. Start, pause, resume, skip, previous, finish, and cancel are supported. Timed steps advance automatically when their countdown reaches zero. Steps without a duration have no countdown and wait for Skip or Finish. The timer is a pure state machine in `domain/execution/RoutineTimer.kt`. It measures time with a monotonic clock and never counts ticks. Each step, session, and completion is written to Room, and the in-progress run is saved in DataStore. The run keeps going when the app is backgrounded, and it is restored correctly afterwards (see below).
 
 Decisions: step reordering uses up and down buttons rather than drag and drop. Step removal and routine deletion undo only from the snackbar that follows them; edits stay in the draft until Save. Duration is stored in seconds.

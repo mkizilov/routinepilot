@@ -1,5 +1,8 @@
 package com.routinepilot.presentation.routine.run
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,10 +30,12 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -44,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.routinepilot.R
 import com.routinepilot.domain.execution.ExecutionStatus
 import com.routinepilot.domain.execution.TimerState
+import com.routinepilot.infrastructure.notifications.NotificationAccess
 import com.routinepilot.presentation.routine.formatCountdown
 
 internal const val TAG_RUN_COUNTDOWN = "run_countdown"
@@ -54,21 +60,54 @@ internal const val TAG_RUN_START = "run_start"
 @Composable
 fun RoutineRunRoute(
     onClose: () -> Unit,
+    autoResume: Boolean = false,
     viewModel: RoutineRunViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     LaunchedEffect(state.isClosed) {
         if (state.isClosed) onClose()
     }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) viewModel.onStopped()
+            when (event) {
+                Lifecycle.Event.ON_START -> viewModel.onForeground()
+                Lifecycle.Event.ON_STOP -> viewModel.onBackground()
+                else -> Unit
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    RoutineRunScreen(state = state, actions = viewModel, onClose = onClose)
+    var resumeHandled by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(autoResume) {
+        if (autoResume && !resumeHandled) {
+            resumeHandled = true
+            viewModel.resume()
+        }
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        // The run starts whether or not the user allows notifications. Only the alerts depend on the answer.
+        viewModel.start()
+    }
+    val actions = remember(viewModel, permissionLauncher) {
+        object : RoutineRunActions by viewModel {
+            override fun start() {
+                if (NotificationAccess.isPermissionGranted(context)) {
+                    viewModel.start()
+                } else {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
+    }
+    RoutineRunScreen(
+        state = state,
+        actions = actions,
+        onClose = onClose,
+        notificationsAllowed = NotificationAccess.canPost(context),
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,6 +116,7 @@ fun RoutineRunScreen(
     state: RoutineRunUiState,
     actions: RoutineRunActions,
     onClose: () -> Unit,
+    notificationsAllowed: Boolean = true,
 ) {
     val view = LocalView.current
     val keepScreenOn = state.timer.status == ExecutionStatus.RUNNING
@@ -105,14 +145,14 @@ fun RoutineRunScreen(
                 state.isMissing -> Text(stringResource(R.string.editor_missing))
                 state.timer.status == ExecutionStatus.COMPLETED -> CompletedContent(onClose)
                 state.timer.status == ExecutionStatus.CANCELLED -> Unit
-                else -> ActiveContent(state, actions)
+                else -> ActiveContent(state, actions, notificationsAllowed)
             }
         }
     }
 }
 
 @Composable
-private fun ActiveContent(state: RoutineRunUiState, actions: RoutineRunActions) {
+private fun ActiveContent(state: RoutineRunUiState, actions: RoutineRunActions, notificationsAllowed: Boolean) {
     val timer = state.timer
     val current = timer.currentStep
     Text(stepHeading(timer), style = MaterialTheme.typography.titleMedium)
@@ -146,6 +186,21 @@ private fun ActiveContent(state: RoutineRunUiState, actions: RoutineRunActions) 
             stringResource(R.string.run_blocked),
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(top = 16.dp),
+        )
+    }
+    if (!notificationsAllowed) {
+        Text(
+            stringResource(R.string.run_notifications_off),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 16.dp),
+        )
+    }
+    if (state.foregroundUnavailable && timer.status == ExecutionStatus.RUNNING) {
+        Text(
+            stringResource(R.string.run_keep_open),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 8.dp),
         )
     }
     Spacer(Modifier.height(32.dp))

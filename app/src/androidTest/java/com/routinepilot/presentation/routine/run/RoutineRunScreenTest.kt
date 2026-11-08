@@ -137,6 +137,27 @@ class RoutineRunScreenTest {
     }
 
     @Test
+    fun notificationsOff_explainsThatTheTimerStillRuns() {
+        setScreen(runState(status = ExecutionStatus.RUNNING, steps = listOf(stretch)), notificationsAllowed = false)
+
+        composeTestRule.onNodeWithText(
+            "Notifications are off. The timer still runs, but you won\u2019t get step alerts.",
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun backgroundTimingRefused_asksTheUserToKeepTheAppOpen() {
+        setScreen(
+            runState(status = ExecutionStatus.RUNNING, steps = listOf(stretch))
+                .copy(foregroundUnavailable = true),
+        )
+
+        composeTestRule.onNodeWithText(
+            "Background timing is unavailable right now. Keep the app open to keep timing.",
+        ).assertIsDisplayed()
+    }
+
+    @Test
     fun missingRoutine_showsMessage() {
         setScreen(RoutineRunUiState(isMissing = true, isLoading = false))
 
@@ -167,10 +188,16 @@ class RoutineRunScreenTest {
         state: RoutineRunUiState,
         actions: RoutineRunActions = RecordingRunActions(),
         onClose: () -> Unit = {},
+        notificationsAllowed: Boolean = true,
     ) {
         composeTestRule.setContent {
             RoutinePilotTheme {
-                RoutineRunScreen(state = state, actions = actions, onClose = onClose)
+                RoutineRunScreen(
+                    state = state,
+                    actions = actions,
+                    onClose = onClose,
+                    notificationsAllowed = notificationsAllowed,
+                )
             }
         }
     }
@@ -205,7 +232,5 @@ class RoutineRunScreenTest {
         override fun cancel() {
             calls += "cancel"
         }
-
-        override fun onStopped() {}
     }
 }

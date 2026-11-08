@@ -23,6 +23,17 @@ class RoutineTimer(private val clock: MonotonicClock) {
     private val _state = MutableStateFlow(TimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
 
+    /** Clears a finished or not-yet-started run so another plan can be loaded. Active runs are left alone. */
+    fun reset() {
+        if (status.isActive) return
+        steps = emptyList()
+        status = ExecutionStatus.NOT_STARTED
+        index = 0
+        accumulatedMillis = 0L
+        runningSinceMillis = null
+        publish(clock.elapsedMillis())
+    }
+
     fun load(plan: List<TimedStep>) {
         if (status != ExecutionStatus.NOT_STARTED) return
         steps = plan
