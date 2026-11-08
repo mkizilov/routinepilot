@@ -13,6 +13,7 @@ import com.routinepilot.domain.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -61,6 +62,9 @@ class PlanningViewModel @Inject constructor(
     private val mutableState = MutableStateFlow(PlanningUiState(date = date))
     val uiState: StateFlow<PlanningUiState> = mutableState.asStateFlow()
 
+    /** The newest replan. An older one is cancelled, so a slow result can never overwrite a newer one. */
+    private var replanJob: Job? = null
+
     init {
         viewModelScope.launch {
             mutableState.value = mutableState.value.copy(pins = repository.storedPins(date))
@@ -79,15 +83,13 @@ class PlanningViewModel @Inject constructor(
                     planned = planned,
                     candidates = candidates,
                 )
-                replan()
+                scheduleReplan()
             }
         }
     }
 
     /** Re-plans from the current settings, planned tasks, and pins. Nothing is applied. */
-    fun refresh() {
-        viewModelScope.launch { replan() }
-    }
+    fun refresh() = scheduleReplan()
 
     fun pin(taskId: UUID, startMinute: Int) {
         mutableState.value = mutableState.value.copy(pins = mutableState.value.pins + (taskId to startMinute))
@@ -113,13 +115,18 @@ class PlanningViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Applies the plan for the current pins. It waits for a replan that is still running, so a pin changed a moment
+     * ago is always checked before anything is written.
+     */
     fun apply() {
-        val result = mutableState.value.result ?: return
-        if (!result.canApply) {
-            mutableState.value = mutableState.value.copy(message = PlanningMessage.CannotApply)
-            return
-        }
         viewModelScope.launch {
+            replanJob?.join()
+            val result = mutableState.value.result ?: return@launch
+            if (!result.canApply) {
+                mutableState.value = mutableState.value.copy(message = PlanningMessage.CannotApply)
+                return@launch
+            }
             mutableState.value = mutableState.value.copy(busy = true)
             repository.applyPlan(date, result)
             mutableState.value = mutableState.value.copy(
@@ -155,6 +162,11 @@ class PlanningViewModel @Inject constructor(
 
     private fun recommendedStart(taskId: UUID): Int? =
         mutableState.value.result?.placements?.firstOrNull { it.taskId == taskId }?.range?.start
+
+    private fun scheduleReplan() {
+        replanJob?.cancel()
+        replanJob = viewModelScope.launch { replan() }
+    }
 
     private suspend fun replan() {
         val state = mutableState.value

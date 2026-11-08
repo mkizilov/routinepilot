@@ -11,8 +11,8 @@ import com.routinepilot.infrastructure.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -84,11 +84,18 @@ class WidgetRefresher @Inject constructor(
         }
     }
 
+    /** Ticks only while a routine runs, so an idle app does not wake up each minute for the widget. */
     private suspend fun tickRunningRoutine() {
-        while (true) {
-            delay(MINUTE_MILLIS)
-            if (activeExecutionStore.observe().first()?.status == ExecutionStatus.RUNNING) refreshRun()
-        }
+        activeExecutionStore.observe()
+            .map { it?.status == ExecutionStatus.RUNNING }
+            .distinctUntilChanged()
+            .collectLatest { running ->
+                if (!running) return@collectLatest
+                while (true) {
+                    delay(MINUTE_MILLIS)
+                    refreshRun()
+                }
+            }
     }
 
     /** What a run widget must redraw for. Checkpoints that only move the clock do not change it. */

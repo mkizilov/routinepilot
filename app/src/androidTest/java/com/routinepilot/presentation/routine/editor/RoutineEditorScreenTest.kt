@@ -2,16 +2,21 @@ package com.routinepilot.presentation.routine.editor
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.routinepilot.domain.validation.RoutineValidationError
 import com.routinepilot.presentation.theme.RoutinePilotTheme
+import com.routinepilot.testing.WithFontScale
+import com.routinepilot.testing.assertEveryClickableIsLabelled
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -97,8 +102,8 @@ class RoutineEditorScreenTest {
         val actions = RecordingEditorActions()
         setScreen(RoutineEditorUiState(steps = listOf(first, second)), actions)
 
-        composeTestRule.onAllNodesWithContentDescription("Move step up")[0].assertIsNotEnabled()
-        composeTestRule.onAllNodesWithContentDescription("Move step down")[0].performClick()
+        composeTestRule.onNodeWithContentDescription("Move step 1 up").assertIsNotEnabled()
+        composeTestRule.onNodeWithContentDescription("Move step 1 down").performClick()
 
         assertEquals(listOf("move:${first.id}:1"), actions.calls)
     }
@@ -109,7 +114,7 @@ class RoutineEditorScreenTest {
         val actions = RecordingEditorActions()
         setScreen(RoutineEditorUiState(steps = listOf(step)), actions)
 
-        composeTestRule.onNodeWithContentDescription("Remove step").performClick()
+        composeTestRule.onNodeWithContentDescription("Remove step 1").performClick()
 
         assertEquals(listOf("remove:${step.id}"), actions.calls)
     }
@@ -157,6 +162,56 @@ class RoutineEditorScreenTest {
         composeTestRule.onNodeWithText("This routine no longer exists.").assertIsDisplayed()
     }
 
+    @Test
+    fun stepControls_nameTheirStep_soEachButtonIsUnambiguous() {
+        val first = draft("First")
+        val second = draft("Second")
+        val actions = RecordingEditorActions()
+        setScreen(RoutineEditorUiState(steps = listOf(first, second)), actions)
+
+        composeTestRule.onNodeWithContentDescription("Remove step 2").performClick()
+        composeTestRule.onNodeWithContentDescription("Move step 2 up").performClick()
+
+        assertEquals(listOf("remove:${second.id}", "move:${second.id}:-1"), actions.calls)
+    }
+
+    @Test
+    fun loading_showsProgress_andHidesTheForm() {
+        setScreen(RoutineEditorUiState(isNewRoutine = false, isLoading = true, title = "Morning"))
+
+        composeTestRule.onNodeWithTag(TAG_LOADING).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TAG_TITLE).assertDoesNotExist()
+    }
+
+    @Test
+    fun stepsHeading_isMarkedAsAHeading_forScreenReaderNavigation() {
+        setScreen(RoutineEditorUiState())
+
+        composeTestRule.onNodeWithText("Steps")
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+    }
+
+    @Test
+    fun everyClickableControl_hasASpokenLabel() {
+        setScreen(
+            RoutineEditorUiState(
+                isNewRoutine = false,
+                title = "Morning",
+                steps = listOf(draft("First"), draft("Second")),
+            ),
+        )
+
+        composeTestRule.assertEveryClickableIsLabelled()
+    }
+
+    @Test
+    fun largeText_keepsSaveVisibleAndTheTitleField() {
+        setScreen(RoutineEditorUiState(title = "Morning", steps = listOf(draft("First"))), fontScale = 2f)
+
+        composeTestRule.onNodeWithTag(TAG_SAVE).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TAG_TITLE).assertExists()
+    }
+
     private fun draft(
         title: String,
         durationMinutes: String = "",
@@ -169,15 +224,21 @@ class RoutineEditorScreenTest {
         durationError = durationError,
     )
 
-    private fun setScreen(state: RoutineEditorUiState, actions: RoutineEditorActions = RecordingEditorActions()) {
+    private fun setScreen(
+        state: RoutineEditorUiState,
+        actions: RoutineEditorActions = RecordingEditorActions(),
+        fontScale: Float = 1f,
+    ) {
         composeTestRule.setContent {
-            RoutinePilotTheme {
-                RoutineEditorScreen(
-                    state = state,
-                    actions = actions,
-                    onBack = {},
-                    snackbarHostState = remember { SnackbarHostState() },
-                )
+            WithFontScale(fontScale) {
+                RoutinePilotTheme {
+                    RoutineEditorScreen(
+                        state = state,
+                        actions = actions,
+                        onBack = {},
+                        snackbarHostState = remember { SnackbarHostState() },
+                    )
+                }
             }
         }
     }

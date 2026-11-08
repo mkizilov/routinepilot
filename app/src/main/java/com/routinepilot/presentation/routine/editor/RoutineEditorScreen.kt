@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,15 +42,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.routinepilot.R
 import com.routinepilot.domain.validation.RoutineValidationError
+import com.routinepilot.presentation.common.CenteredContent
 import com.routinepilot.presentation.routine.formatDuration
 
 internal const val TAG_TITLE = "editor_title"
@@ -57,6 +66,7 @@ internal const val TAG_TOTAL = "editor_total"
 internal const val TAG_ADD_STEP = "editor_add_step"
 internal const val TAG_DELETE = "editor_delete"
 internal const val TAG_SAVE = "editor_save"
+internal const val TAG_LOADING = "editor_loading"
 internal const val TAG_STEP_PREFIX = "editor_step_"
 internal const val TAG_STEP_TITLE_PREFIX = "editor_step_title_"
 internal const val TAG_STEP_DURATION_PREFIX = "editor_step_duration_"
@@ -131,15 +141,32 @@ fun RoutineEditorScreen(
                 Text(stringResource(R.string.editor_missing))
             }
         } else {
-            EditorContent(state, actions, Modifier.fillMaxSize().padding(innerPadding))
+            EditorContent(state, actions, innerPadding)
         }
     }
 }
 
 @Composable
-private fun EditorContent(state: RoutineEditorUiState, actions: RoutineEditorActions, modifier: Modifier) {
+private fun EditorContent(state: RoutineEditorUiState, actions: RoutineEditorActions, padding: PaddingValues) {
+    CenteredContent(padding) {
+        if (state.isLoading) LoadingRoutine() else EditorForm(state, actions)
+    }
+}
+
+@Composable
+private fun LoadingRoutine() {
+    val label = stringResource(R.string.editor_loading)
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(Modifier.testTag(TAG_LOADING).semantics { contentDescription = label })
+    }
+}
+
+@Composable
+private fun EditorForm(state: RoutineEditorUiState, actions: RoutineEditorActions) {
+    val focus = LocalFocusManager.current
+    val next = remember(focus) { KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Next) }) }
     LazyColumn(
-        modifier = modifier,
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -151,6 +178,8 @@ private fun EditorContent(state: RoutineEditorUiState, actions: RoutineEditorAct
                 singleLine = true,
                 isError = state.showErrors && state.titleError != null,
                 supportingText = { ErrorText(state.showErrors, state.titleError) },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = next,
                 modifier = Modifier.fillMaxWidth().testTag(TAG_TITLE),
             )
         }
@@ -172,7 +201,11 @@ private fun EditorContent(state: RoutineEditorUiState, actions: RoutineEditorAct
             )
         }
         item {
-            Text(stringResource(R.string.editor_steps_heading), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.editor_steps_heading),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
         }
         if (state.steps.isEmpty()) {
             item {
@@ -186,6 +219,7 @@ private fun EditorContent(state: RoutineEditorUiState, actions: RoutineEditorAct
                 step = step,
                 showErrors = state.showErrors,
                 actions = actions,
+                modifier = Modifier.animateItem(),
             )
         }
         item {
@@ -206,22 +240,36 @@ private fun StepEditor(
     step: StepDraft,
     showErrors: Boolean,
     actions: RoutineEditorActions,
+    modifier: Modifier,
 ) {
-    Column(Modifier.fillMaxWidth().testTag("$TAG_STEP_PREFIX$index")) {
+    val focus = LocalFocusManager.current
+    val next = remember(focus) { KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Next) }) }
+    val done = remember(focus) { KeyboardActions(onDone = { focus.clearFocus() }) }
+    val stepNumber = index + 1
+    Column(modifier.fillMaxWidth().testTag("$TAG_STEP_PREFIX$index")) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                stringResource(R.string.editor_step_number, index + 1),
+                stringResource(R.string.editor_step_number, stepNumber),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = { actions.onMoveStep(step.id, -1) }, enabled = index > 0) {
-                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.editor_move_up))
+                Icon(
+                    Icons.Filled.KeyboardArrowUp,
+                    contentDescription = stringResource(R.string.editor_move_up, stepNumber),
+                )
             }
             IconButton(onClick = { actions.onMoveStep(step.id, 1) }, enabled = index < count - 1) {
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.editor_move_down))
+                Icon(
+                    Icons.Filled.KeyboardArrowDown,
+                    contentDescription = stringResource(R.string.editor_move_down, stepNumber),
+                )
             }
             IconButton(onClick = { actions.onRemoveStep(step.id) }) {
-                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.editor_remove_step))
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.editor_remove_step, stepNumber),
+                )
             }
         }
         OutlinedTextField(
@@ -231,6 +279,8 @@ private fun StepEditor(
             singleLine = true,
             isError = showErrors && step.titleError != null,
             supportingText = { ErrorText(showErrors, step.titleError) },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = next,
             modifier = Modifier.fillMaxWidth().testTag("$TAG_STEP_TITLE_PREFIX$index"),
         )
         OutlinedTextField(
@@ -239,6 +289,8 @@ private fun StepEditor(
             label = { Text(stringResource(R.string.editor_step_description_label)) },
             isError = showErrors && step.descriptionError != null,
             supportingText = { ErrorText(showErrors, step.descriptionError) },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = next,
             modifier = Modifier.fillMaxWidth(),
         )
         OutlinedTextField(
@@ -246,7 +298,8 @@ private fun StepEditor(
             onValueChange = { actions.onStepDurationChange(step.id, it) },
             label = { Text(stringResource(R.string.editor_step_minutes_label)) },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            keyboardActions = done,
             isError = showErrors && step.durationError != null,
             supportingText = { ErrorText(showErrors, step.durationError) },
             modifier = Modifier.fillMaxWidth().testTag("$TAG_STEP_DURATION_PREFIX$index"),

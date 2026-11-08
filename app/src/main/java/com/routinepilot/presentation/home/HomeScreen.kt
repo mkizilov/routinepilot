@@ -42,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.routinepilot.R
 import com.routinepilot.domain.model.Routine
+import com.routinepilot.presentation.common.CenteredContent
 import java.util.UUID
 
 data class HomeNavigation(
@@ -100,29 +101,31 @@ fun HomeScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        LazyColumn(Modifier.fillMaxSize().padding(innerPadding)) {
-            uiState.activeRoutineId?.let { activeId ->
-                item(key = "resume") {
-                    ResumeRow(onResume = { navigation.onRun(activeId) })
+        CenteredContent(innerPadding) {
+            LazyColumn(Modifier.fillMaxSize()) {
+                uiState.activeRoutineId?.let { activeId ->
+                    item(key = "resume") {
+                        ResumeRow(onResume = { navigation.onRun(activeId) })
+                    }
                 }
-            }
-            if (uiState.routines.isEmpty()) {
-                item {
-                    Text(
-                        stringResource(R.string.home_empty_state),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    )
-                }
-            } else {
-                items(uiState.routines, key = { it.id }) { routine ->
-                    RoutineRow(
-                        routine = routine,
-                        onOpen = { navigation.onEdit(routine.id) },
-                        onRun = { navigation.onRun(routine.id) },
-                        onDuplicate = { actions.duplicateRoutine(routine.id) },
-                        onDelete = { actions.deleteRoutine(routine.id) },
-                    )
+                if (uiState.routines.isEmpty()) {
+                    item {
+                        Text(
+                            stringResource(R.string.home_empty_state),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        )
+                    }
+                } else {
+                    items(uiState.routines, key = { it.id }) { routine ->
+                        RoutineRow(
+                            routine = routine,
+                            onOpen = { navigation.onEdit(routine.id) },
+                            onRun = { navigation.onRun(routine.id) },
+                            onDuplicate = { actions.duplicateRoutine(routine.id) },
+                            onDelete = { actions.deleteRoutine(routine.id) },
+                        )
+                    }
                 }
             }
         }

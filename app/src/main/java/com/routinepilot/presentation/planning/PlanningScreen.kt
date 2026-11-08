@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,7 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,6 +48,7 @@ import com.routinepilot.domain.planning.Placement
 import com.routinepilot.domain.planning.TimeRange
 import com.routinepilot.domain.repository.PlanningSettings
 import com.routinepilot.domain.repository.PlanningTaskSetting
+import com.routinepilot.presentation.common.CenteredContent
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -55,6 +61,7 @@ private const val MAX_PRIORITY = 5
 private const val MINUTES_PER_HOUR = 60
 private const val MAX_HOUR = 23
 private val CLOCK = Regex("""(\d{1,2}):(\d{2})""")
+internal const val TAG_PLANNING_LOADING = "planning_loading"
 private val DATE_STYLE: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
 
 /** A task being edited. [existing] is null for a task that is not planned yet. */
@@ -91,8 +98,10 @@ fun PlanningScreen(
 ) {
     var editingHours by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<TaskEdit?>(null) }
-    val titles = state.planned.associate { it.setting.taskId to it.title } +
-        state.candidates.associate { it.taskId to it.title }
+    val titles = remember(state.planned, state.candidates) {
+        state.planned.associate { it.setting.taskId to it.title } +
+            state.candidates.associate { it.taskId to it.title }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -105,27 +114,30 @@ fun PlanningScreen(
             )
         },
     ) { innerPadding ->
-        LazyColumn(
-            Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item { Text(stringResource(R.string.planning_day, state.date.format(DATE_STYLE))) }
-            item { Text(stringResource(R.string.planning_note)) }
-            item { HoursSection(state.settings, onEdit = { editingHours = true }) }
-            plannedSection(state, onEdit = { editing = it })
-            item { SectionTitle(R.string.planning_recommended_header) }
-            placementsSection(state, titles, onNudge, onTogglePin)
-            issuesSection(state, titles)
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onRefresh) { Text(stringResource(R.string.planning_preview)) }
-                    Button(
-                        onClick = onApply,
-                        enabled = state.result?.canApply == true && !state.busy,
-                    ) { Text(stringResource(R.string.planning_apply)) }
+        CenteredContent(innerPadding) {
+            LazyColumn(
+                Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (state.settings == null) item { LoadingPlan() }
+                item { Text(stringResource(R.string.planning_day, state.date.format(DATE_STYLE))) }
+                item { Text(stringResource(R.string.planning_note)) }
+                item { HoursSection(state.settings, onEdit = { editingHours = true }) }
+                plannedSection(state, onEdit = { editing = it })
+                item { SectionTitle(R.string.planning_recommended_header) }
+                placementsSection(state, titles, onNudge, onTogglePin)
+                issuesSection(state, titles)
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = onRefresh) { Text(stringResource(R.string.planning_preview)) }
+                        Button(
+                            onClick = onApply,
+                            enabled = state.result?.canApply == true && !state.busy,
+                        ) { Text(stringResource(R.string.planning_apply)) }
+                    }
                 }
+                state.message?.let { message -> item { Text(messageText(message)) } }
             }
-            state.message?.let { message -> item { Text(messageText(message)) } }
         }
     }
     val settings = state.settings
@@ -212,7 +224,13 @@ private fun LazyListScope.issuesSection(state: PlanningUiState, titles: Map<UUID
 
 @Composable
 private fun SectionTitle(text: Int) {
-    Text(stringResource(text))
+    Text(stringResource(text), modifier = Modifier.semantics { heading() })
+}
+
+@Composable
+private fun LoadingPlan() {
+    val label = stringResource(R.string.planning_loading)
+    CircularProgressIndicator(Modifier.testTag(TAG_PLANNING_LOADING).semantics { contentDescription = label })
 }
 
 @Composable

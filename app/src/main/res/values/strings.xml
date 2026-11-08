@@ -25,9 +25,10 @@
     <string name="editor_step_name_label">Step name</string>
     <string name="editor_step_description_label">Step description</string>
     <string name="editor_step_minutes_label">Minutes</string>
-    <string name="editor_move_up">Move step up</string>
-    <string name="editor_move_down">Move step down</string>
-    <string name="editor_remove_step">Remove step</string>
+    <string name="editor_move_up">Move step %1$d up</string>
+    <string name="editor_move_down">Move step %1$d down</string>
+    <string name="editor_remove_step">Remove step %1$d</string>
+    <string name="editor_loading">Loading routine</string>
     <string name="editor_step_removed">Removed %1$s</string>
     <string name="editor_save">Save</string>
     <string name="editor_delete_routine">Delete routine</string>
@@ -305,4 +306,12 @@
     <string name="planning_issue_blocked_by">Blocked by %1$s.</string>
     <string name="planning_issue_waits">Waits for %1$s, which could not be placed.</string>
     <string name="planning_issue_cycle">Depends on itself through %1$s.</string>
+    <string name="account_busy">Working on your account</string>
+    <string name="account_confirm_delete">Delete</string>
+    <string name="account_confirm_discard">Discard</string>
+    <string name="account_delete_anyway_title">Delete for every device?</string>
+    <string name="account_delete_anyway_message">Another device changed this item. Deleting it also removes that change, on every device.</string>
+    <string name="account_discard_title">Discard your change?</string>
+    <string name="account_discard_message">Your unsent changes to this item are removed from this device. The item stays deleted, as the other device left it.</string>
+    <string name="planning_loading">Loading your plan</string>
 </resources>
