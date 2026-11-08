@@ -9,12 +9,13 @@ import androidx.room.TypeConverters
         RoutineEntity::class,
         RoutineStepEntity::class,
         TaskEntity::class,
+        ScheduleEntity::class,
         ScheduledOccurrenceEntity::class,
         ExecutionSessionEntity::class,
         StepCompletionEventEntity::class,
         UserPreferenceEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -24,6 +25,8 @@ abstract class RoutinePilotDatabase : RoomDatabase() {
     abstract fun routineStepDao(): RoutineStepDao
 
     abstract fun taskDao(): TaskDao
+
+    abstract fun scheduleDao(): ScheduleDao
 
     abstract fun scheduledOccurrenceDao(): ScheduledOccurrenceDao
 

@@ -2,8 +2,11 @@ package com.routinepilot.data.repository
 
 import com.routinepilot.domain.model.ExecutionSession
 import com.routinepilot.domain.model.OccurrenceStatus
-import com.routinepilot.domain.model.ScheduledOccurrence
+import com.routinepilot.domain.model.Schedule
+import com.routinepilot.domain.model.ScheduleTarget
 import com.routinepilot.domain.model.StepCompletionEvent
+import com.routinepilot.domain.schedule.Recurrence
+import com.routinepilot.domain.schedule.RecurrencePattern
 import com.routinepilot.infrastructure.database.RoutinePilotDatabase
 import com.routinepilot.infrastructure.database.TEST_TIME
 import com.routinepilot.infrastructure.database.createInMemoryDatabase
@@ -13,22 +16,26 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 import java.util.UUID
 
 class ScheduleAndExecutionRepositoryTest {
     private lateinit var db: RoutinePilotDatabase
     private lateinit var routines: RoutineRepositoryImpl
-    private lateinit var schedule: ScheduleRepositoryImpl
+    private lateinit var schedules: ScheduleRepositoryImpl
     private lateinit var execution: ExecutionRepositoryImpl
 
     @Before
     fun setUp() {
         db = createInMemoryDatabase()
         routines = RoutineRepositoryImpl(db)
-        schedule = ScheduleRepositoryImpl(db)
+        schedules = ScheduleRepositoryImpl(db)
         execution = ExecutionRepositoryImpl(db)
     }
 
@@ -38,31 +45,35 @@ class ScheduleAndExecutionRepositoryTest {
     }
 
     @Test
-    fun observeOccurrences_ordersByScheduledTimeAndUpdatesStatus() = runBlocking {
+    fun observeOccurrences_ordersByScheduledTimeAndReflectsCompletion() = runBlocking {
         val routine = newRoutine()
         routines.saveRoutine(routine, emptyList())
-        val late = occurrence(routine.id, Instant.parse("2026-02-02T08:00:00Z"))
-        val early = occurrence(routine.id, Instant.parse("2026-02-01T08:00:00Z"))
-        schedule.saveOccurrence(late)
-        schedule.saveOccurrence(early)
+        val now = Instant.parse("2026-03-10T12:00:00Z")
+        schedules.saveSchedule(dailyRoutineSchedule(routine.id), now)
+        val before = schedules.observeOccurrences(routine.id).first()
+        val early = before.first()
+        val late = before[1]
 
-        schedule.saveOccurrence(early.copy(status = OccurrenceStatus.COMPLETED))
+        schedules.completeOccurrence(late.id, now)
 
-        val result = schedule.observeOccurrences(routine.id).first()
-        assertEquals(listOf(early.id, late.id), result.map { it.id })
-        assertEquals(OccurrenceStatus.COMPLETED, result.first().status)
+        val result = schedules.observeOccurrences(routine.id).first()
+        assertEquals(before.map { it.id }, result.map { it.id })
+        assertTrue(early.scheduledAt.isBefore(late.scheduledAt))
+        assertEquals(OccurrenceStatus.PLANNED, result.first().status)
+        assertEquals(OccurrenceStatus.COMPLETED, result[1].status)
     }
 
     @Test
-    fun deleteOccurrence_hidesOccurrence() = runBlocking {
+    fun deleteOccurrence_hidesOnlyThatOccurrence() = runBlocking {
         val routine = newRoutine()
         routines.saveRoutine(routine, emptyList())
-        val occurrence = occurrence(routine.id, TEST_TIME)
-        schedule.saveOccurrence(occurrence)
+        val now = Instant.parse("2026-03-10T12:00:00Z")
+        schedules.saveSchedule(dailyRoutineSchedule(routine.id), now)
+        val rows = schedules.observeOccurrences(routine.id).first()
 
-        schedule.deleteOccurrence(occurrence.id)
+        schedules.deleteOccurrence(rows.first().id, now)
 
-        assertEquals(emptyList<ScheduledOccurrence>(), schedule.observeOccurrences(routine.id).first())
+        assertEquals(rows.drop(1).map { it.id }, schedules.observeOccurrences(routine.id).first().map { it.id })
     }
 
     @Test
@@ -111,12 +122,13 @@ class ScheduleAndExecutionRepositoryTest {
         assertEquals(emptyList<ExecutionSession>(), execution.observeSessions(routine.id).first())
     }
 
-    private fun occurrence(routineId: UUID, scheduledAt: Instant) = ScheduledOccurrence(
+    private fun dailyRoutineSchedule(routineId: UUID) = Schedule(
         id = UUID.randomUUID(),
-        routineId = routineId,
-        scheduledAt = scheduledAt,
-        status = OccurrenceStatus.PLANNED,
+        target = ScheduleTarget.RoutineTarget(routineId),
+        recurrence = Recurrence(RecurrencePattern.Daily, LocalTime.of(7, 0), LocalDate.of(2026, 3, 1)),
+        zone = ZoneId.of("UTC"),
         createdAt = TEST_TIME,
+        modifiedAt = TEST_TIME,
     )
 
     private fun session(routineId: UUID, startedAt: Instant) = ExecutionSession(

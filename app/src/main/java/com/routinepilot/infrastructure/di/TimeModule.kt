@@ -1,6 +1,7 @@
 package com.routinepilot.infrastructure.di
 
 import com.routinepilot.domain.execution.MonotonicClock
+import com.routinepilot.infrastructure.time.DeviceClock
 import com.routinepilot.infrastructure.time.ElapsedRealtimeClock
 import dagger.Binds
 import dagger.Module
@@ -19,6 +20,6 @@ abstract class TimeModule {
     companion object {
         @Provides
         @Singleton
-        fun provideWallClock(): Clock = Clock.systemUTC()
+        fun provideWallClock(): Clock = DeviceClock()
     }
 }

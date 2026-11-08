@@ -56,6 +56,21 @@ The run is owned by `RoutineRunCoordinator`, a process-wide singleton, and not b
 - **Notification actions:** Pause, Skip, and Finish act on the run directly. Resume opens the run and resumes it, because Android allows a foreground start only from the foreground.
 - **Refused background start:** if the platform refuses the foreground start, the run continues in-process and the run screen says that background timing is unavailable.
 
+## Recurring schedules and the daily agenda
+
+Routines and tasks can repeat on a rule: daily, on selected weekdays, or every N days (1 to 365). Each rule has a local time and a start date. The agenda (the Today screen) groups the day's items into **Due now** (within the last hour), **Upcoming**, and **Earlier today** (done, skipped, and missed items). It refreshes every minute.
+
+- **Generation** is pure Kotlin in `domain/schedule/ScheduleGenerator.kt`. It plans a window from yesterday to 14 days ahead. Each occurrence is identified by its original instant, and a unique index on `(scheduleId, originalScheduledAt)` enforces that a slot exists at most once. Generation is idempotent, so repeated runs and app restarts create nothing twice. A slot the user deleted stays deleted.
+- **Edits** remove only pending items at or after now that the new rule no longer produces. Completed, skipped, and past items are kept as history. Editing a rule never creates items before the edit.
+- **Time zones and daylight saving:** the local time is kept on the wall clock. A time inside a spring-forward gap is shifted forward by the gap, so 02:30 runs at 03:30. A time in the autumn overlap runs once, at the earlier instant. A device zone change re-anchors pending items through the same remove-and-insert path, and `DeviceClock` reads the zone on every call.
+- **Occurrence actions:** Done, Skip, and +15 min. Postponing keeps the original slot, so the rule still cannot regenerate it. Only pending items can change.
+- **Maintenance:** a deferrable WorkManager job runs every 12 hours (unique, KEEP) to roll the window forward and re-anchor after travel. The agenda also generates on open.
+
+Known limits:
+- A moved (rescheduled) pending item is identified by its original slot. If a later rule edit no longer produces that slot, the item is removed even though the user moved it.
+- Occurrences migrated from schema version 3 get their local date computed in UTC, not the device zone. Their scheduled time is unchanged.
+- The schema 3 to 4 migration is exercised only by the full-chain open in `MigrationTest`. A dedicated `MigrationTestHelper` test needs the exported schema JSON from a first build, and is not yet written.
+
 ## Requirements
 
 - JDK 17

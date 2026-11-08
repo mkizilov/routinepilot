@@ -9,13 +9,17 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.util.UUID
 
+/**
+ * Opening a version 1 file with the current database class runs every migration in order. Room then validates the
+ * final schema against the entities, so these tests also check that the whole chain 1 to 4 produces the schema the
+ * code expects. A schema JSON-based MigrationTestHelper test for each step is still outstanding; see the README.
+ */
 class MigrationTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
@@ -72,17 +76,6 @@ class MigrationTest {
         }
     }
 
-    private fun createVersion1Database(seed: (SQLiteDatabase) -> Unit) {
-        SQLiteDatabase.openOrCreateDatabase(context.getDatabasePath(TEST_DB), null).use { legacy ->
-            legacy.execSQL(
-                "CREATE TABLE IF NOT EXISTS `routines` " +
-                    "(`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL)",
-            )
-            seed(legacy)
-            legacy.version = 1
-        }
-    }
-
     @Test
     fun migration2To3_addsNullableDescriptionAndDuration() = runBlocking {
         createVersion1Database { it.execSQL("INSERT INTO `routines` (`title`) VALUES ('Morning walk')") }
@@ -90,7 +83,7 @@ class MigrationTest {
         val db = openMigratedDatabase()
         try {
             val routine = db.routineDao().observeActive().first().single()
-            assertNull(routine.description)
+            assertEquals(null, routine.description)
             db.routineStepDao().upsert(
                 listOf(
                     RoutineStepEntity(
@@ -106,18 +99,26 @@ class MigrationTest {
                 ),
             )
             assertEquals(120L, db.scalar("SELECT durationSeconds FROM routine_steps WHERE title = ?", "Brush"))
-            assertEquals(
-                "Teeth",
-                db.routineStepDao().activeSnapshot(routine.id).single().description,
-            )
+            assertEquals("Teeth", db.routineStepDao().activeSnapshot(routine.id).single().description)
         } finally {
             db.close()
         }
     }
 
+    private fun createVersion1Database(seed: (SQLiteDatabase) -> Unit) {
+        SQLiteDatabase.openOrCreateDatabase(context.getDatabasePath(TEST_DB), null).use { legacy ->
+            legacy.execSQL(
+                "CREATE TABLE IF NOT EXISTS `routines` " +
+                    "(`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL)",
+            )
+            seed(legacy)
+            legacy.version = 1
+        }
+    }
+
     private fun openMigratedDatabase(): RoutinePilotDatabase =
         Room.databaseBuilder(context, RoutinePilotDatabase::class.java, TEST_DB)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .addCallback(ForeignKeysCallback)
             .build()
 

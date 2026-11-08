@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.routinepilot.infrastructure.notifications.RunEventNotifier
 import com.routinepilot.infrastructure.notifications.RunNotificationPresenter
+import com.routinepilot.infrastructure.work.ScheduleMaintenanceWorker
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -23,5 +24,6 @@ class RoutinePilotApplication : Application(), Configuration.Provider {
         super.onCreate()
         presenter.createChannels()
         runEvents.start()
+        ScheduleMaintenanceWorker.enqueue(this)
     }
 }
