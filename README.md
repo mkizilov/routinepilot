@@ -195,6 +195,8 @@ CI (`.github/workflows/android.yml`) runs format, detekt, unit tests, and a debu
 - `app/src/androidTest/` Compose UI tests
 - `config/detekt/detekt.yml` detekt rule overrides
 - `.github/workflows/android.yml` CI
+- `backend/` the Kotlin sync backend (Ktor, PostgreSQL). It has its own Gradle build and is deployed separately. See `backend/README.md`. The Android app does not use it yet.
+- `.github/workflows/backend.yml` backend CI
 
 ## Status
 

@@ -22,6 +22,18 @@ Extend this file with the project's language-specific architecture and verificat
 - Dependency direction: `presentation` → `domain` ← `data` → `infrastructure`. `domain` has no Android imports. Hilt bindings live in `infrastructure/di`.
 - Versions are pinned in `gradle/libs.versions.toml`. Do not add dependencies for a few lines of code.
 
+## Backend architecture (`backend/`)
+
+A separately deployable Kotlin service: Ktor 3.0.3 on Kotlin 2.0.21, PostgreSQL 16 through JDBC and HikariCP. It has its own Gradle build (`backend/settings.gradle.kts`) and version catalog, so the Android build does not depend on it. Packages under `com.routinepilot.backend`: `api` (routes, DTOs, plugins), `service` (rules that use transactions), `persistence` (SQL), `domain` (pure rules, validation, and sync decisions), `security` (hashing, tokens, rate limits), `db` (JDBC helpers and migrations), `config`. Dependencies point inward, and `domain` imports no Ktor or JDBC types. The sync contract lives in `backend/README.md`.
+
+Backend verification commands, run from `backend/`:
+
+- `gradle test` — unit, database, and API tests. The database and API tests need a Docker daemon (Testcontainers).
+- `gradle installDist` — distribution build used by the Dockerfile.
+- `docker compose up --build` — local PostgreSQL and API on loopback.
+
+The backend is not compiled in every environment. Record it as unverified when Gradle, a JDK, or Docker is unavailable.
+
 ## Engineering rules for this project
 
 - Make small, focused changes. Each change touches only what it must and includes tests for new behavior.

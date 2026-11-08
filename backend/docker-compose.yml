@@ -1,0 +1,41 @@
+# Local stack: PostgreSQL 16 and the API. The database is not published to the host. The API binds to loopback only.
+# Put a TLS-terminating reverse proxy in front of it for anything beyond local development.
+# Set RP_DATABASE_PASSWORD in the shell or in a .env file that is not committed.
+name: routinepilot-backend
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: routinepilot
+      POSTGRES_USER: routinepilot
+      POSTGRES_PASSWORD: ${RP_DATABASE_PASSWORD:?set RP_DATABASE_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routinepilot -d routinepilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      RP_DATABASE_URL: jdbc:postgresql://postgres:5432/routinepilot
+      RP_DATABASE_USER: routinepilot
+      RP_DATABASE_PASSWORD: ${RP_DATABASE_PASSWORD:?set RP_DATABASE_PASSWORD}
+      RP_REQUIRE_HTTPS: ${RP_REQUIRE_HTTPS:-false}
+      RP_TRUST_FORWARDED_HEADERS: ${RP_TRUST_FORWARDED_HEADERS:-false}
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  pgdata:
