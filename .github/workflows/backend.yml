@@ -36,3 +36,15 @@ jobs:
       # Testcontainers starts PostgreSQL through the runner's Docker daemon.
       - name: Unit, API, and database tests, then the distribution build
         run: gradle test installDist --no-daemon
+
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      # Builds the deployable image the same way an operator would. The container is not started here.
+      - name: Build the container image
+        run: docker build --tag routinepilot-backend:ci .

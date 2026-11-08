@@ -55,6 +55,8 @@ internal const val TAG_ACCOUNT_EMAIL = "account_email"
 internal const val TAG_ACCOUNT_PASSWORD = "account_password"
 internal const val TAG_ACCOUNT_BUSY = "account_busy"
 internal const val TAG_ACCOUNT_PHASE = "account_phase"
+internal const val TAG_DELETE_PASSWORD = "account_delete_password"
+internal const val TAG_DELETE_ACCOUNT = "account_delete_account"
 
 @Composable
 fun AccountRoute(
@@ -70,6 +72,7 @@ fun AccountRoute(
         onSignOut = viewModel::signOut,
         onSyncNow = viewModel::syncNow,
         onResolve = viewModel::resolve,
+        onDeleteAccount = viewModel::deleteAccount,
     )
 }
 
@@ -83,6 +86,7 @@ fun AccountScreen(
     onSignOut: () -> Unit,
     onSyncNow: () -> Unit,
     onResolve: (Conflict, Decision) -> Unit,
+    onDeleteAccount: (String) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -122,6 +126,7 @@ fun AccountScreen(
                         onSyncNow = onSyncNow,
                         onSignOut = onSignOut,
                         onResolve = onResolve,
+                        onDeleteAccount = onDeleteAccount,
                     )
                 }
                 Text(stringResource(R.string.account_local_note))
@@ -176,6 +181,7 @@ private fun SignedInSection(
     onSyncNow: () -> Unit,
     onSignOut: () -> Unit,
     onResolve: (Conflict, Decision) -> Unit,
+    onDeleteAccount: (String) -> Unit,
 ) {
     Text(stringResource(R.string.account_signed_in_as, email))
     Text(
@@ -191,6 +197,7 @@ private fun SignedInSection(
     state.sync.heldConflicts.forEach { conflict -> HeldConflict(conflict, onResolve) }
     Button(onClick = onSyncNow, enabled = !state.busy) { Text(stringResource(R.string.account_sync_now)) }
     OutlinedButton(onClick = onSignOut, enabled = !state.busy) { Text(stringResource(R.string.account_sign_out)) }
+    DeleteAccountSection(busy = state.busy, onDelete = onDeleteAccount)
 }
 
 @Composable
@@ -261,6 +268,50 @@ private fun ConfirmedChoice(
     }
 }
 
+/** Deleting the account needs the password again and a confirmation. The password is kept in plain state only. */
+@Composable
+private fun DeleteAccountSection(busy: Boolean, onDelete: (String) -> Unit) {
+    var password by remember { mutableStateOf("") }
+    var confirming by remember { mutableStateOf(false) }
+    Text(stringResource(R.string.account_delete_heading))
+    Text(stringResource(R.string.account_delete_help))
+    OutlinedTextField(
+        value = password,
+        onValueChange = { password = it },
+        label = { Text(stringResource(R.string.account_delete_password)) },
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth().testTag(TAG_DELETE_PASSWORD),
+    )
+    OutlinedButton(
+        onClick = { confirming = true },
+        enabled = !busy && password.isNotEmpty(),
+        modifier = Modifier.testTag(TAG_DELETE_ACCOUNT),
+    ) {
+        Text(stringResource(R.string.account_delete_button))
+    }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.account_delete_title)) },
+            text = { Text(stringResource(R.string.account_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirming = false
+                    onDelete(password)
+                    password = ""
+                }) {
+                    Text(stringResource(R.string.account_confirm_account))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+}
+
 @Composable
 private fun phaseText(phase: SyncPhase): String = stringResource(
     when (phase) {
@@ -276,6 +327,7 @@ private fun phaseText(phase: SyncPhase): String = stringResource(
 @Composable
 private fun messageText(message: AccountMessage): String = when (message) {
     AccountMessage.SignedIn -> stringResource(R.string.account_message_signed_in)
+    AccountMessage.AccountDeleted -> stringResource(R.string.account_message_deleted)
     is AccountMessage.Blocked -> stringResource(R.string.account_message_blocked, message.unsyncedChanges)
     is AccountMessage.SignedOut -> stringResource(
         if (message.deviceRevoked) {
@@ -290,6 +342,8 @@ private fun messageText(message: AccountMessage): String = when (message) {
             AuthProblem.EMAIL_TAKEN -> R.string.account_message_email_taken
             AuthProblem.INVALID_INPUT -> R.string.account_message_invalid_input
             AuthProblem.UNAVAILABLE -> R.string.account_message_unavailable
+            AuthProblem.WRONG_PASSWORD -> R.string.account_message_wrong_password
+            AuthProblem.SIGN_IN_AGAIN -> R.string.account_message_sign_in_again
             AuthProblem.SERVER -> R.string.account_message_server
         },
     )

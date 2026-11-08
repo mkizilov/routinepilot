@@ -29,7 +29,7 @@ All paths start with `/v1`. Bodies and responses are JSON. Errors have the shape
 | `POST /v1/auth/logout` | any | 204 | Revokes the current session |
 | `GET /v1/me` | any | 200 profile | |
 | `PUT /v1/me/password` | account | 204 | Needs the current password. Signs out every other session |
-| `DELETE /v1/me` | account | 204 | Needs the password. Deletes the account and all its data |
+| `POST /v1/me/delete` | account | 204 | Needs the password in the body (`{"password"}`). Deletes the account and all its data. A POST, because common HTTP clients, including the Android app's, cannot send a body with DELETE |
 | `POST /v1/devices` | account | 201 device and device token | Each device gets its own session |
 | `GET /v1/devices` | account | 200 list | Active devices only |
 | `DELETE /v1/devices/{id}` | account | 204 | Revokes the device and its sessions at once |
@@ -144,6 +144,75 @@ build/install/routinepilot-backend/bin/routinepilot-backend
 The first `gradle` run needs a local Gradle 8.9 because this directory has no wrapper yet. Generate it once with `gradle wrapper --gradle-version 8.9`, the same way the Android project does.
 
 Migrations run at startup. They are idempotent, and an advisory lock stops two instances from migrating at once.
+
+## Deployment
+
+This describes one host running the API and PostgreSQL. It has not been run end to end in this environment (see Status). CI builds the image but does not start it.
+
+### Before you start
+
+- A host with Docker and Docker Compose, and a DNS name for the service.
+- A TLS-terminating reverse proxy you control, or a keystore for direct TLS (see TLS above).
+- A long random database password. Generate one with `openssl rand -base64 32`.
+
+### Steps
+
+1. Create `backend/.env` (git ignores it) with the password, and the two proxy settings when a proxy is in front:
+
+   ```sh
+   RP_DATABASE_PASSWORD=the-generated-value
+   RP_REQUIRE_HTTPS=true
+   RP_TRUST_FORWARDED_HEADERS=true
+   ```
+
+2. Start the stack. The API listens on `127.0.0.1:8080` only, and PostgreSQL is not published to the host:
+
+   ```sh
+   cd backend
+   docker compose up -d --build
+   ```
+
+3. Put the proxy in front. It must set `X-Forwarded-Proto` and `X-Forwarded-For`, and forward only to `127.0.0.1:8080`. Caddy's `reverse_proxy` sets both headers by default. With nginx, set them yourself with `proxy_set_header`. Trust forwarded headers only behind that proxy, because a client that can reach the service directly could forge them.
+
+4. Check it, using the public address:
+
+   ```sh
+   curl -s https://sync.your-domain.example/health   # expect {"status":"ok"}
+   ```
+
+5. Point the app's release build at it, with `ROUTINEPILOT_SYNC_URL=https://sync.your-domain.example`. `docs/release.md` describes the build.
+
+### Upgrades
+
+- Migrations run at startup. They only move forward, so there is no downgrade path. Back up the database before every upgrade.
+- Rebuild and restart: `docker compose up -d --build`. The advisory lock stops two instances from migrating at once, but run one instance at a time anyway, because rate limits are per process.
+- If an upgrade fails, restore the backup taken before it, and run the previous image version against that restored database.
+
+### Backups and restore
+
+- Back up with `docker compose exec postgres pg_dump -U routinepilot routinepilot > routinepilot-$(date +%F).sql`. Store the file somewhere the API host cannot be the only copy.
+- Test a restore on a scratch database before you rely on the backup: `docker compose exec -T postgres psql -U routinepilot -d scratch < routinepilot-DATE.sql`.
+- Backups contain account email addresses and password hashes, and the synced records. Treat them as personal data.
+- The change log is not compacted, so the database grows with use. Plan its storage and watch its size.
+
+### Running it safely
+
+- Keep `RP_DATABASE_PASSWORD` and any keystore password out of the repository and out of the image. Pass them through the environment or a secret store.
+- The container runs as UID 10001, with a read-only root filesystem and `no-new-privileges`, as set in `docker-compose.yml`.
+- Logs contain unhandled failures with the request path. They do not contain request bodies or passwords.
+- `/health` reports liveness only. There is no metrics endpoint in this version.
+- Run one instance. Rate limits are kept in memory, so several instances would each allow the full budget.
+
+### Account deletion
+
+A user deletes their account in the app, or with `POST /v1/me/delete` and an account session. The server removes the account, its devices, its sessions, and its records, through cascading foreign keys. Backups keep the deleted data until they expire.
+
+### Not verified
+
+- The Docker image has not been built or started in this environment, and the compose stack has not been run.
+- The direct TLS path (keystore) has not been run.
+- The reverse-proxy header handling has not been tested against a real proxy.
+- Behaviour under load, and recovery from a database failure, have not been measured.
 
 ## Verification
 

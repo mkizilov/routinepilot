@@ -15,9 +15,15 @@
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
+    <!--
+        Backups are off. Local data is tied to this device's Keystore key and to the sync session. A restored copy would
+        hold queued changes and cursors without the tokens that match them.
+    -->
     <application
         android:name=".RoutinePilotApplication"
+        android:allowBackup="false"
         android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.RoutinePilot">
         <activity

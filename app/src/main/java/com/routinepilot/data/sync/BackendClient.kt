@@ -1,5 +1,6 @@
 package com.routinepilot.data.sync
 
+import com.routinepilot.BuildConfig
 import com.routinepilot.domain.sync.RemoteBusyException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,6 +40,10 @@ class BackendClient @Inject constructor() {
         exchange("DELETE", "/v1/devices/$deviceId", accountToken)
     }
 
+    suspend fun deleteAccount(accountToken: String, password: String) {
+        exchange("POST", "/v1/me/delete", accountToken, ApiJson.encodeToString(DeleteAccountRequest(password)))
+    }
+
     suspend fun upload(deviceToken: String, body: UploadDto): UploadResponseDto =
         ApiJson.decodeFromString(
             exchange("POST", "/v1/sync/changes", deviceToken, ApiJson.encodeToString(body)),
@@ -52,7 +57,8 @@ class BackendClient @Inject constructor() {
 
     private suspend fun exchange(method: String, path: String, token: String?, body: String? = null): String =
         withContext(Dispatchers.IO) {
-            val connection = (URL(SERVER_URL + path).openConnection() as HttpURLConnection).apply {
+            if (BuildConfig.SYNC_BASE_URL.isBlank()) throw RemoteBusyException("Sync is not configured in this build")
+            val connection = (URL(BuildConfig.SYNC_BASE_URL + path).openConnection() as HttpURLConnection).apply {
                 requestMethod = method
                 connectTimeout = CONNECT_TIMEOUT_MS
                 readTimeout = READ_TIMEOUT_MS
@@ -85,8 +91,6 @@ class BackendClient @Inject constructor() {
     }
 
     private companion object {
-        /** Emulator loopback. Release builds need a real HTTPS address, which is set when the backend is deployed. */
-        const val SERVER_URL = "http://10.0.2.2:8080"
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 30_000
         const val HTTP_BAD_REQUEST = 400

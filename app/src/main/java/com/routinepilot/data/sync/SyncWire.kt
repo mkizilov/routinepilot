@@ -36,6 +36,9 @@ private val BOOLEAN_FIELDS = setOf("isCompleted")
 internal data class LoginRequest(val email: String, val password: String)
 
 @Serializable
+internal data class DeleteAccountRequest(val password: String)
+
+@Serializable
 internal data class TokenDto(val token: String, val expiresAt: String)
 
 @Serializable

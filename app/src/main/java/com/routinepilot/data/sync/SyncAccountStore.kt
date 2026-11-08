@@ -96,6 +96,16 @@ class SyncAccountStore @Inject constructor(
         }
     }
 
+    /** Forgets the account on this device: its sign-in, owner, and cursor. Erasing the data is the caller's job. */
+    suspend fun forgetAccount() {
+        clearSignIn()
+        dataStore.edit {
+            it.remove(OWNER)
+            it.remove(LAST_SYNCED_AT)
+            it[CURSOR] = 0L
+        }
+    }
+
     /** Forgets only the device session. The next sync registers a new device with the account session. */
     suspend fun clearDevice() {
         vault.remove(DEVICE_TOKEN)

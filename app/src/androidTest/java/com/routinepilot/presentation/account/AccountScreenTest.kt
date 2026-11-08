@@ -93,6 +93,22 @@ class AccountScreenTest {
     }
 
     @Test
+    fun deleteAccount_needsThePassword_andAConfirmation_beforeItRuns() {
+        var deletedWith: String? = null
+        setScreen(signedInWith(idleSync()), onDeleteAccount = { deletedWith = it })
+
+        composeTestRule.onNodeWithText("Delete account").assertIsNotEnabled()
+        composeTestRule.onNodeWithTag(TAG_DELETE_PASSWORD).performClick().performTextInput("a long password")
+        composeTestRule.onNodeWithText("Delete account").performClick()
+        composeTestRule.onNodeWithText("Delete your account?").assertIsDisplayed()
+        assertEquals(null, deletedWith)
+
+        composeTestRule.onNodeWithText("Delete my account").performClick()
+
+        assertEquals("a long password", deletedWith)
+    }
+
+    @Test
     fun busy_showsProgress_andHoldsSyncNow() {
         setScreen(signedInWith(idleSync()).copy(busy = true))
 
@@ -133,6 +149,7 @@ class AccountScreenTest {
         state: AccountUiState,
         onSignIn: (String, String) -> Unit = { _, _ -> },
         onResolve: (Conflict, Decision) -> Unit = { _, _ -> },
+        onDeleteAccount: (String) -> Unit = {},
         fontScale: Float = 1f,
     ) {
         composeTestRule.setContent {
@@ -146,6 +163,7 @@ class AccountScreenTest {
                         onSignOut = {},
                         onSyncNow = {},
                         onResolve = onResolve,
+                        onDeleteAccount = onDeleteAccount,
                     )
                 }
             }

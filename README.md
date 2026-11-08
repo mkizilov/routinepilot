@@ -186,7 +186,7 @@ Then use `./gradlew` for all commands:
 ./gradlew check                    # all of the above checks
 ```
 
-CI (`.github/workflows/android.yml`) runs format, detekt, unit tests, and a debug build on every push and pull request, and runs the Compose UI tests on an API 34 emulator. It currently calls `gradle` directly through `gradle/actions/setup-gradle`; switch to `./gradlew` once the wrapper is committed.
+CI (`.github/workflows/android.yml`) runs format, detekt, unit tests, and debug and release builds on every push and pull request, and runs the Compose UI tests on an API 34 emulator. It currently calls `gradle` directly through `gradle/actions/setup-gradle`; switch to `./gradlew` once the wrapper is committed. The release build is unsigned in CI, because no signing secret is set there. `docs/release.md` describes signing.
 
 ## Layout
 
@@ -196,7 +196,12 @@ CI (`.github/workflows/android.yml`) runs format, detekt, unit tests, and a debu
 - `config/detekt/detekt.yml` detekt rule overrides
 - `.github/workflows/android.yml` CI
 - `backend/` the Kotlin sync backend (Ktor, PostgreSQL). It has its own Gradle build and is deployed separately. See `backend/README.md`. The Android app does not use it yet.
-- `.github/workflows/backend.yml` backend CI
+- `.github/workflows/backend.yml` backend CI, including a container image build
+- `.github/workflows/release.yml` release bundle, from a `v*` tag or by hand
+- `docs/release.md` build types, signing, and the release checklist
+- `docs/privacy.md` what is stored where, what is sent, and how to delete data
+- `docs/testing.md` the test suites, what was run, and what was not
+- `docs/release-readiness.md` the final summary and what remains before release
 
 ## Status
 

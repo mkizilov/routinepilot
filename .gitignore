@@ -6,6 +6,13 @@
 _opam/
 .DS_Store
 
+# Signing material and deployment secrets: never commit keystores, passwords, or environment files
+*.jks
+*.keystore
+*.p12
+keystore.properties
+.env
+
 # Android / Gradle
 build/
 .gradle/

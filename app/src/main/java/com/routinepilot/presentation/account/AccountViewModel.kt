@@ -6,6 +6,7 @@ import com.routinepilot.domain.sync.AccountSessions
 import com.routinepilot.domain.sync.AuthProblem
 import com.routinepilot.domain.sync.Conflict
 import com.routinepilot.domain.sync.Decision
+import com.routinepilot.domain.sync.DeleteAccountOutcome
 import com.routinepilot.domain.sync.SignInOutcome
 import com.routinepilot.domain.sync.SyncEngine
 import com.routinepilot.domain.sync.SyncState
@@ -27,6 +28,8 @@ data class AccountUiState(
 
 sealed interface AccountMessage {
     data object SignedIn : AccountMessage
+
+    data object AccountDeleted : AccountMessage
 
     data class Blocked(val unsyncedChanges: Int) : AccountMessage
 
@@ -76,6 +79,13 @@ class AccountViewModel @Inject constructor(
     }
 
     fun signOut() = perform { AccountMessage.SignedOut(sessions.signOut().deviceRevoked) }
+
+    fun deleteAccount(password: String) = perform {
+        when (val outcome = sessions.deleteAccount(password)) {
+            DeleteAccountOutcome.Deleted -> AccountMessage.AccountDeleted
+            is DeleteAccountOutcome.Failed -> AccountMessage.Failed(outcome.problem)
+        }
+    }
 
     fun syncNow() = perform {
         engine.runCycle()

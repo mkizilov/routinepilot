@@ -7,9 +7,28 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+/*
+ * Release settings come from the environment, so no secret or deployment address is written into the repository. Without
+ * a keystore, the release build is produced unsigned. See docs/release.md.
+ */
+val releaseKeystorePath: String? = System.getenv("RP_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+val releaseSyncUrl: String = (findProperty("routinepilot.syncBaseUrl") as String?)
+    ?: System.getenv("ROUTINEPILOT_SYNC_URL").orEmpty()
+
 android {
     namespace = "com.routinepilot"
     compileSdk = 35
+
+    signingConfigs {
+        create("release") {
+            if (releaseKeystorePath != null) {
+                storeFile = file(releaseKeystorePath)
+                storePassword = System.getenv("RP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("RP_KEY_ALIAS")
+                keyPassword = System.getenv("RP_KEY_PASSWORD")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.routinepilot"
@@ -21,8 +40,18 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "SYNC_BASE_URL", "\"http://10.0.2.2:8080\"")
+        }
         release {
+            // Minification stays off until a release build has run on a device. The keep rules for Room, Hilt, Glance,
+            // and kotlinx-serialization were not verified when this was written. See docs/release.md.
             isMinifyEnabled = false
+            require(releaseSyncUrl.isEmpty() || releaseSyncUrl.startsWith("https://")) {
+                "ROUTINEPILOT_SYNC_URL must be an https:// address, or empty to turn sync off"
+            }
+            if (releaseKeystorePath != null) signingConfig = signingConfigs.getByName("release")
+            buildConfigField("String", "SYNC_BASE_URL", "\"$releaseSyncUrl\"")
         }
     }
 
@@ -33,6 +62,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -75,4 +105,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.work.testing)
 }

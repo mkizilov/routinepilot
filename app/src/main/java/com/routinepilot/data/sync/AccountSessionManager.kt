@@ -2,6 +2,7 @@ package com.routinepilot.data.sync
 
 import com.routinepilot.domain.sync.AccountSessions
 import com.routinepilot.domain.sync.AuthProblem
+import com.routinepilot.domain.sync.DeleteAccountOutcome
 import com.routinepilot.domain.sync.OutboxStore
 import com.routinepilot.domain.sync.SignInOutcome
 import com.routinepilot.domain.sync.SignInPlan
@@ -90,6 +91,25 @@ class AccountSessionManager @Inject constructor(
         return SignOutOutcome(deviceRevoked)
     }
 
+    /**
+     * Deletes the account on the server, then erases this device's data. Nothing is erased unless the server confirms.
+     * Queued changes that were never sent are lost with the account, and the account screen says so before this runs.
+     */
+    override suspend fun deleteAccount(password: String): DeleteAccountOutcome {
+        val token = account.accountToken() ?: return DeleteAccountOutcome.Failed(AuthProblem.SIGN_IN_AGAIN)
+        return try {
+            client.deleteAccount(token, password)
+            withContext(Dispatchers.IO) { database.clearAllTables() }
+            account.forgetAccount()
+            scheduler.cancelAll()
+            DeleteAccountOutcome.Deleted
+        } catch (refused: BackendException) {
+            DeleteAccountOutcome.Failed(problemOf(refused))
+        } catch (unreachable: IOException) {
+            DeleteAccountOutcome.Failed(AuthProblem.UNAVAILABLE)
+        }
+    }
+
     /** A login that was refused is closed, so it does not stay usable until it expires. */
     private suspend fun closeUnusedSession(token: String) {
         attempt { client.logout(token) }
@@ -108,6 +128,8 @@ class AccountSessionManager @Inject constructor(
         "invalid_credentials" -> AuthProblem.INVALID_CREDENTIALS
         "email_taken" -> AuthProblem.EMAIL_TAKEN
         "validation_failed" -> AuthProblem.INVALID_INPUT
+        "invalid_password" -> AuthProblem.WRONG_PASSWORD
+        "unauthorized" -> AuthProblem.SIGN_IN_AGAIN
         else -> AuthProblem.SERVER
     }
 

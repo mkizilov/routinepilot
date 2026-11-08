@@ -5,6 +5,9 @@ import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.routinepilot.domain.sync.Expectation
+import com.routinepilot.domain.sync.MutationKind
+import com.routinepilot.domain.sync.SyncType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -17,7 +20,7 @@ import java.util.UUID
 
 /**
  * Opening a version 1 file with the current database class runs every migration in order. Room then validates the
- * final schema against the entities, so these tests also check that the whole chain 1 to 6 produces the schema the
+ * final schema against the entities, so these tests also check that the whole chain 1 to 8 produces the schema the
  * code expects. A schema JSON-based MigrationTestHelper test for each step is still outstanding; see the README.
  */
 class MigrationTest {
@@ -100,6 +103,34 @@ class MigrationTest {
             )
             assertEquals(120L, db.scalar("SELECT durationSeconds FROM routine_steps WHERE title = ?", "Brush"))
             assertEquals("Teeth", db.routineStepDao().activeSnapshot(routine.id).single().description)
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun migratedDatabase_acceptsTheOutboxAndPlanningRows_addedByTheLaterMigrations() = runBlocking {
+        createVersion1Database { }
+        val db = openMigratedDatabase()
+        try {
+            val taskId = UUID.randomUUID()
+            db.syncOutboxDao().insertMutation(
+                MutationOutboxEntity(
+                    mutationId = UUID.randomUUID(),
+                    objectType = SyncType.TASK,
+                    objectId = taskId,
+                    seenVersion = 0,
+                    kind = MutationKind.UPSERT,
+                    expectation = Expectation.ABSENT,
+                    createdAtMillis = 1L,
+                ),
+            )
+            db.planningDao().upsertTask(
+                PlanningTaskEntity(taskId, durationMinutes = 30, priority = 3, deadlineMinute = null),
+            )
+
+            assertEquals(1L, db.scalar("SELECT COUNT(*) FROM mutation_outbox"))
+            assertEquals(1L, db.scalar("SELECT COUNT(*) FROM planning_task"))
         } finally {
             db.close()
         }

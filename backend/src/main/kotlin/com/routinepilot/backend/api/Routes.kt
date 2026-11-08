@@ -70,7 +70,7 @@ fun Route.v1Routes(accounts: AccountService, sync: SyncService, limiter: FixedWi
                 accounts.changePassword(session, request.currentPassword, request.newPassword)
                 call.respond(HttpStatusCode.NoContent)
             }
-            delete("/me") {
+            post("/me/delete") {
                 val session = call.session().requireAccount()
                 val request = call.receiveLimited<DeleteAccountRequest>(maxBody)
                 accounts.deleteAccount(session.userId, request.password)

@@ -43,6 +43,7 @@ fun AgendaRoute(
     onNewSchedule: () -> Unit,
     onOpenSchedules: () -> Unit,
     onOpenProgress: () -> Unit,
+    onOpenHelp: () -> Unit = {},
     viewModel: AgendaViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -52,6 +53,7 @@ fun AgendaRoute(
         onNewSchedule = onNewSchedule,
         onOpenSchedules = onOpenSchedules,
         onOpenProgress = onOpenProgress,
+        onOpenHelp = onOpenHelp,
     )
 }
 
@@ -63,12 +65,14 @@ fun AgendaScreen(
     onNewSchedule: () -> Unit,
     onOpenSchedules: () -> Unit,
     onOpenProgress: () -> Unit = {},
+    onOpenHelp: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.agenda_title)) },
                 actions = {
+                    TextButton(onClick = onOpenHelp) { Text(stringResource(R.string.agenda_help)) }
                     TextButton(onClick = onOpenProgress) { Text(stringResource(R.string.agenda_progress)) }
                     TextButton(onClick = onOpenSchedules) { Text(stringResource(R.string.agenda_manage_schedules)) }
                 },

@@ -12,6 +12,12 @@ interface AccountSessions {
     suspend fun register(email: String, password: String): SignInOutcome
 
     suspend fun signOut(): SignOutOutcome
+
+    /**
+     * Deletes the account on the server, then erases its data on this device. Nothing on the device is erased unless
+     * the server confirms the deletion.
+     */
+    suspend fun deleteAccount(password: String): DeleteAccountOutcome
 }
 
 sealed interface SignInOutcome {
@@ -23,7 +29,21 @@ sealed interface SignInOutcome {
     data class Failed(val problem: AuthProblem) : SignInOutcome
 }
 
-enum class AuthProblem { INVALID_CREDENTIALS, EMAIL_TAKEN, INVALID_INPUT, UNAVAILABLE, SERVER }
+sealed interface DeleteAccountOutcome {
+    data object Deleted : DeleteAccountOutcome
+
+    data class Failed(val problem: AuthProblem) : DeleteAccountOutcome
+}
+
+enum class AuthProblem {
+    INVALID_CREDENTIALS,
+    WRONG_PASSWORD,
+    EMAIL_TAKEN,
+    INVALID_INPUT,
+    SIGN_IN_AGAIN,
+    UNAVAILABLE,
+    SERVER,
+}
 
 /** [deviceRevoked] is false when the server could not be reached to remove this device from the account. */
 data class SignOutOutcome(val deviceRevoked: Boolean)

@@ -2,6 +2,9 @@ package com.routinepilot.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -10,9 +13,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.routinepilot.presentation.account.AccountRoute
 import com.routinepilot.presentation.calendar.CalendarSettingsRoute
+import com.routinepilot.presentation.help.HelpScreen
 import com.routinepilot.presentation.home.HomeNavigation
 import com.routinepilot.presentation.home.HomeRoute
 import com.routinepilot.presentation.routine.editor.ROUTINE_ID_ARG
+import com.routinepilot.presentation.onboarding.OnboardingRoute
+import com.routinepilot.presentation.onboarding.OnboardingViewModel
 import com.routinepilot.presentation.planning.PlanningRoute
 import com.routinepilot.presentation.routine.editor.RoutineEditorRoute
 import com.routinepilot.presentation.routine.run.RoutineRunRoute
@@ -35,6 +41,8 @@ private const val STATS_ROUTE = "stats"
 private const val CALENDAR_ROUTE = "calendar"
 private const val ACCOUNT_ROUTE = "account"
 private const val PLANNING_ROUTE = "planning"
+private const val ONBOARDING_ROUTE = "onboarding"
+private const val HELP_ROUTE = "help"
 
 /**
  * A request from a notification or widget tap. [resume] is true for Resume on a paused run. [start] begins the routine
@@ -57,12 +65,32 @@ fun RoutinePilotNavHost(
     onRunRequestHandled: () -> Unit = {},
     navController: NavHostController = rememberNavController(),
 ) {
-    NavHost(navController = navController, startDestination = AGENDA_ROUTE) {
+    val onboarding: OnboardingViewModel = hiltViewModel()
+    val introNeeded by onboarding.introNeeded.collectAsStateWithLifecycle()
+    // Wait for the stored flag before choosing the first screen, so a finished user never sees the introduction.
+    val startDestination = when (introNeeded ?: return) {
+        true -> ONBOARDING_ROUTE
+        false -> AGENDA_ROUTE
+    }
+    NavHost(navController = navController, startDestination = startDestination) {
+        composable(ONBOARDING_ROUTE) {
+            OnboardingRoute(
+                onFinished = {
+                    navController.navigate(AGENDA_ROUTE) {
+                        popUpTo(ONBOARDING_ROUTE) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(HELP_ROUTE) {
+            HelpScreen(onBack = { navController.popBackStack() })
+        }
         composable(AGENDA_ROUTE) {
             AgendaRoute(
                 onNewSchedule = { navController.navigate(scheduleEditorRoute(null)) },
                 onOpenSchedules = { navController.navigate(SCHEDULES_ROUTE) },
                 onOpenProgress = { navController.navigate(STATS_ROUTE) },
+                onOpenHelp = { navController.navigate(HELP_ROUTE) },
             )
         }
         composable(STATS_ROUTE) {

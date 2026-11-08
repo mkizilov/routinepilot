@@ -88,6 +88,37 @@ class DaylightSavingTest {
         assertEquals(Instant.parse("2026-10-25T00:30:00Z"), onTransitionDay.single().originalScheduledAt)
     }
 
+    /**
+     * These expectations were computed from the IANA time-zone database (zoneinfo), not from this code. They cover
+     * zones with other transition rules: New York, and Lord Howe Island, which changes by only 30 minutes.
+     */
+    @Test
+    fun newYorkSpringForward_gapTimeIsShiftedForward() {
+        val newYork = ZoneId.of("America/New_York")
+
+        val instant = ScheduleCalendar.instantAt(LocalDate.of(2026, 3, 8), LocalTime.of(2, 30), newYork)
+
+        assertEquals(Instant.parse("2026-03-08T07:30:00Z"), instant)
+    }
+
+    @Test
+    fun newYorkFallBack_overlapTimeRunsOnceAtTheEarlierInstant() {
+        val newYork = ZoneId.of("America/New_York")
+
+        val instant = ScheduleCalendar.instantAt(LocalDate.of(2026, 11, 1), LocalTime.of(1, 30), newYork)
+
+        assertEquals(Instant.parse("2026-11-01T05:30:00Z"), instant)
+    }
+
+    @Test
+    fun lordHoweSpringForward_halfHourGapIsShiftedByThirtyMinutes() {
+        val lordHowe = ZoneId.of("Australia/Lord_Howe")
+
+        val instant = ScheduleCalendar.instantAt(LocalDate.of(2026, 10, 4), LocalTime.of(2, 15), lordHowe)
+
+        assertEquals(Instant.parse("2026-10-03T15:45:00Z"), instant)
+    }
+
     private fun berlinSchedule(pattern: RecurrencePattern, time: LocalTime, start: LocalDate) = Schedule(
         id = UUID.fromString("00000000-0000-4000-8000-000000000001"),
         target = ScheduleTarget.RoutineTarget(UUID.fromString("00000000-0000-4000-8000-000000000002")),

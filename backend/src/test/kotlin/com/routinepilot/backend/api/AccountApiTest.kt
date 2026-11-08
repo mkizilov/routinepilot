@@ -65,12 +65,12 @@ class AccountApiTest {
         val client = apiClient()
         val token = client.signUp("mary@example.com").token
 
-        val refused = client.delete("/v1/me") {
+        val refused = client.post("/v1/me/delete") {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
             setBody(DeleteAccountRequest("not the password"))
         }
-        val deleted = client.delete("/v1/me") {
+        val deleted = client.post("/v1/me/delete") {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
             setBody(DeleteAccountRequest(PASSWORD))

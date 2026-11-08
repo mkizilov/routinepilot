@@ -52,10 +52,10 @@ class SyncScheduler @Inject constructor(@ApplicationContext private val context:
     private fun connected(): Constraints =
         Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-    private companion object {
-        const val ONE_TIME_NAME = "routinepilot-sync"
-        const val PERIODIC_NAME = "routinepilot-sync-periodic"
-        const val PERIODIC_HOURS = 6L
-        const val BACKOFF_SECONDS = 30L
+    companion object {
+        internal const val ONE_TIME_NAME = "routinepilot-sync"
+        internal const val PERIODIC_NAME = "routinepilot-sync-periodic"
+        private const val PERIODIC_HOURS = 6L
+        private const val BACKOFF_SECONDS = 30L
     }
 }

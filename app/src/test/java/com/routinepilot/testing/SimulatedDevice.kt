@@ -14,21 +14,33 @@ import com.routinepilot.domain.sync.SyncEngine
 import java.util.UUID
 
 /**
+ * What a device keeps across a process restart: the outbox and app data (Room), the account state (DataStore), and the
+ * id counter, so ids minted after a restart never repeat ids minted before it.
+ */
+class DeviceStorage {
+    val outbox = InMemoryOutboxStore()
+    val account = InMemorySyncAccount()
+    val local = mutableMapOf<ObjectKey, FieldMap>()
+    var counter = 0L
+}
+
+/**
  * One device with its own outbox, account state, and app data, syncing through [remote]. [namespace] keeps mutation ids
- * unique across devices. The app data is written by the same [LocalRecordWriter] contract the Room writer implements.
+ * unique across devices. A new [SimulatedDevice] over the same [storage] models a process restart: it starts with fresh
+ * in-memory engine state and reads everything else back from storage.
  */
 class SimulatedDevice(
     val name: String,
     server: FakeSyncServer,
     namespace: Long,
     val remote: FakeSyncRemote = FakeSyncRemote(server),
+    private val storage: DeviceStorage = DeviceStorage(),
 ) {
-    private var counter = 0L
-    private val store = InMemoryOutboxStore()
-    val account = InMemorySyncAccount()
-    private val replica = OfflineReplica(store) { UUID(namespace, ++counter) }
-    private val syncer = OfflineSync(store, remote) { UUID(namespace, ++counter) }
-    private val local = mutableMapOf<ObjectKey, FieldMap>()
+    private val store = storage.outbox
+    val account = storage.account
+    private val local = storage.local
+    private val replica = OfflineReplica(store) { UUID(namespace, ++storage.counter) }
+    private val syncer = OfflineSync(store, remote) { UUID(namespace, ++storage.counter) }
     private val writer = object : LocalRecordWriter {
         override suspend fun write(view: MergeResult) {
             if (view.exists) local[view.key] = view.fields else local.remove(view.key)
