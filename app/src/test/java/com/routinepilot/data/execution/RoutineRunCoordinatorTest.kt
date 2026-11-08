@@ -451,6 +451,49 @@ class RoutineRunCoordinatorTest {
         assertEquals(8_000L, session.focusedMillis)
     }
 
+    @Test
+    fun reconcileStoredRun_endsARunWhoseRoutineWasDeleted() = runTest(dispatcher) {
+        val session = UUID.randomUUID()
+        executions.saveSession(sessionRow(session, routine.id))
+        store.save(storedRun(session, routine.id, listOf(stretch.id), ExecutionStatus.PAUSED))
+        val coordinator = RoutineRunCoordinator(
+            routineRepository = FakeRoutineRepository(emptyList()),
+            executionRepository = executions,
+            activeExecutionStore = store,
+            monotonicClock = clock,
+            wallClock = wallClock,
+            reminders = reminders,
+            foreground = foreground,
+            scope = backgroundScope,
+        )
+
+        coordinator.reconcileStoredRun()
+
+        assertNull(store.current.value)
+        assertEquals(SessionOutcome.CANCELLED, executions.sessions.value.single().outcome)
+    }
+
+    @Test
+    fun reconcileStoredRun_leavesARunWhoseRoutineStillExists() = runTest(dispatcher) {
+        val session = UUID.randomUUID()
+        executions.saveSession(sessionRow(session, routine.id))
+        store.save(storedRun(session, routine.id, listOf(stretch.id), ExecutionStatus.PAUSED))
+        val coordinator = newCoordinator(backgroundScope)
+
+        coordinator.reconcileStoredRun()
+
+        assertEquals(session, store.current.value?.sessionId)
+    }
+
+    @Test
+    fun start_checkpointsTheWallClockTime_soWidgetsCanTellALiveRunFromAStaleOne() = runTest(dispatcher) {
+        val coordinator = newCoordinator(backgroundScope)
+        coordinator.open(routine.id)
+        coordinator.start()
+
+        assertEquals(wallNow.toEpochMilli(), store.current.value!!.savedAtEpochMillis)
+    }
+
     /** A run's session row exists from the moment it starts, so restored runs have one too. */
     private fun sessionRow(id: UUID, routineId: UUID) = ExecutionSession(
         id = id,

@@ -38,10 +38,16 @@ class MainActivity : ComponentActivity() {
         intent.toRunRequest()?.let { runRequest = it }
     }
 
+    /** Only the three run actions open a run. Any other action just opens the app. */
     private fun Intent.toRunRequest(): RunRequest? {
         val routineId = getStringExtra(RunIntents.EXTRA_ROUTINE_ID)
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?: return null
-        return RunRequest(routineId = routineId, resume = action == RunIntents.ACTION_RESUME_RUN)
+        return when (action) {
+            RunIntents.ACTION_RESUME_RUN -> RunRequest(routineId = routineId, resume = true)
+            RunIntents.ACTION_START_RUN -> RunRequest(routineId = routineId, resume = false, start = true)
+            RunIntents.ACTION_OPEN_RUN -> RunRequest(routineId = routineId, resume = false)
+            else -> null
+        }
     }
 }

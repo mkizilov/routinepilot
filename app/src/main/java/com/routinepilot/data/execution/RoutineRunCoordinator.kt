@@ -152,6 +152,22 @@ class RoutineRunCoordinator @Inject constructor(
         onStatusChanged(before)
     }
 
+    /**
+     * Ends a stored run whose routine was deleted. Without this the run would block new runs and keep a resume card
+     * that leads nowhere. Runs of routines that still exist are left alone.
+     */
+    fun reconcileStoredRun() = serialized {
+        val live = activeRun
+        if (live != null) {
+            if (routineRepository.observeRoutine(live.routineId).first() == null) handle(timer.cancel())
+            return@serialized
+        }
+        val stored = activeExecutionStore.observe().first() ?: return@serialized
+        if (routineRepository.observeRoutine(stored.routineId).first() == null) {
+            endRun(stored, monotonicClock.elapsedMillis(), SessionOutcome.CANCELLED, stored.focusedMillis)
+        }
+    }
+
     /** Runs one operation at a time, then keeps the ticker alive while the timer is running. */
     private fun serialized(block: suspend () -> Unit) {
         scope.launch {
@@ -318,6 +334,7 @@ class RoutineRunCoordinator @Inject constructor(
                     elapsedMillis = snapshot.elapsedMillis,
                     status = snapshot.status,
                     focusedMillis = snapshot.focusedMillis,
+                    savedAtEpochMillis = Instant.now(wallClock).toEpochMilli(),
                 ),
             )
         }

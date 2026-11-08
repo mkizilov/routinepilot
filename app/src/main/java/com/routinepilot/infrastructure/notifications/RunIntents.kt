@@ -13,6 +13,7 @@ import java.util.UUID
 object RunIntents {
     const val ACTION_OPEN_RUN = "com.routinepilot.action.OPEN_RUN"
     const val ACTION_RESUME_RUN = "com.routinepilot.action.RESUME_RUN"
+    const val ACTION_START_RUN = "com.routinepilot.action.START_RUN"
     const val ACTION_PAUSE = "com.routinepilot.action.PAUSE_RUN"
     const val ACTION_SKIP = "com.routinepilot.action.SKIP_STEP"
     const val ACTION_FINISH = "com.routinepilot.action.FINISH_RUN"
@@ -31,6 +32,16 @@ object RunIntents {
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         return PendingIntent.getActivity(context, requestCode, intent, PENDING_FLAGS)
     }
+
+    /**
+     * An explicit intent to MainActivity for the app's own widgets. The routine id travels as an extra and is parsed
+     * back to a UUID, so malformed input is ignored rather than trusted.
+     */
+    fun activityIntent(context: Context, routineId: UUID?, action: String): Intent =
+        Intent(context, MainActivity::class.java)
+            .setAction(action)
+            .putExtra(EXTRA_ROUTINE_ID, routineId?.toString())
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
     fun command(context: Context, action: String): PendingIntent {
         val intent = Intent(action).setClass(context, RunActionReceiver::class.java)

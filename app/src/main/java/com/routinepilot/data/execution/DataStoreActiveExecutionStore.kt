@@ -30,6 +30,7 @@ class DataStoreActiveExecutionStore @Inject constructor(
             prefs[ELAPSED_MILLIS] = execution.elapsedMillis
             prefs[STATUS] = execution.status.name
             prefs[FOCUSED_MILLIS] = execution.focusedMillis
+            prefs[SAVED_AT_MILLIS] = execution.savedAtEpochMillis
         }
     }
 
@@ -43,6 +44,7 @@ class DataStoreActiveExecutionStore @Inject constructor(
             prefs.remove(ELAPSED_MILLIS)
             prefs.remove(STATUS)
             prefs.remove(FOCUSED_MILLIS)
+            prefs.remove(SAVED_AT_MILLIS)
         }
     }
 
@@ -65,6 +67,7 @@ class DataStoreActiveExecutionStore @Inject constructor(
             elapsedMillis = elapsedMillis,
             status = status,
             focusedMillis = this[FOCUSED_MILLIS] ?: elapsedMillis,
+            savedAtEpochMillis = this[SAVED_AT_MILLIS] ?: 0L,
         )
     }
 
@@ -80,5 +83,6 @@ class DataStoreActiveExecutionStore @Inject constructor(
         val ELAPSED_MILLIS = longPreferencesKey("active_execution_elapsed_millis")
         val STATUS = stringPreferencesKey("active_execution_status")
         val FOCUSED_MILLIS = longPreferencesKey("active_execution_focused_millis")
+        val SAVED_AT_MILLIS = longPreferencesKey("active_execution_saved_at_millis")
     }
 }

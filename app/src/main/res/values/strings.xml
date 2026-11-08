@@ -113,6 +113,35 @@
     <string name="schedule_describe_interval">Every %1$d days at %2$s</string>
 
     <string name="agenda_progress">Progress</string>
+
+    <string name="widget_today_label">Today</string>
+    <string name="widget_today_description">Your next routines and tasks today.</string>
+    <string name="widget_run_label">Routine progress</string>
+    <string name="widget_run_description">The running routine: current step, time left, and controls.</string>
+    <string name="widget_quick_label">Quick start</string>
+    <string name="widget_quick_description">Start a routine in one tap.</string>
+    <string name="widget_today_heading">Today</string>
+    <string name="widget_today_empty">Nothing else scheduled today</string>
+    <string name="widget_due_now">Now</string>
+    <string name="widget_moved">(moved)</string>
+    <string name="widget_quick_heading">Start a routine</string>
+    <string name="widget_quick_empty">No routines yet. Open RoutinePilot to create one.</string>
+    <string name="widget_run_none">No routine running. Open RoutinePilot to start one.</string>
+    <string name="widget_run_missing">This routine was deleted. Open RoutinePilot to clear the run.</string>
+    <string name="widget_run_attention">%1$s needs attention. Open RoutinePilot to resume it.</string>
+    <string name="widget_run_running">Running</string>
+    <string name="widget_run_paused">Paused</string>
+    <string name="widget_step_of">Step %1$d of %2$d: %3$s</string>
+    <string name="widget_minutes_left">%1$d min left in this step</string>
+    <string name="widget_total_left">%1$d min left in total</string>
+    <string name="widget_next">Next: %1$s</string>
+    <string name="widget_more">+%1$d more</string>
+    <string name="widget_open">Open</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_resume">Resume</string>
+    <string name="widget_skip">Skip</string>
+    <string name="widget_finish">Finish</string>
+    <string name="widget_load_failed">Could not load. Open RoutinePilot.</string>
     <string name="stats_title">Progress</string>
     <string name="stats_loading">Loading your progress…</string>
     <string name="stats_today">Today</string>

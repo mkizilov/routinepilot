@@ -90,6 +90,40 @@ Limits:
 - Streaks and trends look back at most 365 days, so a longer streak is shown as 365 days.
 - The 4 to 5 migration is covered only by the full-chain open in `MigrationTest`, like the 3 to 4 migration.
 
+## Home screen widgets
+
+Three widgets, built with Jetpack Glance 1.2.0. Each one declares the same three sizes, and the layout picks the bucket the launcher gives it.
+
+- **Today:** the next routines and tasks, due-now first. A tap opens the app.
+- **Routine progress:** the running routine's step, minutes left in the step and in total, and controls. Pause, Skip, and Finish act on the run directly. Resume opens the run screen.
+- **Quick start:** up to four routines. A tap opens the run screen and starts the routine through the same permission path as the Start button.
+
+What the widgets show comes from the same sources as the app: Room for routines and the agenda, and the run checkpoint in DataStore. The widgets hold no copy of their own. Their rules are in `domain/widget/`, which is pure Kotlin and tested on the JVM.
+
+Updates and process death:
+- While the app process is alive, widgets update when data changes, when a run changes step or status, once a minute while a routine is running, and every fifteen minutes for today's list.
+- If the process is gone, a periodic WorkManager job refreshes every thirty minutes at most. Android may delay it.
+- A run that was running when its process stopped shows "needs attention" rather than a countdown that is no longer true. Opening the app settles it.
+- A run whose routine was deleted shows that it was deleted. The app ends such a run the next time it starts.
+- A widget button for pause, skip, or finish goes through the app's coordinator, which restores a stored run first.
+
+Security:
+- The three widget providers are `exported="false"`. The system's AppWidget service sends their update broadcasts, and widget taps go through Glance's own non-exported receiver.
+- A widget action carries only a command word (`pause`, `skip`, or `finish`). It never names a routine, so a widget cannot act on anything but the current run.
+- Widget intents to the activity are explicit, and the routine id is parsed as a UUID. Anything malformed is ignored.
+- Glance creates the PendingIntents for button taps. I have not checked the flags it uses in this environment. Check them on the first device build.
+
+Supported Android versions:
+- The app's minimum is Android 8.0 (API 26). Glance 1.2.0 supports API 23 and up.
+- On Android 12 and later, responsive sizing uses the launcher's native multi-size support. On Android 8 to 11, Glance renders each declared size on its own.
+
+Limits:
+- **Countdowns are to the minute.** Launchers cannot tick a widget every second. The figure is current when it is drawn, then refreshed each minute while the app process is alive.
+- **Quick start does not start a timer in the background.** Android restricts background starts, so the tap opens the app.
+- **Launchers vary.** Some ignore resizing or fix widget sizes. Some do not show a preview in the picker. This app does not provide preview images.
+- **Colours are fixed.** Widgets do not follow Material You in this version.
+- **Not verified here.** No widget was rendered on a launcher. The Glance layouts, the receivers, and the PendingIntents have not been compiled or run in this environment. The state logic is covered by JVM tests only.
+
 ## Requirements
 
 - JDK 17

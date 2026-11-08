@@ -25,18 +25,22 @@ internal const val HOME_ROUTE = "home"
 private const val EDITOR_ROUTE = "editor"
 private const val RUN_ROUTE = "run"
 private const val RESUME_ARG = "resume"
+private const val START_ARG = "start"
 private const val SCHEDULES_ROUTE = "schedules"
 private const val SCHEDULE_EDITOR_ROUTE = "schedule"
 private const val STATS_ROUTE = "stats"
 
-/** A request from a notification tap. [resume] is true when the user pressed Resume on a paused run. */
-data class RunRequest(val routineId: UUID, val resume: Boolean)
+/**
+ * A request from a notification or widget tap. [resume] is true for Resume on a paused run. [start] begins the routine
+ * once its screen has loaded, through the same path as the Start button.
+ */
+data class RunRequest(val routineId: UUID, val resume: Boolean, val start: Boolean = false)
 
 internal fun editorRoute(routineId: UUID?): String =
     if (routineId == null) EDITOR_ROUTE else "$EDITOR_ROUTE?$ROUTINE_ID_ARG=$routineId"
 
-internal fun runRoute(routineId: UUID, resume: Boolean = false): String =
-    "$RUN_ROUTE/$routineId?$RESUME_ARG=$resume"
+internal fun runRoute(routineId: UUID, resume: Boolean = false, start: Boolean = false): String =
+    "$RUN_ROUTE/$routineId?$RESUME_ARG=$resume&$START_ARG=$start"
 
 internal fun scheduleEditorRoute(scheduleId: UUID?): String =
     if (scheduleId == null) SCHEDULE_EDITOR_ROUTE else "$SCHEDULE_EDITOR_ROUTE?$SCHEDULE_ID_ARG=$scheduleId"
@@ -80,10 +84,14 @@ fun RoutinePilotNavHost(
             RoutineEditorRoute(onClose = { navController.popBackStack() })
         }
         composable(
-            route = "$RUN_ROUTE/{$ROUTINE_ID_ARG}?$RESUME_ARG={$RESUME_ARG}",
+            route = "$RUN_ROUTE/{$ROUTINE_ID_ARG}?$RESUME_ARG={$RESUME_ARG}&$START_ARG={$START_ARG}",
             arguments = listOf(
                 navArgument(ROUTINE_ID_ARG) { type = NavType.StringType },
                 navArgument(RESUME_ARG) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument(START_ARG) {
                     type = NavType.BoolType
                     defaultValue = false
                 },
@@ -92,6 +100,7 @@ fun RoutinePilotNavHost(
             RoutineRunRoute(
                 onClose = { navController.popBackStack() },
                 autoResume = entry.arguments?.getBoolean(RESUME_ARG) ?: false,
+                autoStart = entry.arguments?.getBoolean(START_ARG) ?: false,
             )
         }
         composable(SCHEDULES_ROUTE) {
@@ -118,7 +127,7 @@ fun RoutinePilotNavHost(
     // Declared after NavHost so the graph is set before the first navigation.
     LaunchedEffect(runRequest) {
         val request = runRequest ?: return@LaunchedEffect
-        navController.navigate(runRoute(request.routineId, request.resume)) { launchSingleTop = true }
+        navController.navigate(runRoute(request.routineId, request.resume, request.start)) { launchSingleTop = true }
         onRunRequestHandled()
     }
 }

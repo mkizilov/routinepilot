@@ -75,6 +75,13 @@ class DataStoreActiveExecutionStoreTest {
         assertNull(store.observe().first())
     }
 
+    @Test
+    fun save_keepsTheCheckpointTimeThatWidgetsUse() = runBlocking {
+        store.save(sampleRun().copy(savedAtEpochMillis = 1_234_567L))
+
+        assertEquals(1_234_567L, store.observe().first()?.savedAtEpochMillis)
+    }
+
     private fun sampleRun() = ActiveExecution(
         sessionId = UUID.fromString("11111111-2222-4333-8444-555555555555"),
         routineId = UUID.fromString("66666666-7777-4888-8999-aaaaaaaaaaaa"),

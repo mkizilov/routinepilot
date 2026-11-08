@@ -61,6 +61,7 @@ internal const val TAG_RUN_START = "run_start"
 fun RoutineRunRoute(
     onClose: () -> Unit,
     autoResume: Boolean = false,
+    autoStart: Boolean = false,
     viewModel: RoutineRunViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -100,6 +101,14 @@ fun RoutineRunRoute(
                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
+        }
+    }
+    var startHandled by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(autoStart, state.isLoading, state.timer.status) {
+        // A widget's Start opens the run and begins it once, through the same permission path as the Start button.
+        if (autoStart && !startHandled && !state.isLoading && state.timer.status == ExecutionStatus.NOT_STARTED) {
+            startHandled = true
+            actions.start()
         }
     }
     RoutineRunScreen(

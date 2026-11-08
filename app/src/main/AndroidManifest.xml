@@ -37,6 +37,44 @@
             android:name=".infrastructure.notifications.RunActionReceiver"
             android:exported="false" />
 
+        <!--
+            Widget providers. exported="false" is enough: the system's AppWidget service sends the update broadcast, and
+            widget button taps go through Glance's own non-exported receiver.
+        -->
+        <receiver
+            android:name=".infrastructure.widget.TodayWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_today_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".infrastructure.widget.RunWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_run_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/run_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".infrastructure.widget.QuickStartWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_quick_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_start_widget_info" />
+        </receiver>
+
         <receiver
             android:name=".infrastructure.notifications.RunBootReceiver"
             android:exported="true">

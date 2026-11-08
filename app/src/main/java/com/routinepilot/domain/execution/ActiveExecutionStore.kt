@@ -17,6 +17,10 @@ data class ActiveExecution(
     val elapsedMillis: Long,
     val status: ExecutionStatus,
     val focusedMillis: Long = 0L,
+    /**
+     * Wall-clock time of the checkpoint. Zero for runs saved before this field existed. Used only for widget display.
+     */
+    val savedAtEpochMillis: Long = 0L,
 )
 
 interface ActiveExecutionStore {
