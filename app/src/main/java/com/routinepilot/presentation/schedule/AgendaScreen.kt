@@ -42,6 +42,7 @@ private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm"
 fun AgendaRoute(
     onNewSchedule: () -> Unit,
     onOpenSchedules: () -> Unit,
+    onOpenProgress: () -> Unit,
     viewModel: AgendaViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -50,6 +51,7 @@ fun AgendaRoute(
         actions = viewModel,
         onNewSchedule = onNewSchedule,
         onOpenSchedules = onOpenSchedules,
+        onOpenProgress = onOpenProgress,
     )
 }
 
@@ -60,12 +62,14 @@ fun AgendaScreen(
     actions: AgendaActions,
     onNewSchedule: () -> Unit,
     onOpenSchedules: () -> Unit,
+    onOpenProgress: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.agenda_title)) },
                 actions = {
+                    TextButton(onClick = onOpenProgress) { Text(stringResource(R.string.agenda_progress)) }
                     TextButton(onClick = onOpenSchedules) { Text(stringResource(R.string.agenda_manage_schedules)) }
                 },
             )

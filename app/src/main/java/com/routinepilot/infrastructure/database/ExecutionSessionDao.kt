@@ -15,6 +15,9 @@ interface ExecutionSessionDao {
     )
     fun observeActiveForRoutine(routineId: UUID): Flow<List<ExecutionSessionEntity>>
 
+    @Query("SELECT * FROM execution_sessions WHERE id = :id")
+    suspend fun findById(id: UUID): ExecutionSessionEntity?
+
     @Upsert
     suspend fun upsert(session: ExecutionSessionEntity)
 

@@ -141,8 +141,17 @@ internal fun ScheduledOccurrence.toEntity(modifiedAt: Instant) =
         deletedAt = deletedAt,
     )
 
-internal fun ExecutionSessionEntity.toDomain() =
-    ExecutionSession(id, routineId, occurrenceId, startedAt, endedAt, createdAt)
+internal fun ExecutionSessionEntity.toDomain() = ExecutionSession(
+    id = id,
+    routineId = routineId,
+    occurrenceId = occurrenceId,
+    startedAt = startedAt,
+    endedAt = endedAt,
+    createdAt = createdAt,
+    outcome = outcome,
+    focusedMillis = focusedMillis,
+    localDate = localDate,
+)
 
 internal fun ExecutionSession.toEntity(modifiedAt: Instant) =
     ExecutionSessionEntity(
@@ -153,9 +162,13 @@ internal fun ExecutionSession.toEntity(modifiedAt: Instant) =
         endedAt = endedAt,
         createdAt = createdAt,
         modifiedAt = modifiedAt,
+        outcome = outcome,
+        focusedMillis = focusedMillis,
+        localDate = localDate,
     )
 
-internal fun StepCompletionEventEntity.toDomain() = StepCompletionEvent(id, sessionId, stepId, completedAt, createdAt)
+internal fun StepCompletionEventEntity.toDomain() =
+    StepCompletionEvent(id, sessionId, stepId, completedAt, createdAt, localDate)
 
 internal fun StepCompletionEvent.toEntity(modifiedAt: Instant) =
     StepCompletionEventEntity(
@@ -165,6 +178,7 @@ internal fun StepCompletionEvent.toEntity(modifiedAt: Instant) =
         completedAt = completedAt,
         createdAt = createdAt,
         modifiedAt = modifiedAt,
+        localDate = localDate,
     )
 
 private const val MINUTES_PER_HOUR = 60

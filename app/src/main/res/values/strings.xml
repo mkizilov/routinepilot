@@ -111,6 +111,36 @@
     <string name="schedule_describe_daily">Every day at %1$s</string>
     <string name="schedule_describe_weekdays">%1$s at %2$s</string>
     <string name="schedule_describe_interval">Every %1$d days at %2$s</string>
+
+    <string name="agenda_progress">Progress</string>
+    <string name="stats_title">Progress</string>
+    <string name="stats_loading">Loading your progress…</string>
+    <string name="stats_today">Today</string>
+    <string name="stats_nothing_due">Nothing due</string>
+    <string name="stats_percent">%1$d%%</string>
+    <string name="stats_sessions_count">%1$d finished</string>
+    <string name="stats_steps_count">%1$d steps</string>
+    <string name="stats_focus_time">%1$s focused</string>
+    <string name="stats_status_kept">Day kept</string>
+    <string name="stats_status_excused">Excused by skips</string>
+    <string name="stats_status_missed">Missed items</string>
+    <string name="stats_status_in_progress">In progress</string>
+    <string name="stats_streak_title">Streak</string>
+    <string name="stats_days">%1$d days</string>
+    <string name="stats_streak_current">Current</string>
+    <string name="stats_streak_longest">Longest</string>
+    <string name="stats_streak_explain">A day counts when you finish a routine or complete a scheduled item. Skipped days don’t add to or break the streak. Missing a scheduled item breaks it. Cancelled sessions don’t count.</string>
+    <string name="stats_last_7_days">Last 7 days</string>
+    <string name="stats_weekly">Weeks (Monday to Sunday)</string>
+    <string name="stats_monthly">Months</string>
+    <string name="stats_calendar">Last five weeks</string>
+    <string name="stats_legend_kept">Kept</string>
+    <string name="stats_legend_excused">Skipped</string>
+    <string name="stats_legend_missed">Missed</string>
+    <string name="stats_legend_pending">Today</string>
+    <string name="stats_consistency">Routine consistency, last 30 days</string>
+    <string name="stats_consistency_empty">No scheduled routines yet.</string>
+    <string name="stats_definitions">Completion is completed items divided by items that were completed or missed. Skipped and not-yet-due items are left out. Focused time excludes pauses. Cancelled sessions keep their focused time but are never counted as finished.</string>
     <string name="run_notifications_off">Notifications are off. The timer still runs, but you won’t get step alerts.</string>
     <string name="run_keep_open">Background timing is unavailable right now. Keep the app open to keep timing.</string>
 

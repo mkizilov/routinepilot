@@ -3,8 +3,10 @@ package com.routinepilot.data.execution
 import com.routinepilot.domain.execution.ActiveExecution
 import com.routinepilot.domain.execution.ExecutionStatus
 import com.routinepilot.domain.execution.RunEvent
+import com.routinepilot.domain.model.ExecutionSession
 import com.routinepilot.domain.model.Routine
 import com.routinepilot.domain.model.RoutineStep
+import com.routinepilot.domain.model.SessionOutcome
 import com.routinepilot.testing.FakeActiveExecutionStore
 import com.routinepilot.testing.FakeExecutionRepository
 import com.routinepilot.testing.FakeMonotonicClock
@@ -178,6 +180,7 @@ class RoutineRunCoordinatorTest {
     @Test
     fun notificationCommand_afterProcessDeath_adoptsTheStoredRunBeforeActing() = runTest(dispatcher) {
         val session = UUID.randomUUID()
+        executions.saveSession(sessionRow(session, routine.id))
         store.save(
             ActiveExecution(
                 sessionId = session,
@@ -355,6 +358,7 @@ class RoutineRunCoordinatorTest {
     @Test
     fun storedRunWhosePlanNoLongerMatches_isEndedRatherThanGuessedAt() = runTest(dispatcher) {
         val session = UUID.randomUUID()
+        executions.saveSession(sessionRow(session, routine.id))
         store.save(storedRun(session, routine.id, listOf(stretch.id, UUID.randomUUID()), ExecutionStatus.PAUSED))
         val coordinator = newCoordinator(backgroundScope)
 
@@ -414,6 +418,48 @@ class RoutineRunCoordinatorTest {
             runCurrent()
         }
     }
+
+    @Test
+    fun finish_recordsOutcomeFinished_andFocusedTimeExcludingPauses() = runTest(dispatcher) {
+        val coordinator = newCoordinator(backgroundScope)
+        coordinator.open(routine.id)
+        coordinator.start()
+        advance(10_000)
+        coordinator.pause()
+        advance(30_000)
+        coordinator.resume()
+        advance(5_000)
+
+        coordinator.finish()
+
+        val session = executions.sessions.value.single()
+        assertEquals(SessionOutcome.FINISHED, session.outcome)
+        assertEquals(15_000L, session.focusedMillis)
+    }
+
+    @Test
+    fun cancel_recordsOutcomeCancelled_andKeepsTheFocusedTimeAccrued() = runTest(dispatcher) {
+        val coordinator = newCoordinator(backgroundScope)
+        coordinator.open(routine.id)
+        coordinator.start()
+        advance(8_000)
+
+        coordinator.cancel()
+
+        val session = executions.sessions.value.single()
+        assertEquals(SessionOutcome.CANCELLED, session.outcome)
+        assertEquals(8_000L, session.focusedMillis)
+    }
+
+    /** A run's session row exists from the moment it starts, so restored runs have one too. */
+    private fun sessionRow(id: UUID, routineId: UUID) = ExecutionSession(
+        id = id,
+        routineId = routineId,
+        occurrenceId = null,
+        startedAt = wallNow.minusSeconds(60),
+        endedAt = null,
+        createdAt = wallNow.minusSeconds(60),
+    )
 
     private fun storedRun(
         session: UUID = UUID.randomUUID(),

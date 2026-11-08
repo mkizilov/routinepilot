@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 @Entity(
@@ -26,6 +27,7 @@ import java.util.UUID
     indices = [
         Index(value = ["sessionId"], name = "index_step_completion_events_sessionId"),
         Index(value = ["stepId"], name = "index_step_completion_events_stepId"),
+        Index(value = ["localDate"], name = "index_step_completion_events_localDate"),
     ],
 )
 data class StepCompletionEventEntity(
@@ -36,4 +38,5 @@ data class StepCompletionEventEntity(
     val createdAt: Instant,
     val modifiedAt: Instant,
     val deletedAt: Instant? = null,
+    val localDate: LocalDate? = null,
 )

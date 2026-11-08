@@ -17,6 +17,7 @@ import com.routinepilot.presentation.schedule.AgendaRoute
 import com.routinepilot.presentation.schedule.SCHEDULE_ID_ARG
 import com.routinepilot.presentation.schedule.ScheduleEditorRoute
 import com.routinepilot.presentation.schedule.ScheduleListRoute
+import com.routinepilot.presentation.stats.StatsRoute
 import java.util.UUID
 
 internal const val AGENDA_ROUTE = "agenda"
@@ -26,6 +27,7 @@ private const val RUN_ROUTE = "run"
 private const val RESUME_ARG = "resume"
 private const val SCHEDULES_ROUTE = "schedules"
 private const val SCHEDULE_EDITOR_ROUTE = "schedule"
+private const val STATS_ROUTE = "stats"
 
 /** A request from a notification tap. [resume] is true when the user pressed Resume on a paused run. */
 data class RunRequest(val routineId: UUID, val resume: Boolean)
@@ -50,7 +52,11 @@ fun RoutinePilotNavHost(
             AgendaRoute(
                 onNewSchedule = { navController.navigate(scheduleEditorRoute(null)) },
                 onOpenSchedules = { navController.navigate(SCHEDULES_ROUTE) },
+                onOpenProgress = { navController.navigate(STATS_ROUTE) },
             )
+        }
+        composable(STATS_ROUTE) {
+            StatsRoute(onBack = { navController.popBackStack() })
         }
         composable(HOME_ROUTE) {
             HomeRoute(

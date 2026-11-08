@@ -12,6 +12,7 @@ import com.routinepilot.domain.execution.RunSnapshot
 import com.routinepilot.domain.execution.TimedStep
 import com.routinepilot.domain.execution.TimerEvent
 import com.routinepilot.domain.model.ExecutionSession
+import com.routinepilot.domain.model.SessionOutcome
 import com.routinepilot.domain.model.StepCompletionEvent
 import com.routinepilot.domain.repository.ExecutionRepository
 import com.routinepilot.domain.repository.RoutineRepository
@@ -34,6 +35,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -49,6 +51,9 @@ private const val EVENT_BUFFER = 16
  * measured with the monotonic clock, and every change is checkpointed so a killed process can resume from the
  * last checkpoint. Only the foreground service, which the platform allows while a run is RUNNING, keeps the
  * process alive for background timing.
+ *
+ * A run ends as FINISHED (Finish, or the last step expiring) or CANCELLED (Cancel, or a saved plan that no longer
+ * matches the routine). Either way its focused time is recorded.
  */
 @Singleton
 class RoutineRunCoordinator @Inject constructor(
@@ -101,7 +106,7 @@ class RoutineRunCoordinator @Inject constructor(
         )
         activeRun = run
         handle(timer.start())
-        executionRepository.saveSession(
+        executionRepository.startSession(
             ExecutionSession(
                 id = run.sessionId,
                 routineId = routineId,
@@ -109,6 +114,7 @@ class RoutineRunCoordinator @Inject constructor(
                 startedAt = startedAt,
                 endedAt = null,
                 createdAt = startedAt,
+                localDate = LocalDate.ofInstant(startedAt, wallClock.zone),
             ),
         )
         persist()
@@ -183,7 +189,7 @@ class RoutineRunCoordinator @Inject constructor(
         val stored = activeExecutionStore.observe().first() ?: return
         val routine = routineRepository.observeRoutine(stored.routineId).first()
         if (routine == null) {
-            endRun(stored, monotonicClock.elapsedMillis())
+            endRun(stored, monotonicClock.elapsedMillis(), SessionOutcome.CANCELLED, stored.focusedMillis)
             return
         }
         meta.update { RunSnapshot(routineId = stored.routineId, routineTitle = routine.title, isLoading = false) }
@@ -201,12 +207,17 @@ class RoutineRunCoordinator @Inject constructor(
             stored.stepIndex in stored.stepIds.indices &&
             stored.stepIds.all { it in byId }
         if (!intact) {
-            endRun(stored, monotonicClock.elapsedMillis())
+            endRun(stored, monotonicClock.elapsedMillis(), SessionOutcome.CANCELLED, stored.focusedMillis)
             timer.load(plan)
             return
         }
         val before = timer.state.value.status
-        timer.restore(stored.stepIds.map { byId.getValue(it) }, stored.stepIndex, stored.elapsedMillis)
+        timer.restore(
+            plan = stored.stepIds.map { byId.getValue(it) },
+            stepIndex = stored.stepIndex,
+            elapsedMillis = stored.elapsedMillis,
+            focusedMillis = stored.focusedMillis,
+        )
         activeRun = stored
         persist()
         onStatusChanged(before)
@@ -224,13 +235,15 @@ class RoutineRunCoordinator @Inject constructor(
         for (event in events) {
             when (event) {
                 is TimerEvent.StepCompleted -> {
+                    val completedAt = wallTime(event.atMillis)
                     executionRepository.recordStepCompletion(
                         StepCompletionEvent(
                             id = UUID.randomUUID(),
                             sessionId = run.sessionId,
                             stepId = event.stepId,
-                            completedAt = wallTime(event.atMillis),
+                            completedAt = completedAt,
                             createdAt = Instant.now(wallClock),
+                            localDate = LocalDate.ofInstant(completedAt, wallClock.zone),
                         ),
                     )
                     val index = steps.indexOfFirst { it.id == event.stepId }
@@ -243,36 +256,27 @@ class RoutineRunCoordinator @Inject constructor(
                 }
                 is TimerEvent.StepSkipped -> Unit
                 is TimerEvent.Finished -> {
-                    endRun(run, event.atMillis)
+                    endRun(run, event.atMillis, SessionOutcome.FINISHED, timer.snapshot().focusedMillis)
                     eventFlow.emit(RunEvent.RoutineFinished(run.routineId, routineTitle))
                 }
                 is TimerEvent.Cancelled -> {
-                    endRun(run, event.atMillis)
+                    endRun(run, event.atMillis, SessionOutcome.CANCELLED, timer.snapshot().focusedMillis)
                     meta.update { it.copy(isClosed = true) }
                 }
             }
         }
     }
 
-    private suspend fun endRun(run: ActiveExecution, atMillis: Long) {
-        executionRepository.saveSession(
-            ExecutionSession(
-                id = run.sessionId,
-                routineId = run.routineId,
-                occurrenceId = null,
-                startedAt = run.startedAt,
-                endedAt = wallTime(atMillis),
-                createdAt = run.startedAt,
-            ),
-        )
+    private suspend fun endRun(run: ActiveExecution, atMillis: Long, outcome: SessionOutcome, focusedMillis: Long) {
+        executionRepository.endSession(run.sessionId, outcome, wallTime(atMillis), focusedMillis)
         activeExecutionStore.clear()
         reminders.cancel()
         activeRun = null
     }
 
     /**
-     * Reminders follow the pause state; ending a run cancels its reminder in [endRun]. Entering RUNNING also asks the
-     * platform to keep the run alive.
+     * Reminders follow the pause state; ending a run cancels its reminder in [endRun]. Entering RUNNING also asks
+     * the platform to keep the run alive.
      */
     private fun onStatusChanged(before: ExecutionStatus) {
         val after = timer.state.value.status
@@ -313,6 +317,7 @@ class RoutineRunCoordinator @Inject constructor(
                     stepIndex = snapshot.stepIndex,
                     elapsedMillis = snapshot.elapsedMillis,
                     status = snapshot.status,
+                    focusedMillis = snapshot.focusedMillis,
                 ),
             )
         }

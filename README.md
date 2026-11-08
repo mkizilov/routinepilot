@@ -71,6 +71,25 @@ Known limits:
 - Occurrences migrated from schema version 3 get their local date computed in UTC, not the device zone. Their scheduled time is unchanged.
 - The schema 3 to 4 migration is exercised only by the full-chain open in `MigrationTest`. A dedicated `MigrationTestHelper` test needs the exported schema JSON from a first build, and is not yet written.
 
+## Progress and statistics
+
+The Progress screen (opened from the agenda) shows today's completion, the last 7 days, weekly and monthly trends, a five-week calendar, routine consistency, and the current and longest streak. Every number comes from one set of definitions in `domain/statistics/StatisticsCalculator.kt`.
+
+- **Completion %** for a day: completed scheduled items divided by completed plus missed. Skipped items and items not yet due are left out. Blank when nothing was due.
+- **Completed routine session:** a session that ended with Finish. Cancelled sessions are counted separately and never as completed.
+- **Completed steps:** step completions that day, whatever happened to their session.
+- **Focused time:** running time, excluding pauses, of sessions that ended that day, including cancelled ones (their focus was real).
+- **Streak day:** a day counts when a routine finished or a scheduled item was completed. A day with only skipped items is excused: it neither adds to nor breaks the streak. A day with a missed item and nothing done breaks it. A cancelled session alone does not count. Today stays in progress until something is missed.
+- **Consistency:** per routine over the last 30 days, completed divided by completed plus missed.
+- **Linking:** starting a run links the oldest pending item of that routine due within the next hour. Finishing completes that item. Cancelling leaves it pending.
+- **Updates:** statistics come from Room flows, so finishing a run or completing an item updates the screen with no refresh. A one-minute tick rolls the day over.
+
+Limits:
+- Sessions recorded before schema version 5 are marked UNRECORDED. They are not counted as finished or cancelled, and their focused time is unknown. Their dates are computed in UTC.
+- Runs that are left open and never finished or cancelled are never counted, and their focus is not recorded.
+- Streaks and trends look back at most 365 days, so a longer streak is shown as 365 days.
+- The 4 to 5 migration is covered only by the full-chain open in `MigrationTest`, like the 3 to 4 migration.
+
 ## Requirements
 
 - JDK 17

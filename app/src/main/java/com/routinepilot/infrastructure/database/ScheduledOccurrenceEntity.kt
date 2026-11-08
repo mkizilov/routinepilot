@@ -45,6 +45,7 @@ import java.util.UUID
         Index(value = ["routineId"], name = "index_scheduled_occurrences_routineId"),
         Index(value = ["taskId"], name = "index_scheduled_occurrences_taskId"),
         Index(value = ["scheduledAt"], name = "index_scheduled_occurrences_scheduledAt"),
+        Index(value = ["localDate"], name = "index_scheduled_occurrences_localDate"),
     ],
 )
 data class ScheduledOccurrenceEntity(

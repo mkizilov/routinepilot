@@ -4,7 +4,9 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.routinepilot.domain.model.SessionOutcome
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 @Entity(
@@ -26,6 +28,7 @@ import java.util.UUID
     indices = [
         Index(value = ["routineId"], name = "index_execution_sessions_routineId"),
         Index(value = ["occurrenceId"], name = "index_execution_sessions_occurrenceId"),
+        Index(value = ["localDate"], name = "index_execution_sessions_localDate"),
     ],
 )
 data class ExecutionSessionEntity(
@@ -37,4 +40,7 @@ data class ExecutionSessionEntity(
     val createdAt: Instant,
     val modifiedAt: Instant,
     val deletedAt: Instant? = null,
+    val outcome: SessionOutcome? = null,
+    val focusedMillis: Long? = null,
+    val localDate: LocalDate? = null,
 )

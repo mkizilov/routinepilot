@@ -26,6 +26,13 @@ interface ScheduledOccurrenceDao {
     @Query("SELECT * FROM scheduled_occurrences WHERE id = :id")
     suspend fun findById(id: UUID): ScheduledOccurrenceEntity?
 
+    /** The oldest pending item of a routine that is due at or before [dueBy]. Used to link a new session. */
+    @Query(
+        "SELECT * FROM scheduled_occurrences WHERE routineId = :routineId AND deletedAt IS NULL " +
+            "AND status IN ('PLANNED', 'RESCHEDULED') AND scheduledAt <= :dueBy ORDER BY scheduledAt, id LIMIT 1",
+    )
+    suspend fun earliestPendingDue(routineId: UUID, dueBy: Instant): ScheduledOccurrenceEntity?
+
     /** Every row for a schedule, including deleted ones, because deleted slots must not be regenerated. */
     @Query("SELECT * FROM scheduled_occurrences WHERE scheduleId = :scheduleId")
     suspend fun allForSchedule(scheduleId: UUID): List<ScheduledOccurrenceEntity>

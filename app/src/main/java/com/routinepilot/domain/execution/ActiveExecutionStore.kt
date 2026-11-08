@@ -16,6 +16,7 @@ data class ActiveExecution(
     val stepIndex: Int,
     val elapsedMillis: Long,
     val status: ExecutionStatus,
+    val focusedMillis: Long = 0L,
 )
 
 interface ActiveExecutionStore {

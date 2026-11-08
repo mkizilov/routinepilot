@@ -275,6 +275,103 @@ class RoutineTimerTest {
     }
 
     @Test
+    fun focus_excludesPausedTime() {
+        timer.load(listOf(stretch, water))
+        timer.start()
+        timer.elapse(10_000)
+        timer.pause()
+        timer.elapse(30_000)
+
+        assertEquals(10_000L, timer.snapshot().focusedMillis)
+
+        timer.resume()
+        timer.elapse(5_000)
+
+        assertEquals(15_000L, timer.snapshot().focusedMillis)
+    }
+
+    @Test
+    fun focus_sumsRunningTimeAcrossAnAutomaticAdvance() {
+        timer.load(listOf(stretch, water))
+        timer.start()
+
+        timer.elapse(65_000)
+
+        assertEquals(65_000L, timer.snapshot().focusedMillis)
+    }
+
+    @Test
+    fun focus_keepsTheTimeAccruedOnASkippedStep() {
+        timer.load(listOf(stretch, water))
+        timer.start()
+        timer.elapse(5_000)
+        timer.skip()
+        timer.elapse(3_000)
+
+        assertEquals(8_000L, timer.snapshot().focusedMillis)
+    }
+
+    @Test
+    fun focus_countsTheTimeSpentOnAStepLeftWithPrevious() {
+        timer.load(listOf(stretch, water))
+        timer.start()
+        timer.elapse(10_000)
+        timer.skip()
+        timer.elapse(5_000)
+
+        timer.previous()
+        timer.elapse(2_000)
+
+        assertEquals(17_000L, timer.snapshot().focusedMillis)
+    }
+
+    @Test
+    fun focus_isFrozenWhenTheRoutineFinishes() {
+        timer.load(listOf(stretch, water))
+        timer.start()
+        timer.elapse(10_000)
+        timer.finish()
+
+        timer.elapse(100_000)
+
+        assertEquals(10_000L, timer.snapshot().focusedMillis)
+    }
+
+    @Test
+    fun focus_isFrozenWhenTheRoutineIsCancelled() {
+        timer.load(listOf(stretch, water))
+        timer.start()
+        timer.elapse(10_000)
+        timer.cancel()
+
+        timer.elapse(100_000)
+
+        assertEquals(10_000L, timer.snapshot().focusedMillis)
+    }
+
+    @Test
+    fun focus_continuesFromARestoredCheckpoint() {
+        timer.restore(listOf(stretch, water), 0, 12_000L, 40_000L)
+        assertEquals(40_000L, timer.snapshot().focusedMillis)
+
+        timer.resume()
+        timer.elapse(3_000)
+
+        assertEquals(43_000L, timer.snapshot().focusedMillis)
+    }
+
+    @Test
+    fun focus_countsUntimedStepsToo() {
+        val untimed = TimedStep(UUID.randomUUID(), "Rest", null)
+        timer.load(listOf(untimed, water))
+        timer.start()
+
+        timer.elapse(600_000)
+
+        assertEquals(600_000L, timer.snapshot().focusedMillis)
+    }
+
+    @Test
     fun restore_withAnInvalidIndex_isIgnored() {
         timer.restore(listOf(stretch), 3, 0L)
 
@@ -295,7 +392,7 @@ class RoutineTimerTest {
         timer.start()
         timer.elapse(4_000)
 
-        assertEquals(TimerSnapshot(ExecutionStatus.RUNNING, 0, 4_000L), timer.snapshot())
+        assertEquals(TimerSnapshot(ExecutionStatus.RUNNING, 0, 4_000L, 4_000L), timer.snapshot())
     }
 
     private fun RoutineTimer.elapse(millis: Long): List<TimerEvent> {

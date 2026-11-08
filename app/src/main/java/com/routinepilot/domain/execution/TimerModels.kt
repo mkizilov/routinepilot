@@ -34,7 +34,12 @@ sealed interface TimerEvent {
     data class Cancelled(override val atMillis: Long) : TimerEvent
 }
 
-data class TimerSnapshot(val status: ExecutionStatus, val stepIndex: Int, val elapsedMillis: Long)
+data class TimerSnapshot(
+    val status: ExecutionStatus,
+    val stepIndex: Int,
+    val elapsedMillis: Long,
+    val focusedMillis: Long = 0L,
+)
 
 data class TimerState(
     val status: ExecutionStatus = ExecutionStatus.NOT_STARTED,

@@ -5,12 +5,14 @@ import com.routinepilot.data.repository.ExecutionRepositoryImpl
 import com.routinepilot.data.repository.PreferenceRepositoryImpl
 import com.routinepilot.data.repository.RoutineRepositoryImpl
 import com.routinepilot.data.repository.ScheduleRepositoryImpl
+import com.routinepilot.data.repository.StatsRepositoryImpl
 import com.routinepilot.data.repository.TaskRepositoryImpl
 import com.routinepilot.domain.execution.ActiveExecutionStore
 import com.routinepilot.domain.repository.ExecutionRepository
 import com.routinepilot.domain.repository.PreferenceRepository
 import com.routinepilot.domain.repository.RoutineRepository
 import com.routinepilot.domain.repository.ScheduleRepository
+import com.routinepilot.domain.repository.StatsRepository
 import com.routinepilot.domain.repository.TaskRepository
 import dagger.Binds
 import dagger.Module
@@ -37,4 +39,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindActiveExecutionStore(impl: DataStoreActiveExecutionStore): ActiveExecutionStore
+
+    @Binds
+    abstract fun bindStatsRepository(impl: StatsRepositoryImpl): StatsRepository
 }

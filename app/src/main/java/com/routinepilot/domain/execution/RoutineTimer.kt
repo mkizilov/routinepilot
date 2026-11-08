@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * Elapsed time is measured against [clock] (monotonic) and never by counting ticks. Time left over after a step
  * expires carries into the next step, so a late tick still lands on the correct step.
  *
+ * Focused time is running time summed across the whole run. The running time of a step is closed out when the step
+ * is left, so the total survives moves and freezes when the routine ends or is cancelled. Pauses are not counted.
+ *
  * Commands that do not apply to the current status are ignored and return no events.
  */
 class RoutineTimer(private val clock: MonotonicClock) {
@@ -19,6 +22,7 @@ class RoutineTimer(private val clock: MonotonicClock) {
     private var index = 0
     private var accumulatedMillis = 0L
     private var runningSinceMillis: Long? = null
+    private var closedFocusMillis = 0L
 
     private val _state = MutableStateFlow(TimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
@@ -31,6 +35,7 @@ class RoutineTimer(private val clock: MonotonicClock) {
         index = 0
         accumulatedMillis = 0L
         runningSinceMillis = null
+        closedFocusMillis = 0L
         publish(clock.elapsedMillis())
     }
 
@@ -40,12 +45,16 @@ class RoutineTimer(private val clock: MonotonicClock) {
         publish(clock.elapsedMillis())
     }
 
-    /** Restores an interrupted run. It comes back paused so the user decides when time starts counting again. */
-    fun restore(plan: List<TimedStep>, stepIndex: Int, elapsedMillis: Long) {
+    /**
+     * Restores an interrupted run. It comes back paused so the user decides when time counts again. [focusedMillis] is
+     * the total running time at the checkpoint, of which [elapsedMillis] belongs to the current step.
+     */
+    fun restore(plan: List<TimedStep>, stepIndex: Int, elapsedMillis: Long, focusedMillis: Long = elapsedMillis) {
         if (status != ExecutionStatus.NOT_STARTED || stepIndex !in plan.indices) return
         steps = plan
         index = stepIndex
         accumulatedMillis = elapsedMillis.coerceAtLeast(0L)
+        closedFocusMillis = (focusedMillis - accumulatedMillis).coerceAtLeast(0L)
         status = ExecutionStatus.PAUSED
         publish(clock.elapsedMillis())
     }
@@ -84,9 +93,8 @@ class RoutineTimer(private val clock: MonotonicClock) {
     /** Moves back one step, or restarts the first step. The step reached always starts from zero. */
     fun previous(): List<TimerEvent> = mutate { now, _ ->
         if (status.isActive) {
+            closeSegment(now)
             if (index > 0) index--
-            accumulatedMillis = 0L
-            runningSinceMillis = if (status == ExecutionStatus.RUNNING) now else null
         }
     }
 
@@ -98,11 +106,13 @@ class RoutineTimer(private val clock: MonotonicClock) {
         }
     }
 
-    /** Ends the routine without recording the current step as completed. */
+    /** Ends the routine without recording the current step as completed. Focus accrued so far is kept. */
     fun cancel(): List<TimerEvent> = mutate { now, events ->
         if (status.isActive) {
-            status = ExecutionStatus.CANCELLED
+            closedFocusMillis += elapsedAt(now)
+            accumulatedMillis = 0L
             runningSinceMillis = null
+            status = ExecutionStatus.CANCELLED
             events += TimerEvent.Cancelled(now)
         }
     }
@@ -110,7 +120,10 @@ class RoutineTimer(private val clock: MonotonicClock) {
     /** Applies any expiry that has happened since the last command. Safe to call at any frequency. */
     fun tick(): List<TimerEvent> = mutate { _, _ -> }
 
-    fun snapshot(): TimerSnapshot = TimerSnapshot(status, index, elapsedAt(clock.elapsedMillis()))
+    fun snapshot(): TimerSnapshot {
+        val now = clock.elapsedMillis()
+        return TimerSnapshot(status, index, elapsedAt(now), focusedAt(now))
+    }
 
     private fun mutate(change: (now: Long, events: MutableList<TimerEvent>) -> Unit): List<TimerEvent> {
         val now = clock.elapsedMillis()
@@ -137,20 +150,29 @@ class RoutineTimer(private val clock: MonotonicClock) {
         if (index == steps.lastIndex) {
             complete(at, events)
         } else {
+            closeSegment(at)
             index++
-            accumulatedMillis = 0L
-            runningSinceMillis = if (status == ExecutionStatus.RUNNING) at else null
         }
     }
 
+    /** Adds the current step's running time to focus, and starts the next segment from zero at [at]. */
+    private fun closeSegment(at: Long) {
+        closedFocusMillis += elapsedAt(at)
+        accumulatedMillis = 0L
+        runningSinceMillis = if (status == ExecutionStatus.RUNNING) at else null
+    }
+
     private fun complete(at: Long, events: MutableList<TimerEvent>) {
-        status = ExecutionStatus.COMPLETED
+        closedFocusMillis += elapsedAt(at)
         accumulatedMillis = 0L
         runningSinceMillis = null
+        status = ExecutionStatus.COMPLETED
         events += TimerEvent.Finished(at)
     }
 
     private fun elapsedAt(now: Long): Long = accumulatedMillis + (runningSinceMillis?.let { now - it } ?: 0L)
+
+    private fun focusedAt(now: Long): Long = closedFocusMillis + elapsedAt(now)
 
     private fun publish(now: Long) {
         val current = steps.getOrNull(index)

@@ -15,7 +15,7 @@ import androidx.room.TypeConverters
         StepCompletionEventEntity::class,
         UserPreferenceEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -35,4 +35,6 @@ abstract class RoutinePilotDatabase : RoomDatabase() {
     abstract fun stepCompletionEventDao(): StepCompletionEventDao
 
     abstract fun userPreferenceDao(): UserPreferenceDao
+
+    abstract fun statsDao(): StatsDao
 }
