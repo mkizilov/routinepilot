@@ -5,6 +5,8 @@ COPY . .
 RUN gradle installDist --no-daemon -x test
 
 FROM eclipse-temurin:17-jre
+LABEL org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.title="RoutinePilot sync backend"
 RUN groupadd --system routinepilot && useradd --system --gid routinepilot --uid 10001 routinepilot
 WORKDIR /app
 COPY --from=build /src/build/install/routinepilot-backend /app

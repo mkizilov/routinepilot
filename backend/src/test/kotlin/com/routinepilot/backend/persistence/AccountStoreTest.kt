@@ -82,7 +82,8 @@ class AccountStoreTest {
         userId = userId,
         deviceId = deviceId,
         tokenHash = hashOf(label),
-        createdAt = NOW,
+        // A session cannot expire before it was created, so an already expired session was created earlier.
+        createdAt = if (expiresAt.isBefore(NOW)) expiresAt.minusSeconds(3_600) else NOW,
         expiresAt = expiresAt,
     )
 

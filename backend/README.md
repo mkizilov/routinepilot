@@ -1,5 +1,7 @@
 # RoutinePilot sync backend
 
+Licensed under the MIT License (see the repository's `LICENSE`). Its runtime dependencies keep their own licenses, listed in the repository's `THIRD_PARTY_NOTICES.md`.
+
 A Kotlin service built with Ktor 3.0.3, on PostgreSQL 16. It is separately deployable: it has its own Gradle build in this directory and shares nothing at build time with the Android app. The Android app does not use it yet. Android synchronization is a later step.
 
 ## Status

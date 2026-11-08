@@ -203,6 +203,10 @@ CI (`.github/workflows/android.yml`) starts with `scripts/static-checks.py`, the
 - `docs/testing.md` the test suites, what was run, and what was not
 - `docs/release-readiness.md` the final summary and what remains before release
 
+## License
+
+RoutinePilot is released under the MIT License. See [LICENSE](LICENSE). Third-party components keep their own licenses, which are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## Verification status
 
 Read this before relying on any feature.
