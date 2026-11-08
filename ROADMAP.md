@@ -245,7 +245,7 @@ Priorities: **P0** blocks trust in everything else. **P1** correctness, security
 
 ## 19. Stop test and dev processes reliably in the orchestration sandbox
 
-- **Priority:** P2, operations. **Status:** observed. In this pass, the sandbox denied signals to two owned processes after starting them, so they had to be left running and documented. The backend (PID 6057, port 21580) and PostgreSQL (PID 4929, port 21547) may still be running when this pass ends.
+- **Priority:** P2, operations. **Status:** observed. At the end of this pass the sandbox denied signals to two processes this pass started, so they were left running. They are still listening: the backend (PID 6057, `RP_PORT=21580`, bound to all interfaces, not loopback) and PostgreSQL 16.15 (PID 4929, `127.0.0.1:21547`, data directory `.agent-local/pgdata`, 47 MB, ignored by git). Stop them from a shell with the permission to signal them: `pg_ctl -D .agent-local/pgdata -m fast stop`, then `kill 6057`. Delete `.agent-local/pgdata` afterward, because it holds a throwaway test database.
 - **Scope:** Write a stop script that uses each server's own shutdown path (`pg_ctl stop`, and an admin endpoint or a `SIGTERM` handler for the backend), and check the port is free afterward. Record the process ids in a file under `.agent-local/run/` so a later cleanup can find them.
 - **Rationale:** Leftover listeners hold ports and data directories, and the next run can fail or see stale data.
 - **Dependencies:** Step 18, for a shutdown endpoint if one is added.
