@@ -1,6 +1,6 @@
 # Offline change tracking and conflict resolution
 
-Status: the device-side model, the Room outbox, and the merge rules are written. They have not been compiled or run in the environment that wrote them, because it has no JDK or Android SDK. The sync client is not connected to the backend (`backend/`). Those are the next steps.
+Status: the device-side model, the Room outbox, the merge rules, the sync engine, the backend client, sign-in, and the account screen are written. None of it has been compiled or run, because the environment that wrote it has no working JDK, Android SDK, or Gradle. The JVM tests are written but not executed. The app is connected to the backend's API as described in the sync client section below.
 
 ## What is tracked
 
@@ -42,9 +42,59 @@ The merge (`OfflineMerge`) replays a record's queue, in local order, on top of i
 
 ## Known gaps and limits
 
-- **Local app data is not yet reconciled from the merged view.** The merge produces the view the user should see (`MergeResult.fields`). Writing that view back into the Room tables is the sync integration step. `SimulatedDevice` does this for the tests only.
 - **Duplicate step positions** can result from concurrent reordering. The display sort must break ties by step id. That sort is not implemented in this change.
 - **Schedules** share the generic merge and the field mapping. The field names of the recurrence kinds are not checked against the backend's validator yet.
-- **No network.** The transport is a seam (`SyncTransport`). The tests use `FakeSyncServer`, which copies the backend's rules, not the backend itself.
+- **The tests use a fake network.** `FakeSyncRemote` wraps `FakeSyncServer`, which copies the backend's rules, not the backend itself. The real HTTP client is not exercised by any test here.
+- **Server address.** The client points at the emulator loopback, `http://10.0.2.2:8080`, which Android only allows with a debug network security config. Release builds must use HTTPS, and that address is not set up yet.
 - **Room schema.** The Room schema for version 7 is generated on the first build and must be reviewed and committed then.
 - **Not run.** No Kotlin compiler, JDK, Android SDK, or Gradle was available. The JVM tests in `domain/sync` are written, not executed.
+
+## Sync client
+
+Components, from the bottom up:
+
+- **Wire format** (`data/sync/SyncWire.kt`). Matches the backend's DTOs. Numbers and booleans are sent as JSON values. Every other field is sent as text. Entity types the app does not sync, such as the server's preference records, are skipped, and the cursor still moves past them.
+- **HTTP** (`data/sync/BackendClient.kt`). Uses the platform's `HttpURLConnection`, so no networking library is added. Server-busy and server-error answers become `RemoteBusyException`, which is retried. Other failures become `BackendException` with the server's error code.
+- **Remote** (`data/sync/BackendSyncRemote.kt`). Sync calls use a device session. A device session that has expired by its stored time is registered again, once. A device session the server rejects before its stored expiry means the device was revoked, so the user must sign in again rather than having the device quietly re-added.
+- **Engine** (`domain/sync/SyncEngine.kt`). One pass pulls the log, sends each queued record's changes in local order, and pulls again. A mutex serializes passes, so a background job and "Sync now" never interleave. A failure leaves the outbox and base in a state the next pass continues from. The engine applies merged views to the app's tables, so server changes appear in the app.
+- **Background** (`infrastructure/sync/`). A pass runs only with a network connection. A pass that could not reach the server is retried by WorkManager with exponential backoff starting at 30 seconds. A periodic pass runs every 6 hours for a signed-in account. A change to the queued count, while signed in, schedules a pass after a 1-second pause, so a burst of edits syncs once.
+- **Account** (`data/sync/AccountSessionManager.kt`). Sign-in, registration, and sign-out. See the table below.
+- **Tokens** (`data/sync/TokenVault.kt`). Tokens are encrypted with an AES-GCM key held in the Android Keystore. DataStore holds only the ciphertext. If the key is lost, the tokens cannot be read, and the user is asked to sign in again. Local data is not affected.
+
+### Account data isolation
+
+Each device's data belongs to one account, its owner. Signing in decides what happens to local data:
+
+| Device state | Sign in to | Result |
+| --- | --- | --- |
+| No owner yet, for example a fresh install | Any account | The device adopts the account. Records made before sign-in are queued and uploaded. |
+| Owned by the same account | That account | Nothing is erased. The cursor carries on. |
+| Owned by another account, with unsent changes | A different account | Refused. Nothing is erased, and the user is asked to sync the other account first. |
+| Owned by another account, everything sent | A different account | The local data is erased, then the new account adopts the device. |
+
+Signing out keeps local data, the owner, the cursor, and queued changes, so the app keeps working offline. It tries to remove the device from the account. If the server cannot be reached, the device session expires on its own, and the user is told so.
+
+A cursor belongs to one account's log. Changing the owner resets it to zero.
+
+### Sync states
+
+| State | Meaning |
+| --- | --- |
+| Not signed in | No account session. Nothing is sent. |
+| Syncing | A pass is running. |
+| Up to date | The last pass completed with nothing held or refused. |
+| Waiting for a connection | The server could not be reached. Changes are kept, and the next pass runs when the connection returns. |
+| Sign in again | The session expired or the device was revoked. Changes are kept. |
+| Needs attention | An edit or delete waits for a decision, or the server refused a change. Refused changes stay queued and are reported. |
+
+Two ways a queued change can stay stuck, both surfaced in the screen:
+
+- A held edit or delete waits until the user decides.
+- A refused change is never dropped, and it blocks later changes to the same record until it is fixed on the server. The app cannot repair it yet.
+
+### Known limits of the client
+
+- Execution history, scheduled occurrences, and calendar links are device-local. They are not synced, and on an account switch they are erased with the rest of the local data. Calendar events already exported stay in the calendar app, because the app cannot delete them after its own links are gone.
+- `createdAt` is not synced. A record that arrives from the server gets the local time it arrived, and keeps that time afterwards.
+- Changes to a record made in the calendar app are not read back.
+- The account screen offers sign-in, registration, sign-out, sync now, and the two conflict choices. Other settings are not included.

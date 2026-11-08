@@ -75,6 +75,11 @@ class RoomOutboxStore(private val dao: SyncOutboxDao) : OutboxStore {
         dao.deleteAllFor(key.type, key.id)
     }
 
+    override suspend fun keysWithPending(): List<ObjectKey> =
+        dao.pendingKeys().map { ObjectKey(it.objectType, it.objectId) }
+
+    override suspend fun pendingCount(): Int = dao.pendingTotal()
+
     private suspend fun toDomain(row: MutationOutboxEntity): Mutation {
         val fields = dao.fieldsOf(row.localSequence)
         return Mutation(

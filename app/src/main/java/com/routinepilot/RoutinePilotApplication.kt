@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.routinepilot.data.execution.RoutineRunCoordinator
+import com.routinepilot.data.sync.SyncObserver
 import com.routinepilot.infrastructure.calendar.CalendarSyncObserver
 import com.routinepilot.infrastructure.notifications.RunEventNotifier
 import com.routinepilot.infrastructure.notifications.RunNotificationPresenter
@@ -27,6 +28,8 @@ class RoutinePilotApplication : Application(), Configuration.Provider {
 
     @Inject lateinit var calendarSync: CalendarSyncObserver
 
+    @Inject lateinit var syncObserver: SyncObserver
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -39,5 +42,6 @@ class RoutinePilotApplication : Application(), Configuration.Provider {
         widgets.start()
         WidgetRefreshWorker.enqueue(this)
         calendarSync.start()
+        syncObserver.start()
     }
 }

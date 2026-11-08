@@ -1,5 +1,6 @@
 package com.routinepilot.domain.sync
 
+import com.routinepilot.testing.FakeSyncRemote
 import com.routinepilot.testing.FakeSyncServer
 import com.routinepilot.testing.SimulatedDevice
 import com.routinepilot.testing.routineFields
@@ -195,8 +196,8 @@ class OfflineSyncSimulationTest {
     fun aRetryAfterALostResponse_isAcknowledgedAsADuplicate_andAppliesOnce() {
         runBlocking {
             val server = seededServer()
-            val lossy = LostFirstResponse(server)
-            val a = SimulatedDevice("A", server, namespace = 2, transport = lossy).also { it.pull() }
+            val remote = FakeSyncRemote(server).also { it.dropNextResponse = true }
+            val a = SimulatedDevice("A", server, namespace = 2, remote = remote).also { it.pull() }
             a.save(key, routineFields(title = "Evening", description = "Old"))
 
             assertThrows(IOException::class.java) { runBlocking { a.sync(key) } }
@@ -213,8 +214,8 @@ class OfflineSyncSimulationTest {
     fun aRetryAfterALostResponse_stillWorks_whenAnotherDeviceChangedTheRecordInTheMeantime() {
         runBlocking {
             val server = seededServer()
-            val lossy = LostFirstResponse(server)
-            val a = SimulatedDevice("A", server, namespace = 2, transport = lossy).also { it.pull() }
+            val remote = FakeSyncRemote(server).also { it.dropNextResponse = true }
+            val a = SimulatedDevice("A", server, namespace = 2, remote = remote).also { it.pull() }
             val b = device("B", server, 3)
             a.save(key, routineFields(title = "Evening", description = "Old"))
             assertThrows(IOException::class.java) { runBlocking { a.sync(key) } }
@@ -326,18 +327,4 @@ class OfflineSyncSimulationTest {
 
     private fun positionOf(server: FakeSyncServer, key: ObjectKey): String? =
         server.head(key)?.fields?.get("position")
-
-    /** Applies the first submission but loses its response, as a dropped connection would. */
-    private class LostFirstResponse(private val server: FakeSyncServer) : SyncTransport {
-        private var dropped = false
-
-        override suspend fun submit(change: PlannedChange): SubmitResult {
-            val result = server.submit(change)
-            if (!dropped) {
-                dropped = true
-                throw IOException("response lost")
-            }
-            return result
-        }
-    }
 }

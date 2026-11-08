@@ -28,4 +28,9 @@ interface OutboxStore {
     suspend fun remove(mutationId: UUID)
 
     suspend fun removeAllFor(key: ObjectKey)
+
+    /** Records that have queued changes, so a sync pass knows what to send. */
+    suspend fun keysWithPending(): List<ObjectKey>
+
+    suspend fun pendingCount(): Int
 }

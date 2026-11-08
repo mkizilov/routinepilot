@@ -6,10 +6,23 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.routinepilot.domain.sync.SyncType
+import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+
+/** A record that has at least one queued change. */
+data class PendingKeyRow(val objectType: SyncType, val objectId: UUID)
 
 @Dao
 interface SyncOutboxDao {
+    @Query("SELECT DISTINCT objectType, objectId FROM mutation_outbox")
+    suspend fun pendingKeys(): List<PendingKeyRow>
+
+    @Query("SELECT COUNT(*) FROM mutation_outbox")
+    suspend fun pendingTotal(): Int
+
+    @Query("SELECT COUNT(*) FROM mutation_outbox")
+    fun observePendingCount(): Flow<Int>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMutation(mutation: MutationOutboxEntity): Long
 

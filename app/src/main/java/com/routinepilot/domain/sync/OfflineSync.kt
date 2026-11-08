@@ -46,25 +46,25 @@ class OfflineSync(
             when (val result = transport.submit(next)) {
                 is SubmitResult.Accepted -> settle(key, next.mutationId, result.version, next.kind, next.payload)
                 is SubmitResult.Conflict -> store.saveBase(key, result.head)
-                is SubmitResult.Rejected -> error("Server rejected change ${next.mutationId}: ${result.reason}")
+                is SubmitResult.Rejected -> throw RemoteRejectedException(next.mutationId, result.reason)
             }
         }
     }
 
     /**
-     * Applies a change from the server's log. If it is one of this device's own changes, it is settled. Any other
-     * change moves the base forward, but only in version order, so the device never skips a version it has not seen.
+     * Applies a change from the server's log and reports whether the base moved. If it is one of this device's own
+     * changes, it is settled. Any other change moves the base forward, but only in version order, so the device never
+     * skips a version it has not seen.
      */
-    suspend fun absorb(change: ServerChange) {
+    suspend fun absorb(change: ServerChange): Boolean {
         val kind = if (change.deleted) MutationKind.DELETE else MutationKind.UPSERT
         if (store.findPending(change.changeId) != null) {
-            settle(change.key, change.changeId, change.version, kind, change.fields)
-            return
+            return settle(change.key, change.changeId, change.version, kind, change.fields)
         }
         val base = store.base(change.key) ?: BaseState.NEVER_SEEN
-        if (change.version == base.version + 1) {
-            store.saveBase(change.key, BaseState(change.version, change.deleted, change.fields))
-        }
+        if (change.version != base.version + 1) return false
+        store.saveBase(change.key, BaseState(change.version, change.deleted, change.fields))
+        return true
     }
 
     /** Applies a user decision to a held change. A superseded field resolves on its own and takes no decision. */
@@ -109,10 +109,10 @@ class OfflineSync(
     }
 
     /**
-     * Removes an accepted change and moves the base to its state when it is the next version.
+     * Removes an accepted change and moves the base to its state when that is the next version.
      * A queued change that was
-     * made on the version just before this one moves to this version,
-     * so it does not report a conflict with its own change.
+     * made on the version just before this one moves to this version, so it does not report a conflict with its own
+     * change. Returns whether the base moved.
      */
     private suspend fun settle(
         key: ObjectKey,
@@ -120,15 +120,15 @@ class OfflineSync(
         version: Long,
         kind: MutationKind,
         payload: FieldMap?,
-    ) {
+    ): Boolean {
         store.remove(mutationId)
         val base = store.base(key) ?: BaseState.NEVER_SEEN
-        if (version == base.version + 1) {
-            store.saveBase(key, BaseState(version, kind == MutationKind.DELETE, payload.orEmpty()))
-        }
+        val advanced = version == base.version + 1
+        if (advanced) store.saveBase(key, BaseState(version, kind == MutationKind.DELETE, payload.orEmpty()))
         store.pending(key)
             .filter { it.seenVersion == version - 1 }
             .forEach { store.replace(it.copy(seenVersion = version)) }
+        return advanced
     }
 
     private companion object {

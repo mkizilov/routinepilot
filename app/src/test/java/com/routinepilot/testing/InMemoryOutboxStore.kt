@@ -44,4 +44,8 @@ class InMemoryOutboxStore : OutboxStore {
     override suspend fun removeAllFor(key: ObjectKey) {
         queue.removeAll { it.key == key }
     }
+
+    override suspend fun keysWithPending(): List<ObjectKey> = queue.map { it.key }.distinct()
+
+    override suspend fun pendingCount(): Int = queue.size
 }
