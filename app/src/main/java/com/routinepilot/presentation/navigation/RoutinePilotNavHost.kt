@@ -13,6 +13,7 @@ import com.routinepilot.presentation.calendar.CalendarSettingsRoute
 import com.routinepilot.presentation.home.HomeNavigation
 import com.routinepilot.presentation.home.HomeRoute
 import com.routinepilot.presentation.routine.editor.ROUTINE_ID_ARG
+import com.routinepilot.presentation.planning.PlanningRoute
 import com.routinepilot.presentation.routine.editor.RoutineEditorRoute
 import com.routinepilot.presentation.routine.run.RoutineRunRoute
 import com.routinepilot.presentation.schedule.AgendaRoute
@@ -33,6 +34,7 @@ private const val SCHEDULE_EDITOR_ROUTE = "schedule"
 private const val STATS_ROUTE = "stats"
 private const val CALENDAR_ROUTE = "calendar"
 private const val ACCOUNT_ROUTE = "account"
+private const val PLANNING_ROUTE = "planning"
 
 /**
  * A request from a notification or widget tap. [resume] is true for Resume on a paused run. [start] begins the routine
@@ -114,6 +116,7 @@ fun RoutinePilotNavHost(
                 onNew = { navController.navigate(scheduleEditorRoute(null)) },
                 onOpenCalendar = { navController.navigate(CALENDAR_ROUTE) },
                 onOpenAccount = { navController.navigate(ACCOUNT_ROUTE) },
+                onOpenPlanning = { navController.navigate(PLANNING_ROUTE) },
             )
         }
         composable(CALENDAR_ROUTE) {
@@ -121,6 +124,9 @@ fun RoutinePilotNavHost(
         }
         composable(ACCOUNT_ROUTE) {
             AccountRoute(onBack = { navController.popBackStack() })
+        }
+        composable(PLANNING_ROUTE) {
+            PlanningRoute(onBack = { navController.popBackStack() })
         }
         composable(
             route = "$SCHEDULE_EDITOR_ROUTE?$SCHEDULE_ID_ARG={$SCHEDULE_ID_ARG}",
