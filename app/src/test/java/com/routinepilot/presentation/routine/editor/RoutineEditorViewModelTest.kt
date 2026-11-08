@@ -5,8 +5,6 @@ import com.routinepilot.domain.model.Routine
 import com.routinepilot.domain.model.RoutineStep
 import com.routinepilot.domain.validation.RoutineValidationError
 import com.routinepilot.testing.FakeRoutineRepository
-import java.time.Instant
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -20,6 +18,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.Instant
+import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RoutineEditorViewModelTest {

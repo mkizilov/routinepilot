@@ -1,0 +1,28 @@
+package com.routinepilot.domain.execution
+
+import kotlinx.coroutines.flow.Flow
+import java.time.Instant
+import java.util.UUID
+
+/**
+ * The run in progress, saved so it survives process death. The timer is not kept alive in the background;
+ * a restored run comes back paused at the last saved elapsed time.
+ */
+data class ActiveExecution(
+    val sessionId: UUID,
+    val routineId: UUID,
+    val startedAt: Instant,
+    val stepIds: List<UUID>,
+    val stepIndex: Int,
+    val elapsedMillis: Long,
+    val status: ExecutionStatus,
+)
+
+interface ActiveExecutionStore {
+    /** Emits the current run, or null when no run is in progress. */
+    fun observe(): Flow<ActiveExecution?>
+
+    suspend fun save(execution: ActiveExecution)
+
+    suspend fun clear()
+}

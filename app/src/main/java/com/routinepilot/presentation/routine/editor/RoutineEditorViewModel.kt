@@ -9,15 +9,15 @@ import com.routinepilot.domain.repository.RoutineRepository
 import com.routinepilot.domain.validation.RoutineValidationError
 import com.routinepilot.domain.validation.RoutineValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.Instant
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.util.UUID
+import javax.inject.Inject
 
 const val ROUTINE_ID_ARG = "routineId"
 

@@ -6,11 +6,11 @@ import com.routinepilot.domain.model.ExecutionSession
 import com.routinepilot.domain.model.StepCompletionEvent
 import com.routinepilot.domain.repository.ExecutionRepository
 import com.routinepilot.infrastructure.database.RoutinePilotDatabase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 class ExecutionRepositoryImpl @Inject constructor(
     database: RoutinePilotDatabase,

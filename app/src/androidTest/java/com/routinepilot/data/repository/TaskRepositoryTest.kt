@@ -5,13 +5,13 @@ import com.routinepilot.infrastructure.database.RoutinePilotDatabase
 import com.routinepilot.infrastructure.database.TEST_TIME
 import com.routinepilot.infrastructure.database.createInMemoryDatabase
 import com.routinepilot.infrastructure.database.newRoutine
-import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 
 class TaskRepositoryTest {
     private lateinit var db: RoutinePilotDatabase

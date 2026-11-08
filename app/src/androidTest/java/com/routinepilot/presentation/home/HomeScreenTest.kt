@@ -9,11 +9,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.routinepilot.domain.model.Routine
 import com.routinepilot.presentation.theme.RoutinePilotTheme
-import java.time.Instant
-import java.util.UUID
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import java.time.Instant
+import java.util.UUID
 
 class HomeScreenTest {
     @get:Rule
@@ -37,7 +37,7 @@ class HomeScreenTest {
     fun deleteFromMenu_reportsTheRoutine() {
         val target = routine("Morning walk")
         val actions = RecordingHomeActions()
-        setScreen(HomeUiState(listOf(target)), actions)
+        setScreen(HomeUiState(listOf(target)), actions = actions)
 
         composeTestRule.onNodeWithContentDescription("More actions").performClick()
         composeTestRule.onNodeWithText("Delete").performClick()
@@ -49,7 +49,7 @@ class HomeScreenTest {
     fun duplicateFromMenu_reportsTheRoutine() {
         val target = routine("Morning walk")
         val actions = RecordingHomeActions()
-        setScreen(HomeUiState(listOf(target)), actions)
+        setScreen(HomeUiState(listOf(target)), actions = actions)
 
         composeTestRule.onNodeWithContentDescription("More actions").performClick()
         composeTestRule.onNodeWithText("Duplicate").performClick()
@@ -57,15 +57,51 @@ class HomeScreenTest {
         assertEquals(listOf("duplicate:${target.id}"), actions.calls)
     }
 
+    @Test
+    fun startFromMenu_opensTheRunScreenForTheRoutine() {
+        val target = routine("Morning walk")
+        val runs = mutableListOf<UUID>()
+        setScreen(HomeUiState(listOf(target)), navigation = navigation(onRun = { runs += it }))
+
+        composeTestRule.onNodeWithContentDescription("More actions").performClick()
+        composeTestRule.onNodeWithText("Start routine").performClick()
+
+        assertEquals(listOf(target.id), runs)
+    }
+
+    @Test
+    fun resumeCard_isShownWhenARunIsInProgress_andOpensItsRun() {
+        val target = routine("Morning walk")
+        val runs = mutableListOf<UUID>()
+        setScreen(
+            HomeUiState(listOf(target), activeRoutineId = target.id),
+            navigation = navigation(onRun = { runs += it }),
+        )
+
+        composeTestRule.onNodeWithText("A routine is in progress").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Resume").performClick()
+
+        assertEquals(listOf(target.id), runs)
+    }
+
     private fun routine(title: String) = Routine(UUID.randomUUID(), title, 0, Instant.EPOCH)
 
-    private fun setScreen(state: HomeUiState, actions: HomeActions = RecordingHomeActions()) {
+    private fun navigation(onRun: (UUID) -> Unit = {}) = HomeNavigation(
+        onEdit = {},
+        onRun = onRun,
+        onNew = {},
+    )
+
+    private fun setScreen(
+        state: HomeUiState,
+        navigation: HomeNavigation = navigation(),
+        actions: HomeActions = RecordingHomeActions(),
+    ) {
         composeTestRule.setContent {
             RoutinePilotTheme {
                 HomeScreen(
                     uiState = state,
-                    onOpenRoutine = {},
-                    onNewRoutine = {},
+                    navigation = navigation,
                     actions = actions,
                     snackbarHostState = remember { SnackbarHostState() },
                 )

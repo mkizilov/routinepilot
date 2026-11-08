@@ -1,10 +1,12 @@
 package com.routinepilot.infrastructure.di
 
+import com.routinepilot.data.execution.DataStoreActiveExecutionStore
 import com.routinepilot.data.repository.ExecutionRepositoryImpl
 import com.routinepilot.data.repository.PreferenceRepositoryImpl
 import com.routinepilot.data.repository.RoutineRepositoryImpl
 import com.routinepilot.data.repository.ScheduleRepositoryImpl
 import com.routinepilot.data.repository.TaskRepositoryImpl
+import com.routinepilot.domain.execution.ActiveExecutionStore
 import com.routinepilot.domain.repository.ExecutionRepository
 import com.routinepilot.domain.repository.PreferenceRepository
 import com.routinepilot.domain.repository.RoutineRepository
@@ -32,4 +34,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindPreferenceRepository(impl: PreferenceRepositoryImpl): PreferenceRepository
+
+    @Binds
+    abstract fun bindActiveExecutionStore(impl: DataStoreActiveExecutionStore): ActiveExecutionStore
 }

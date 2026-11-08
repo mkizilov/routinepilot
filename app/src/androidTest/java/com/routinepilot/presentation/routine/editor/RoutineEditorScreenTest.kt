@@ -12,11 +12,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.routinepilot.domain.validation.RoutineValidationError
 import com.routinepilot.presentation.theme.RoutinePilotTheme
-import java.time.Instant
-import java.util.UUID
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import java.time.Instant
+import java.util.UUID
 
 class RoutineEditorScreenTest {
     @get:Rule

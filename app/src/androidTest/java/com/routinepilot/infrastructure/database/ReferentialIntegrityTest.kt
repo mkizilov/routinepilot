@@ -10,13 +10,13 @@ import com.routinepilot.domain.model.OccurrenceStatus
 import com.routinepilot.domain.model.ScheduledOccurrence
 import com.routinepilot.domain.model.StepCompletionEvent
 import com.routinepilot.domain.model.Task
-import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 
 class ReferentialIntegrityTest {
     private lateinit var db: RoutinePilotDatabase

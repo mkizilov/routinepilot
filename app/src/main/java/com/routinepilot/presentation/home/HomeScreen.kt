@@ -24,6 +24,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,10 +44,15 @@ import com.routinepilot.R
 import com.routinepilot.domain.model.Routine
 import java.util.UUID
 
+data class HomeNavigation(
+    val onEdit: (UUID) -> Unit,
+    val onRun: (UUID) -> Unit,
+    val onNew: () -> Unit,
+)
+
 @Composable
 fun HomeRoute(
-    onOpenRoutine: (UUID) -> Unit,
-    onNewRoutine: () -> Unit,
+    navigation: HomeNavigation,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,8 +77,7 @@ fun HomeRoute(
     }
     HomeScreen(
         uiState = uiState,
-        onOpenRoutine = onOpenRoutine,
-        onNewRoutine = onNewRoutine,
+        navigation = navigation,
         actions = viewModel,
         snackbarHostState = snackbarHostState,
     )
@@ -81,30 +87,39 @@ fun HomeRoute(
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
-    onOpenRoutine: (UUID) -> Unit,
-    onNewRoutine: () -> Unit,
+    navigation: HomeNavigation,
     actions: HomeActions,
     snackbarHostState: SnackbarHostState,
 ) {
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNewRoutine) {
+            FloatingActionButton(onClick = navigation.onNew) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.home_new_routine))
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        if (uiState.routines.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.home_empty_state))
+        LazyColumn(Modifier.fillMaxSize().padding(innerPadding)) {
+            uiState.activeRoutineId?.let { activeId ->
+                item(key = "resume") {
+                    ResumeRow(onResume = { navigation.onRun(activeId) })
+                }
             }
-        } else {
-            LazyColumn(Modifier.fillMaxSize().padding(innerPadding)) {
+            if (uiState.routines.isEmpty()) {
+                item {
+                    Text(
+                        stringResource(R.string.home_empty_state),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    )
+                }
+            } else {
                 items(uiState.routines, key = { it.id }) { routine ->
                     RoutineRow(
                         routine = routine,
-                        onOpen = { onOpenRoutine(routine.id) },
+                        onOpen = { navigation.onEdit(routine.id) },
+                        onRun = { navigation.onRun(routine.id) },
                         onDuplicate = { actions.duplicateRoutine(routine.id) },
                         onDelete = { actions.deleteRoutine(routine.id) },
                     )
@@ -115,9 +130,27 @@ fun HomeScreen(
 }
 
 @Composable
+private fun ResumeRow(onResume: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(R.string.home_resume_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onResume) { Text(stringResource(R.string.home_resume_action)) }
+    }
+}
+
+@Composable
 private fun RoutineRow(
     routine: Routine,
     onOpen: () -> Unit,
+    onRun: () -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -134,18 +167,25 @@ private fun RoutineRow(
                 Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        RoutineActionsMenu(onDuplicate = onDuplicate, onDelete = onDelete)
+        RoutineActionsMenu(onRun = onRun, onDuplicate = onDuplicate, onDelete = onDelete)
     }
 }
 
 @Composable
-private fun RoutineActionsMenu(onDuplicate: () -> Unit, onDelete: () -> Unit) {
+private fun RoutineActionsMenu(onRun: () -> Unit, onDuplicate: () -> Unit, onDelete: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) {
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.home_more_actions))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.home_action_run)) },
+                onClick = {
+                    expanded = false
+                    onRun()
+                },
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.home_action_duplicate)) },
                 onClick = {

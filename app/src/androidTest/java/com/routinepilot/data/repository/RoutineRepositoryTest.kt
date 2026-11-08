@@ -6,10 +6,9 @@ import com.routinepilot.infrastructure.database.createInMemoryDatabase
 import com.routinepilot.infrastructure.database.newRoutine
 import com.routinepilot.infrastructure.database.newStep
 import com.routinepilot.infrastructure.database.scalar
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -21,6 +20,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 
 class RoutineRepositoryTest {
     private lateinit var db: RoutinePilotDatabase
