@@ -27,7 +27,7 @@ class PreferenceRepositoryTest {
     }
 
     @Test
-    fun setPreference_isObservableAndOverwritesValue() =
+    fun setPreference_isObservableAndOverwritesValue(): Unit =
         runBlocking {
             assertNull(repository.observePreference("theme").first())
 
@@ -39,7 +39,7 @@ class PreferenceRepositoryTest {
         }
 
     @Test
-    fun removePreference_hidesValueAndAllowsResetWithoutDuplicateName() =
+    fun removePreference_hidesValueAndAllowsResetWithoutDuplicateName(): Unit =
         runBlocking {
             repository.setPreference("reminders", "on")
 

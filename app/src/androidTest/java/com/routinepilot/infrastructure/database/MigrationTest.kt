@@ -37,7 +37,7 @@ class MigrationTest {
     }
 
     @Test
-    fun migration1To2_convertsRoutinesToUuidIdsInOriginalOrder() =
+    fun migration1To2_convertsRoutinesToUuidIdsInOriginalOrder(): Unit =
         runBlocking {
             createVersion1Database { legacy ->
                 legacy.execSQL("INSERT INTO `routines` (`title`) VALUES ('Morning walk'), ('Evening review')")
@@ -58,7 +58,7 @@ class MigrationTest {
         }
 
     @Test
-    fun migration1To2_keepsForeignKeysEnforced() =
+    fun migration1To2_keepsForeignKeysEnforced(): Unit =
         runBlocking {
             createVersion1Database { }
 
@@ -83,7 +83,7 @@ class MigrationTest {
         }
 
     @Test
-    fun migration2To3_addsNullableDescriptionAndDuration() =
+    fun migration2To3_addsNullableDescriptionAndDuration(): Unit =
         runBlocking {
             createVersion1Database { it.execSQL("INSERT INTO `routines` (`title`) VALUES ('Morning walk')") }
 
@@ -125,7 +125,7 @@ class MigrationTest {
         }
 
     @Test
-    fun migratedDatabase_acceptsTheOutboxAndPlanningRows_addedByTheLaterMigrations() =
+    fun migratedDatabase_acceptsTheOutboxAndPlanningRows_addedByTheLaterMigrations(): Unit =
         runBlocking {
             createVersion1Database { }
             val db = openMigratedDatabase()

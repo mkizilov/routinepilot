@@ -74,7 +74,7 @@ class ReferentialIntegrityTest {
     }
 
     @Test
-    fun completionEventForUnknownStep_isRejected() =
+    fun completionEventForUnknownStep_isRejected(): Unit =
         runBlocking {
             val routine = newRoutine()
             routines.saveRoutine(routine, emptyList())
@@ -103,7 +103,7 @@ class ReferentialIntegrityTest {
         }
 
     @Test
-    fun hardPurgeOfRoutine_cascadesToStepsOccurrencesAndSessions() =
+    fun hardPurgeOfRoutine_cascadesToStepsOccurrencesAndSessions(): Unit =
         runBlocking {
             val routine = newRoutine()
             routines.saveRoutine(routine, listOf(newStep(routine.id, "Brush", 0)))
@@ -120,7 +120,7 @@ class ReferentialIntegrityTest {
         }
 
     @Test
-    fun hardPurgeOfRoutine_detachesLinkedTasks() =
+    fun hardPurgeOfRoutine_detachesLinkedTasks(): Unit =
         runBlocking {
             val routine = newRoutine()
             routines.saveRoutine(routine, emptyList())
@@ -134,7 +134,7 @@ class ReferentialIntegrityTest {
         }
 
     @Test
-    fun hardPurgeOfSchedule_cascadesToItsGeneratedOccurrences() =
+    fun hardPurgeOfSchedule_cascadesToItsGeneratedOccurrences(): Unit =
         runBlocking {
             val routine = newRoutine()
             routines.saveRoutine(routine, emptyList())
@@ -165,7 +165,7 @@ class ReferentialIntegrityTest {
         }
 
     @Test
-    fun stepWithRecordedCompletion_cannotBeHardDeleted() =
+    fun stepWithRecordedCompletion_cannotBeHardDeleted(): Unit =
         runBlocking {
             val routine = newRoutine()
             val step = newStep(routine.id, "Brush", 0)

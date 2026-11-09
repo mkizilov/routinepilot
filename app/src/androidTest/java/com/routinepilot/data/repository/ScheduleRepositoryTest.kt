@@ -47,7 +47,7 @@ class ScheduleRepositoryTest {
     }
 
     @Test
-    fun saveSchedule_generatesAHorizonOfPendingOccurrences() =
+    fun saveSchedule_generatesAHorizonOfPendingOccurrences(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
 
@@ -59,7 +59,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun ensureOccurrences_calledRepeatedly_neverDuplicatesASlot() =
+    fun ensureOccurrences_calledRepeatedly_neverDuplicatesASlot(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
             val before = schedules.observeOccurrences(routine.id).first().size
@@ -77,7 +77,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun uniqueIndex_rejectsADuplicateSlotEvenIfTheSameRowIsInsertedDirectly() =
+    fun uniqueIndex_rejectsADuplicateSlotEvenIfTheSameRowIsInsertedDirectly(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
             val row = schedules.observeOccurrences(routine.id).first().first()
@@ -111,7 +111,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun deletedSlot_staysDeletedAcrossRestartLikeRegeneration() =
+    fun deletedSlot_staysDeletedAcrossRestartLikeRegeneration(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
             val target = schedules.observeOccurrences(routine.id).first().first()
@@ -131,7 +131,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun completeSkipAndReschedule_changeStatusAndTime() =
+    fun completeSkipAndReschedule_changeStatusAndTime(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
             val rows = schedules.observeOccurrences(routine.id).first()
@@ -151,7 +151,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun completedOccurrence_isNotRemovedWhenTheRuleChanges() =
+    fun completedOccurrence_isNotRemovedWhenTheRuleChanges(): Unit =
         runBlocking {
             val schedule = dailySchedule()
             schedules.saveSchedule(schedule, now)
@@ -167,7 +167,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun changingWeekdays_replacesPendingSlotsWithTheNewPattern() =
+    fun changingWeekdays_replacesPendingSlotsWithTheNewPattern(): Unit =
         runBlocking {
             val weekdaySchedule =
                 dailySchedule().copy(
@@ -189,7 +189,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun deleteSchedule_removesPendingButKeepsCompletedHistory() =
+    fun deleteSchedule_removesPendingButKeepsCompletedHistory(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
             val done = schedules.observeOccurrences(routine.id).first().first()
@@ -210,7 +210,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun agenda_resolvesTitlesAndHidesItemsOfDeletedRoutines() =
+    fun agenda_resolvesTitlesAndHidesItemsOfDeletedRoutines(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
             // Today's slot is already past, so use tomorrow, which has a generated occurrence.
@@ -232,7 +232,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun deletingARoutine_cascadesToItsSchedules() =
+    fun deletingARoutine_cascadesToItsSchedules(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
 
@@ -243,7 +243,7 @@ class ScheduleRepositoryTest {
         }
 
     @Test
-    fun statusCannotBeChangedAfterSoftDelete() =
+    fun statusCannotBeChangedAfterSoftDelete(): Unit =
         runBlocking {
             schedules.saveSchedule(dailySchedule(), now)
             val row = schedules.observeOccurrences(routine.id).first().first()

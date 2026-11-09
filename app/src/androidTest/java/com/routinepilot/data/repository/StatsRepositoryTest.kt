@@ -58,7 +58,7 @@ class StatsRepositoryTest {
     }
 
     @Test
-    fun observeInput_aggregatesItemsSessionsAndStepsPerDay_andIgnoresDeletedAndUnrecordedRows() =
+    fun observeInput_aggregatesItemsSessionsAndStepsPerDay_andIgnoresDeletedAndUnrecordedRows(): Unit =
         runBlocking {
             insertOccurrence(Instant.parse("2026-03-09T07:00:00Z"), day, OccurrenceStatus.COMPLETED)
             insertOccurrence(Instant.parse("2026-03-09T09:00:00Z"), day, OccurrenceStatus.SKIPPED)
@@ -87,7 +87,7 @@ class StatsRepositoryTest {
         }
 
     @Test
-    fun startSession_linksTheEarliestItemDueWithinAnHour_andFinishingCompletesIt() =
+    fun startSession_linksTheEarliestItemDueWithinAnHour_andFinishingCompletesIt(): Unit =
         runBlocking {
             val due = insertOccurrence(Instant.parse("2026-03-10T07:00:00Z"), nextDay, OccurrenceStatus.PLANNED)
 
@@ -108,7 +108,7 @@ class StatsRepositoryTest {
         }
 
     @Test
-    fun cancelledSession_leavesItsLinkedItemPending() =
+    fun cancelledSession_leavesItsLinkedItemPending(): Unit =
         runBlocking {
             val due = insertOccurrence(Instant.parse("2026-03-10T07:00:00Z"), nextDay, OccurrenceStatus.PLANNED)
             val started =
@@ -122,7 +122,7 @@ class StatsRepositoryTest {
         }
 
     @Test
-    fun startSession_doesNotLinkItemsDueMoreThanAnHourAhead() =
+    fun startSession_doesNotLinkItemsDueMoreThanAnHourAhead(): Unit =
         runBlocking {
             insertOccurrence(Instant.parse("2026-03-10T09:00:00Z"), nextDay, OccurrenceStatus.PLANNED)
 
@@ -135,7 +135,7 @@ class StatsRepositoryTest {
         }
 
     @Test
-    fun endSession_onlyTakesEffectOnce() =
+    fun endSession_onlyTakesEffectOnce(): Unit =
         runBlocking {
             val started =
                 executions.startSession(
@@ -151,7 +151,7 @@ class StatsRepositoryTest {
         }
 
     @Test
-    fun observeInput_emitsAgainWhenASessionFinishes() =
+    fun observeInput_emitsAgainWhenASessionFinishes(): Unit =
         runBlocking {
             val seen = Channel<StatisticsInput>(Channel.UNLIMITED)
             val collector =

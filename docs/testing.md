@@ -64,9 +64,9 @@ The script is checked against itself. For the final pass, one defect was injecte
 
 The Android CI job runs the script first.
 
-## What was run in this environment
+## What was run in the release pass (`cee492e`)
 
-The environment had no working JDK, Android SDK, Gradle, emulator, or Docker daemon, and no network from the shell. So no Gradle task and no test was executed. The following checks were run instead, and each one's result is recorded here.
+That pass had no working JDK, Android SDK, Gradle, emulator, or Docker daemon, and no network from the shell. So no Gradle task and no test was executed. The current results are in [README.md](../README.md#verification-status) and [ROADMAP.md](../ROADMAP.md). The following checks were run instead, and each one's result is recorded here.
 
 1. **Daylight-saving expectations.** The three existing Berlin expectations (gap, before the gap, and overlap) were recomputed with Python's `zoneinfo`. All three matched. The three new New York and Lord Howe expectations were computed the same way. A check also confirmed that each of those cases is a real gap or overlap, rather than an ordinary time.
 2. **Client and backend contract.** A script compared the two sides' source:

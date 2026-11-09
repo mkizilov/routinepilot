@@ -45,7 +45,7 @@ class ScheduleAndExecutionRepositoryTest {
     }
 
     @Test
-    fun observeOccurrences_ordersByScheduledTimeAndReflectsCompletion() =
+    fun observeOccurrences_ordersByScheduledTimeAndReflectsCompletion(): Unit =
         runBlocking {
             val routine = newRoutine()
             routines.saveRoutine(routine, emptyList())
@@ -65,7 +65,7 @@ class ScheduleAndExecutionRepositoryTest {
         }
 
     @Test
-    fun deleteOccurrence_hidesOnlyThatOccurrence() =
+    fun deleteOccurrence_hidesOnlyThatOccurrence(): Unit =
         runBlocking {
             val routine = newRoutine()
             routines.saveRoutine(routine, emptyList())
@@ -79,7 +79,7 @@ class ScheduleAndExecutionRepositoryTest {
         }
 
     @Test
-    fun observeSessions_returnsMostRecentlyStartedFirst() =
+    fun observeSessions_returnsMostRecentlyStartedFirst(): Unit =
         runBlocking {
             val routine = newRoutine()
             routines.saveRoutine(routine, emptyList())
@@ -96,7 +96,7 @@ class ScheduleAndExecutionRepositoryTest {
         }
 
     @Test
-    fun observeCompletions_ordersByCompletionTime() =
+    fun observeCompletions_ordersByCompletionTime(): Unit =
         runBlocking {
             val routine = newRoutine()
             val steps = listOf(newStep(routine.id, "Brush", 0), newStep(routine.id, "Floss", 1))
@@ -115,7 +115,7 @@ class ScheduleAndExecutionRepositoryTest {
         }
 
     @Test
-    fun deleteSession_hidesSession() =
+    fun deleteSession_hidesSession(): Unit =
         runBlocking {
             val routine = newRoutine()
             routines.saveRoutine(routine, emptyList())

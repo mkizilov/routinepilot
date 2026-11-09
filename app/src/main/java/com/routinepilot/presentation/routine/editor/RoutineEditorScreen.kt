@@ -67,6 +67,7 @@ internal const val TAG_ADD_STEP = "editor_add_step"
 internal const val TAG_DELETE = "editor_delete"
 internal const val TAG_SAVE = "editor_save"
 internal const val TAG_LOADING = "editor_loading"
+internal const val TAG_EDITOR_LIST = "editor_list"
 internal const val TAG_STEP_PREFIX = "editor_step_"
 internal const val TAG_STEP_TITLE_PREFIX = "editor_step_title_"
 internal const val TAG_STEP_DURATION_PREFIX = "editor_step_duration_"
@@ -174,7 +175,7 @@ private fun EditorForm(
     val focus = LocalFocusManager.current
     val next = remember(focus) { KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Next) }) }
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(TAG_EDITOR_LIST),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {

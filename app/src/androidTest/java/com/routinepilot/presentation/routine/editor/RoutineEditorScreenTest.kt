@@ -7,11 +7,15 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import com.routinepilot.domain.validation.RoutineValidationError
 import com.routinepilot.presentation.theme.RoutinePilotTheme
 import com.routinepilot.testing.WithFontScale
@@ -60,7 +64,9 @@ class RoutineEditorScreenTest {
             ),
         )
 
+        scrollListTo(hasText("Enter a name"))
         composeTestRule.onNodeWithText("Enter a name").assertIsDisplayed()
+        scrollListTo(hasText("Enter whole minutes from 1 to 480, or leave blank"))
         composeTestRule.onNodeWithText("Enter whole minutes from 1 to 480, or leave blank").assertIsDisplayed()
     }
 
@@ -137,8 +143,9 @@ class RoutineEditorScreenTest {
     @Test
     fun deleteRoutine_requiresConfirmation() {
         val actions = RecordingEditorActions()
-        setScreen(RoutineEditorUiState(isNewRoutine = false, title = "Morning"), actions)
+        setScreen(RoutineEditorUiState(isNewRoutine = false, isLoading = false, title = "Morning"), actions)
 
+        scrollListTo(hasText("Delete routine"))
         composeTestRule.onNodeWithText("Delete routine").performClick()
         composeTestRule.onNodeWithText("Delete routine?").assertIsDisplayed()
         assertEquals(emptyList<String>(), actions.calls)
@@ -151,8 +158,9 @@ class RoutineEditorScreenTest {
     @Test
     fun deleteRoutine_cancelDoesNothing() {
         val actions = RecordingEditorActions()
-        setScreen(RoutineEditorUiState(isNewRoutine = false, title = "Morning"), actions)
+        setScreen(RoutineEditorUiState(isNewRoutine = false, isLoading = false, title = "Morning"), actions)
 
+        scrollListTo(hasText("Delete routine"))
         composeTestRule.onNodeWithText("Delete routine").performClick()
         composeTestRule.onNodeWithText("Cancel").performClick()
 
@@ -173,7 +181,9 @@ class RoutineEditorScreenTest {
         val actions = RecordingEditorActions()
         setScreen(RoutineEditorUiState(steps = listOf(first, second)), actions)
 
+        scrollListTo(hasContentDescription("Remove step 2"))
         composeTestRule.onNodeWithContentDescription("Remove step 2").performClick()
+        scrollListTo(hasContentDescription("Move step 2 up"))
         composeTestRule.onNodeWithContentDescription("Move step 2 up").performClick()
 
         assertEquals(listOf("remove:${second.id}", "move:${second.id}:-1"), actions.calls)
@@ -201,6 +211,7 @@ class RoutineEditorScreenTest {
         setScreen(
             RoutineEditorUiState(
                 isNewRoutine = false,
+                isLoading = false,
                 title = "Morning",
                 steps = listOf(draft("First"), draft("Second")),
             ),
@@ -228,6 +239,11 @@ class RoutineEditorScreenTest {
         durationMinutes = durationMinutes,
         durationError = durationError,
     )
+
+    /** Scrolls the editor list until the matching item is composed and placed, as a screen reader's scroll would. */
+    private fun scrollListTo(matcher: SemanticsMatcher) {
+        composeTestRule.onNode(hasTestTag(TAG_EDITOR_LIST)).performScrollToNode(matcher)
+    }
 
     private fun setScreen(
         state: RoutineEditorUiState,

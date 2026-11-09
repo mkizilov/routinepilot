@@ -39,7 +39,7 @@ class RoomOutboxStorePersistenceTest {
     }
 
     @Test
-    fun queuedChangesAndTheServerBase_surviveReopeningTheDatabase() =
+    fun queuedChangesAndTheServerBase_surviveReopeningTheDatabase(): Unit =
         runBlocking {
             val first = open()
             RoomOutboxStore(first.syncOutboxDao()).also { store ->

@@ -42,7 +42,7 @@ class RoutineRepositoryTest {
     }
 
     @Test
-    fun saveRoutine_isReadBackWithAllFields() =
+    fun saveRoutine_isReadBackWithAllFields(): Unit =
         runBlocking {
             val routine = newRoutine(title = "Morning")
 
@@ -52,7 +52,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun saveRoutine_updatesExistingRowInPlace() =
+    fun saveRoutine_updatesExistingRowInPlace(): Unit =
         runBlocking {
             val routine = newRoutine(title = "Morning")
             repository.saveRoutine(routine, emptyList())
@@ -64,7 +64,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun observeRoutines_ordersByPositionThenId() =
+    fun observeRoutines_ordersByPositionThenId(): Unit =
         runBlocking {
             val first = newRoutine(title = "First", position = 0)
             val second = newRoutine(title = "Second", position = 1)
@@ -80,7 +80,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun observeSteps_ordersStepsByPosition() =
+    fun observeSteps_ordersStepsByPosition(): Unit =
         runBlocking {
             val routine = newRoutine()
             val steps =
@@ -99,7 +99,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun observeRoutines_emitsWhenDataChanges() =
+    fun observeRoutines_emitsWhenDataChanges(): Unit =
         runBlocking {
             val received = Channel<List<String>>(Channel.UNLIMITED)
             val collector =
@@ -115,7 +115,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun deleteRoutine_hidesRoutineAndStepsButKeepsTombstones() =
+    fun deleteRoutine_hidesRoutineAndStepsButKeepsTombstones(): Unit =
         runBlocking {
             val routine = newRoutine()
             repository.saveRoutine(routine, listOf(newStep(routine.id, "Brush", position = 0)))
@@ -130,7 +130,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun deleteStep_tombstonesOnlyThatStep() =
+    fun deleteStep_tombstonesOnlyThatStep(): Unit =
         runBlocking {
             val routine = newRoutine()
             val keep = newStep(routine.id, "Keep", position = 0)
@@ -143,7 +143,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun saveRoutine_rollsBackRoutineWhenStepWriteFails() =
+    fun saveRoutine_rollsBackRoutineWhenStepWriteFails(): Unit =
         runBlocking {
             val routine = newRoutine(title = "Atomic")
             val orphanStep = newStep(routineId = UUID.randomUUID(), title = "Orphan", position = 0)
@@ -157,7 +157,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun saveRoutine_softDeletesActiveStepsMissingFromTheList() =
+    fun saveRoutine_softDeletesActiveStepsMissingFromTheList(): Unit =
         runBlocking {
             val routine = newRoutine()
             val keep = newStep(routine.id, "Keep", position = 0)
@@ -171,7 +171,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun stepDetails_roundTripDescriptionAndDuration() =
+    fun stepDetails_roundTripDescriptionAndDuration(): Unit =
         runBlocking {
             val routine = newRoutine()
             val step = newStep(routine.id, "Stretch", position = 0).copy(description = "Hips", durationSeconds = 600)
@@ -182,7 +182,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun restoreRoutine_restoresRoutineAndOnlyStepsDeletedWithIt() =
+    fun restoreRoutine_restoresRoutineAndOnlyStepsDeletedWithIt(): Unit =
         runBlocking {
             val routine = newRoutine()
             val earlier = newStep(routine.id, "Earlier", position = 0)
@@ -201,7 +201,7 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun duplicateRoutine_copiesRoutineAndStepsAsNewRows() =
+    fun duplicateRoutine_copiesRoutineAndStepsAsNewRows(): Unit =
         runBlocking {
             val source = newRoutine(title = "Morning", position = 0)
             val brush = newStep(source.id, "Brush", position = 0).copy(durationSeconds = 120)
@@ -222,13 +222,13 @@ class RoutineRepositoryTest {
         }
 
     @Test
-    fun duplicateRoutine_ofMissingRoutine_returnsNull() =
+    fun duplicateRoutine_ofMissingRoutine_returnsNull(): Unit =
         runBlocking {
             assertNull(repository.duplicateRoutine(UUID.randomUUID()))
         }
 
     @Test
-    fun reads_runOffTheMainThreadSafely() =
+    fun reads_runOffTheMainThreadSafely(): Unit =
         runBlocking {
             val routine = newRoutine()
             withContext(Dispatchers.IO) { repository.saveRoutine(routine, emptyList()) }

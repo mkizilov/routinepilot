@@ -25,7 +25,7 @@ Nothing marked *Implemented* is verified unless it says so in the evidence colum
 | Release configuration, account deletion, onboarding, help, CI, privacy and deployment documents | `cee492e` | Implemented; partially verified | Workflows parse. Daylight-saving expectations checked against the IANA database. Contract compared in the same earlier pass. No build |
 | Repository checks, `scripts/static-checks.py` | `7984f2c` | Implemented; verified | Twelve checks pass on the final tree. Nine injected defects were all reported |
 | Android build, format, static analysis | `d20a979`, `11d3ca2` | Verified | Compile, 303 JVM tests, Spotless, detekt with a 42-entry baseline, debug and release assemblies |
-| Instrumentation sources and test APK | this commit | Compiles; not run | 129 `@Test` methods are in the compiled debug test APK. No emulator or device here |
+| Instrumentation sources and test APK | `283d47b` and the commit after it | Compiles; 129 of 129 pass on a local API 34 arm64 emulator | Hosted CI (x86_64) not yet re-run. Physical devices not covered |
 | MIT license and third-party notices | `f194230` | Verified | `LICENSE` and `THIRD_PARTY_NOTICES.md` added. Items needing review are listed there |
 
 Corrections to earlier reports:
@@ -104,7 +104,7 @@ Priorities: **P0** blocks trust in everything else. **P1** correctness, security
 
 ## 4. Run the Compose UI and database tests on an emulator
 
-- **Priority:** P0. **Status:** the test APK compiles and contains all 129 test methods. None has run, because no emulator or device is available in the environment that produced this pass.
+- **Priority:** P0. **Status:** 129 of 129 pass on a local API 34 arm64 emulator (Google APIs). The hosted job (API 34 x86_64) has not been re-run since the fixes. Physical devices are not covered.
 - **Scope:** Run `./gradlew connectedDebugAndroidTest` on an API 34 x86_64 emulator, as the CI job does. Fix failures. Confirm that the migration chain and the persistence test open a real database. Check the WorkManager test setup.
 - **Rationale:** Compose rendering, Room on a device, and WorkManager's test setup have not run.
 - **Dependencies:** Step 1.
@@ -300,7 +300,7 @@ Assumptions:
 - The estimates include writing or changing tests and documentation.
 - Not included: waiting for store review, legal review, an email provider decision, device-lab scheduling, and code review queues.
 - The sync protocol and schema stay as they are. Steps 6 and 13 change behavior at the boundary and add time.
-- The first build found 38 compile errors in the Android app and 3 in the backend. All are fixed. The remaining uncertainty is in the instrumented tests and on devices, which have not run.
+- The first build found 38 compile errors in the Android app and 3 in the backend. All are fixed. The instrumented suite passes on a local emulator. Hosted CI and physical devices remain unverified.
 - The contingency covers that uncertainty only partly.
 
 ## Known limits that apply today

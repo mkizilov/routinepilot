@@ -30,7 +30,7 @@ class TaskRepositoryTest {
     }
 
     @Test
-    fun saveTask_updatesCompletionAndKeepsCreatedAt() =
+    fun saveTask_updatesCompletionAndKeepsCreatedAt(): Unit =
         runBlocking {
             val task = newTask(title = "Buy filters")
             repository.saveTask(task)
@@ -41,7 +41,7 @@ class TaskRepositoryTest {
         }
 
     @Test
-    fun observeTasks_ordersByPosition() =
+    fun observeTasks_ordersByPosition(): Unit =
         runBlocking {
             repository.saveTask(newTask(title = "Second", position = 1))
             repository.saveTask(newTask(title = "First", position = 0))
@@ -50,7 +50,7 @@ class TaskRepositoryTest {
         }
 
     @Test
-    fun deleteTask_hidesTaskFromObservers() =
+    fun deleteTask_hidesTaskFromObservers(): Unit =
         runBlocking {
             val task = newTask(title = "Temporary")
             repository.saveTask(task)
@@ -62,7 +62,7 @@ class TaskRepositoryTest {
         }
 
     @Test
-    fun taskLinkedToRoutine_isStoredWithRoutineId() =
+    fun taskLinkedToRoutine_isStoredWithRoutineId(): Unit =
         runBlocking {
             val routine = newRoutine()
             RoutineRepositoryImpl(db).saveRoutine(routine, emptyList())

@@ -222,7 +222,8 @@ Verified on a Mac (arm64) with the pinned toolchain: Temurin JDK 17.0.21, Gradle
 | Android: `assembleDebug` | Passes | |
 | Android: `assembleRelease` | Passes, unsigned | No keystore is configured, so the APK is unsigned |
 | Android: `compileDebugAndroidTestKotlin` | Passes | Instrumentation sources compile |
-| Android: `assembleDebugAndroidTest` | Passes | The test APK assembles, and all 129 `@Test` methods are in the compiled classes |
+| Android: `assembleDebugAndroidTest` | Passes | The test APK assembles, and all 129 `@Test` methods are public `void` with no arguments in the compiled classes |
+| Android: `connectedDebugAndroidTest` on a local emulator (Android 14, API 34, arm64) | 129 of 129 pass | Project-local Google APIs image. The hosted CI job uses API 34 x86_64 and has not been re-run since these fixes |
 | Backend: `compileKotlin`, `compileTestKotlin` | Pass | |
 | Backend: `test` | 63 of 63 pass | Against a local PostgreSQL 16.15, including the database, migration, store, and API tests |
 | Backend: `installDist` | Passes | |
@@ -231,7 +232,7 @@ Verified on a Mac (arm64) with the pinned toolchain: Temurin JDK 17.0.21, Gradle
 
 Not run here:
 
-- **Instrumented tests** (129 functions). They compile into the test APK but have not run, because no emulator or device is available here.
+- **Hosted instrumented job.** The local emulator run above used an arm64 image at the same API level. The hosted job (API 34 x86_64) has not been re-run since the fixes. The local run covers Compose and Room tests on one emulator, not physical devices.
 - **Docker** (Testcontainers path and the container image). Docker was not operated. The backend tests use the Testcontainers path only when no `RP_TEST_DATABASE_URL` is set.
 - **Devices.** Notifications, boot restore, calendar provider behavior, widgets, Keystore, and the sync client against a real server from a phone.
 - **Release signing and minification.** Not configured.

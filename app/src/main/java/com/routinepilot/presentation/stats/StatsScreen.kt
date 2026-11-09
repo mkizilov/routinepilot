@@ -50,6 +50,7 @@ import java.util.UUID
 
 internal const val TAG_STATS_TODAY_PERCENT = "stats_today_percent"
 internal const val TAG_STATS_CURRENT_STREAK = "stats_current_streak"
+internal const val TAG_STATS_LIST = "stats_list"
 
 private const val MILLIS_PER_SECOND = 1_000L
 private const val BAR_WIDTH_FRACTION = 0.6f
@@ -103,7 +104,7 @@ private fun StatsContent(
     modifier: Modifier,
 ) {
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.testTag(TAG_STATS_LIST),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
