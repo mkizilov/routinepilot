@@ -5,6 +5,7 @@ import com.routinepilot.infrastructure.database.RoutinePilotDatabase
 import com.routinepilot.infrastructure.database.TEST_TIME
 import com.routinepilot.infrastructure.database.createInMemoryDatabase
 import com.routinepilot.infrastructure.database.newRoutine
+import com.routinepilot.infrastructure.database.scalar
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After

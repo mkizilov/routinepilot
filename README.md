@@ -112,7 +112,7 @@ Security:
 - The three widget providers are `exported="false"`. The system's AppWidget service sends their update broadcasts, and widget taps go through Glance's own non-exported receiver.
 - A widget action carries only a command word (`pause`, `skip`, or `finish`). It never names a routine, so a widget cannot act on anything but the current run.
 - Widget intents to the activity are explicit, and the routine id is parsed as a UUID. Anything malformed is ignored.
-- Glance creates the PendingIntents for button taps. I have not checked the flags it uses in this environment. Check them on the first device build.
+- Glance creates the PendingIntents for button taps. The flags it uses have not been checked in this environment. Check them on the first device build.
 
 Supported Android versions:
 - The app's minimum is Android 8.0 (API 26). Glance 1.2.0 supports API 23 and up.
@@ -158,7 +158,7 @@ The app never reads other events. Refusing leaves export off, and nothing else i
 - Access revoked outside the app is noticed at the next sync or when the screen resumes.
 - The UID relies on the provider storing `UID_2445`. A provider that drops it can create a duplicate only after a lost link.
 - The first build exports the Room schema for version 8 to `app/schemas/`. Those files are not in this checkout yet. Commit them after the first build.
-- **Not verified here.** The environment had no JDK, Android SDK, Gradle, or network, so nothing in this section has been compiled or run. The mapping and sync tests are written but have not run. The provider calls, the screen, the migration, and the permission prompts have not run on a device or emulator. Check them on a device before relying on them.
+- **Not verified on a device.** The mapping and sync tests run as JVM unit tests and pass (see Verification status). The provider calls, the screen, the migration, and the permission prompts have not run on a device or emulator. Check them on a device before relying on them.
 
 ## Requirements
 
@@ -221,6 +221,8 @@ Verified on a Mac (arm64) with the pinned toolchain: Temurin JDK 17.0.21, Gradle
 | Android: `detekt` | Passes | 42 structural findings recorded in `config/detekt/baseline.xml`; new findings fail |
 | Android: `assembleDebug` | Passes | |
 | Android: `assembleRelease` | Passes, unsigned | No keystore is configured, so the APK is unsigned |
+| Android: `compileDebugAndroidTestKotlin` | Passes | Instrumentation sources compile |
+| Android: `assembleDebugAndroidTest` | Passes | The test APK assembles, and all 129 `@Test` methods are in the compiled classes |
 | Backend: `compileKotlin`, `compileTestKotlin` | Pass | |
 | Backend: `test` | 63 of 63 pass | Against a local PostgreSQL 16.15, including the database, migration, store, and API tests |
 | Backend: `installDist` | Passes | |
@@ -229,7 +231,7 @@ Verified on a Mac (arm64) with the pinned toolchain: Temurin JDK 17.0.21, Gradle
 
 Not run here:
 
-- **Instrumented tests** (129 functions). They need an emulator or device, and none is available here.
+- **Instrumented tests** (129 functions). They compile into the test APK but have not run, because no emulator or device is available here.
 - **Docker** (Testcontainers path and the container image). Docker was not operated. The backend tests use the Testcontainers path only when no `RP_TEST_DATABASE_URL` is set.
 - **Devices.** Notifications, boot restore, calendar provider behavior, widgets, Keystore, and the sync client against a real server from a phone.
 - **Release signing and minification.** Not configured.

@@ -6,6 +6,7 @@ import com.routinepilot.domain.model.Schedule
 import com.routinepilot.domain.model.ScheduleTarget
 import com.routinepilot.domain.schedule.Recurrence
 import com.routinepilot.domain.schedule.RecurrencePattern
+import com.routinepilot.domain.schedule.ScheduleGenerator
 import com.routinepilot.infrastructure.database.RoutinePilotDatabase
 import com.routinepilot.infrastructure.database.createInMemoryDatabase
 import com.routinepilot.infrastructure.database.scalar

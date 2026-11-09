@@ -2,12 +2,10 @@ package com.routinepilot.testing
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.provides
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.ComposeContentTestRule
 import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.onAllNodes
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.unit.Density
 import org.junit.Assert.assertTrue
 

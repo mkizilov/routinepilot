@@ -25,6 +25,7 @@ Nothing marked *Implemented* is verified unless it says so in the evidence colum
 | Release configuration, account deletion, onboarding, help, CI, privacy and deployment documents | `cee492e` | Implemented; partially verified | Workflows parse. Daylight-saving expectations checked against the IANA database. Contract compared in the same earlier pass. No build |
 | Repository checks, `scripts/static-checks.py` | `7984f2c` | Implemented; verified | Twelve checks pass on the final tree. Nine injected defects were all reported |
 | Android build, format, static analysis | `d20a979`, `11d3ca2` | Verified | Compile, 303 JVM tests, Spotless, detekt with a 42-entry baseline, debug and release assemblies |
+| Instrumentation sources and test APK | this commit | Compiles; not run | 129 `@Test` methods are in the compiled debug test APK. No emulator or device here |
 | MIT license and third-party notices | `f194230` | Verified | `LICENSE` and `THIRD_PARTY_NOTICES.md` added. Items needing review are listed there |
 
 Corrections to earlier reports:
@@ -103,7 +104,7 @@ Priorities: **P0** blocks trust in everything else. **P1** correctness, security
 
 ## 4. Run the Compose UI and database tests on an emulator
 
-- **Priority:** P0. **Status:** unverified, 129 instrumented test functions. None has run.
+- **Priority:** P0. **Status:** the test APK compiles and contains all 129 test methods. None has run, because no emulator or device is available in the environment that produced this pass.
 - **Scope:** Run `./gradlew connectedDebugAndroidTest` on an API 34 x86_64 emulator, as the CI job does. Fix failures. Confirm that the migration chain and the persistence test open a real database. Check the WorkManager test setup.
 - **Rationale:** Compose rendering, Room on a device, and WorkManager's test setup have not run.
 - **Dependencies:** Step 1.
@@ -245,7 +246,7 @@ Priorities: **P0** blocks trust in everything else. **P1** correctness, security
 
 ## 19. Stop test and dev processes reliably in the orchestration sandbox
 
-- **Priority:** P2, operations. **Status:** observed. At the end of this pass the sandbox denied signals to two processes this pass started, so they were left running. They are still listening: the backend (PID 6057, `RP_PORT=21580`, bound to all interfaces, not loopback) and PostgreSQL 16.15 (PID 4929, `127.0.0.1:21547`, data directory `.agent-local/pgdata`, 47 MB, ignored by git). Stop them from a shell with the permission to signal them: `pg_ctl -D .agent-local/pgdata -m fast stop`, then `kill 6057`. Delete `.agent-local/pgdata` afterward, because it holds a throwaway test database.
+- **Priority:** P2, operations. **Status:** observed in an earlier pass. The sandbox denied signals to two processes that pass had started: a backend bound to all interfaces on port 21580, and a PostgreSQL 16.15 server on `127.0.0.1:21547`. When the next pass started, both had exited, and the ports were free. The denial was not reproduced. The earlier backend's bind address (all interfaces, not loopback) is still the default, which step 18 covers.
 - **Scope:** Write a stop script that uses each server's own shutdown path (`pg_ctl stop`, and an admin endpoint or a `SIGTERM` handler for the backend), and check the port is free afterward. Record the process ids in a file under `.agent-local/run/` so a later cleanup can find them.
 - **Rationale:** Leftover listeners hold ports and data directories, and the next run can fail or see stale data.
 - **Dependencies:** Step 18, for a shutdown endpoint if one is added.
